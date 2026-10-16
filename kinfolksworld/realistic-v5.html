@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#090b11" />
+  <title>Kinfolksworld Multiplayer</title>
+  <style>
+    html,body{margin:0;width:100%;height:100%;background:#090b11;overflow:hidden;font-family:Inter,system-ui,sans-serif;color:#fff}
+    #baseApp{position:absolute;inset:0;width:100%;height:100%;border:0;background:#090b11}
+    #mpLauncher{position:fixed;right:14px;top:74px;z-index:40;border:1px solid rgba(255,255,255,.13);background:linear-gradient(135deg,#8a63ff,#5c8dff);color:white;border-radius:16px;padding:11px 14px;font-weight:900;box-shadow:0 12px 30px rgba(80,70,180,.35)}
+    #mpLauncher span{opacity:.8;font-size:11px;display:block;margin-top:2px;font-weight:700}
+    #mpLayer{position:fixed;inset:0;z-index:60;background:#090b11;display:none}
+    #mpLayer.open{display:block}
+    #mpCanvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+    .mpHud{position:absolute;inset:0;pointer-events:none}
+    .mpTop{pointer-events:auto;position:absolute;left:10px;right:10px;top:max(10px,env(safe-area-inset-top));display:flex;justify-content:space-between;gap:8px;align-items:center}
+    .mpPill{background:rgba(9,11,17,.76);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:10px 12px;box-shadow:0 14px 34px rgba(0,0,0,.24)}
+    .roomName{font-weight:900;font-size:15px}.roomMeta{font-size:10px;color:#b9bdd0;margin-top:2px}.liveDot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#49e5a7;box-shadow:0 0 10px #49e5a7;margin-right:5px}
+    .mpTop button,.actionBar button,.movePad button{border:0;color:white;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.10);font-weight:900}
+    .mpTop button{border-radius:14px;padding:10px 12px}
+    .roster{position:absolute;right:10px;top:74px;width:min(180px,44vw);max-height:42vh;overflow:auto;background:rgba(9,11,17,.72);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:9px;pointer-events:auto}
+    .rosterTitle{font-size:10px;font-weight:900;letter-spacing:.12em;color:#b7a6ff;margin:2px 4px 7px}.person{display:flex;align-items:center;gap:8px;padding:7px;border-radius:12px}.person+.person{margin-top:2px}.personDot{width:30px;height:30px;border-radius:11px;display:grid;place-items:center;font-weight:900;background:linear-gradient(135deg,#8a63ff,#ff5ba7)}.personText{min-width:0}.personName{font-size:11px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.personState{font-size:9px;color:#9fa5b8;margin-top:1px}
+    .actionBar{pointer-events:auto;position:absolute;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));display:flex;gap:7px;padding:7px;border-radius:18px;background:rgba(9,11,17,.72);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.09)}
+    .actionBar button{border-radius:12px;padding:8px 10px;font-size:11px}.actionBar button.active{background:linear-gradient(135deg,#8a63ff,#5c8dff)}
+    .movePad{pointer-events:auto;position:absolute;left:14px;bottom:calc(18px + env(safe-area-inset-bottom));width:132px;height:132px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:5px}.movePad button{border-radius:16px;font-size:19px;background:rgba(17,20,31,.72);backdrop-filter:blur(16px)}.movePad .up{grid-column:2;grid-row:1}.movePad .left{grid-column:1;grid-row:2}.movePad .down{grid-column:2;grid-row:3}.movePad .right{grid-column:3;grid-row:2}
+    .help{position:absolute;right:12px;bottom:calc(24px + env(safe-area-inset-bottom));max-width:190px;background:rgba(9,11,17,.68);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);padding:8px 10px;border-radius:14px;font-size:9px;color:#aeb4c6;text-align:right}
+    .statusToast{position:absolute;left:50%;top:84px;transform:translate(-50%,-8px);opacity:0;background:#f6f5fb;color:#11131a;padding:9px 12px;border-radius:999px;font-size:11px;font-weight:900;transition:.2s;pointer-events:none}.statusToast.show{opacity:1;transform:translate(-50%,0)}
+    @media(max-width:520px){.roster{top:72px}.actionBar{bottom:calc(160px + env(safe-area-inset-bottom));max-width:calc(100% - 20px);overflow:auto}.help{display:none}}
+  </style>
+  <script type="importmap">
+  {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
+  </script>
+</head>
+<body>
+  <iframe id="baseApp" src="./realistic-v4.html" title="Kinfolksworld"></iframe>
+  <button id="mpLauncher">🌐 Enter Multiplayer<span>Live room beta</span></button>
+  <section id="mpLayer" aria-label="Kinfolksworld multiplayer room">
+    <div id="mpCanvas"></div>
+    <div class="mpHud">
+      <div class="mpTop">
+        <div class="mpPill"><div class="roomName" id="mpRoomName">Skyline Lounge</div><div class="roomMeta"><span class="liveDot"></span><span id="mpStatus">Connecting…</span></div></div>
+        <button id="mpExit">Exit room</button>
+      </div>
+      <div class="roster"><div class="rosterTitle">PLAYERS HERE</div><div id="mpRoster"></div></div>
+      <div class="actionBar" id="mpActions">
+        <button data-action="idle" class="active">Idle</button>
+        <button data-action="wave">Wave</button>
+        <button data-action="dance">Dance</button>
+        <button data-action="sit">Sit</button>
+      </div>
+      <div class="movePad" id="movePad">
+        <button class="up" data-move="forward">▲</button><button class="left" data-move="left">◀</button><button class="right" data-move="right">▶</button><button class="down" data-move="back">▼</button>
+      </div>
+      <div class="help">Drag the room to look around. Hold the arrows to move. Open this link on a second device to test multiplayer.</div>
+      <div class="statusToast" id="mpToast"></div>
+    </div>
+  </section>
+  <script type="module" src="./multiplayer-v5.js"></script>
+</body>
+</html>
