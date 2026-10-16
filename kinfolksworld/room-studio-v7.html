@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Kinfolksworld Room Studio</title>
+<style>
+:root{color-scheme:dark;font-family:Inter,system-ui,sans-serif;--bg:#090b11;--panel:#151925;--line:rgba(255,255,255,.1);--muted:#aab0c2;--accent:#8a63ff;--good:#49e5a7}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 20% -10%,#34265f,transparent 35%),var(--bg);color:#fff}button,input,select,textarea{font:inherit}.shell{min-height:100dvh;display:grid;grid-template-rows:auto 1fr}.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:rgba(9,11,17,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--line)}.brand{font-weight:950}.sub{font-size:10px;color:var(--muted);margin-top:2px}.top button,.primary,.ghost,.roomBtn,.inventory button{border:0;color:white;cursor:pointer}.top button,.ghost{background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:13px;padding:9px 11px}.primary{background:linear-gradient(135deg,var(--accent),#5e87ff);font-weight:900;border-radius:13px;padding:10px 13px}.content{display:grid;grid-template-columns:340px 1fr;min-height:0}.side{border-right:1px solid var(--line);padding:14px;overflow:auto;background:rgba(12,14,21,.68)}.stageWrap{padding:14px;display:grid;grid-template-rows:auto 1fr;min-width:0}.card{background:rgba(21,25,37,.92);border:1px solid var(--line);border-radius:20px;padding:14px;margin-bottom:12px}.card h3{margin:0 0 10px;font-size:14px}.field{display:grid;gap:6px;margin:10px 0;font-size:11px;color:#d9dce7}.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);background:#0d1018;color:white;border-radius:12px;padding:10px;outline:none}.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}.rooms{display:grid;gap:8px}.roomBtn{width:100%;text-align:left;background:#10141e;border:1px solid var(--line);border-radius:14px;padding:10px}.roomBtn.active{outline:2px solid rgba(138,99,255,.65)}.roomBtn b{display:block}.roomBtn small{display:block;color:var(--muted);margin-top:3px}.inventory{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.inventory button{background:#10141e;border:1px solid var(--line);border-radius:14px;padding:10px 6px;min-height:72px}.inventory span{display:block;font-size:24px}.inventory small{display:block;font-size:9px;color:var(--muted);margin-top:4px}.stageBar{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}.stageBar .meta{color:var(--muted);font-size:11px}.floor{position:relative;min-height:540px;border:1px solid var(--line);border-radius:24px;overflow:hidden;background:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px),radial-gradient(circle at 50% 10%,rgba(138,99,255,.16),transparent 35%),#111520;background-size:32px 32px,32px 32px,auto,auto}.floor:before{content:"ROOM FLOOR";position:absolute;left:14px;top:12px;color:rgba(255,255,255,.22);font-size:10px;font-weight:900;letter-spacing:.18em}.obj{position:absolute;width:68px;height:68px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(145deg,#2a3044,#151923);border:1px solid rgba(255,255,255,.13);box-shadow:0 12px 26px rgba(0,0,0,.28);touch-action:none;user-select:none;cursor:grab}.obj span{font-size:27px}.obj small{position:absolute;bottom:5px;left:5px;right:5px;text-align:center;font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#dfe2eb}.obj.selected{outline:3px solid var(--accent)}.toolbar{position:absolute;right:10px;top:10px;display:flex;gap:6px;z-index:3}.toolbar button{border:0;border-radius:11px;padding:7px 9px;color:white;background:rgba(8,10,16,.72);backdrop-filter:blur(12px)}.notice{font-size:10px;color:var(--muted);line-height:1.45}.good{color:var(--good)}.inviteBox{display:flex;gap:7px}.inviteBox input{flex:1}.empty{color:var(--muted);font-size:11px;padding:10px 2px}.member{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px;border-radius:12px;background:#10141e;margin-top:7px}.member small{color:var(--muted)}.toast{position:fixed;left:50%;bottom:18px;transform:translate(-50%,12px);opacity:0;background:white;color:#11131a;padding:10px 14px;border-radius:999px;font-size:11px;font-weight:900;transition:.2s;z-index:50}.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:800px){.content{grid-template-columns:1fr}.side{border-right:0;border-bottom:1px solid var(--line);max-height:47dvh}.stageWrap{padding:10px}.floor{min-height:52dvh}.inventory{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<div class="shell">
+<header class="top"><div><div class="brand">Kinfolksworld Room Studio</div><div class="sub" id="identityText">Checking Kinfolk account…</div></div><div class="row" style="flex:none"><button id="joinInvite">Join invite</button><button id="backWorld">Back to world</button></div></header>
+<div class="content">
+<aside class="side">
+  <section class="card"><h3>Create a room</h3>
+    <label class="field">Room name<input id="roomName" maxlength="40" placeholder="My Penthouse" /></label>
+    <label class="field">Description<textarea id="roomDescription" rows="2" maxlength="160" placeholder="Chill room for friends"></textarea></label>
+    <div class="row"><label class="field">Vibe<select id="roomVibe"><option value="loft">City Loft</option><option value="club">Neon Club</option><option value="beach">Sunset Beach</option></select></label><label class="field">Access<select id="roomAccess"><option value="public">Public</option><option value="friends">Friends only</option><option value="private">Invite only</option></select></label></div>
+    <button class="primary" id="createRoom" style="width:100%">Create room</button><p class="notice">Guest testers can design a local room immediately. Cloud rooms, invites, and moderation turn on automatically for signed-in Kinfolk accounts after this module is integrated into the main app.</p>
+  </section>
+  <section class="card"><h3>Your rooms</h3><div class="rooms" id="roomList"></div></section>
+  <section class="card"><h3>Furniture</h3><div class="inventory" id="inventory"></div></section>
+  <section class="card" id="ownerCard"><h3>Owner controls</h3>
+    <div class="row"><button class="ghost" id="saveLayout">Save layout</button><button class="ghost" id="clearLayout">Clear furniture</button></div>
+    <label class="field">Room access<select id="editAccess"><option value="public">Public</option><option value="friends">Friends only</option><option value="private">Invite only</option></select></label>
+    <label class="field">Max players<input id="maxPlayers" type="number" min="2" max="50" value="20" /></label>
+    <label class="field"><span>Room chat</span><select id="allowChat"><option value="true">Enabled</option><option value="false">Disabled</option></select></label>
+    <button class="primary" id="saveSettings" style="width:100%">Save room settings</button>
+    <div style="height:10px"></div><div class="inviteBox"><input id="inviteCode" placeholder="Invite code" readonly /><button class="ghost" id="makeInvite">Create invite</button></div>
+    <div id="members"></div>
+  </section>
+</aside>
+<main class="stageWrap"><div class="stageBar"><div><b id="stageName">Local Room Draft</b><div class="meta" id="stageMeta">Drag furniture anywhere on the floor</div></div><div class="row" style="flex:none"><button class="ghost" id="rotateItem">Rotate</button><button class="ghost" id="deleteItem">Delete</button></div></div><div class="floor" id="floor"><div class="toolbar"><button id="zoomOut">−</button><button id="zoomIn">+</button></div></div></main>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script type="module" src="./room-studio-v7.js"></script>
+</body>
+</html>
