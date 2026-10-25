@@ -1,0 +1,30 @@
+name: Kinfolk Recovery177 mobile login regressions
+on:
+  push:
+    branches:
+      - kinfolk-social/recovery177-login-form-mobile-efficiency
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-and-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check for auth and existing guards
+        run: |
+          node --check kinfolk-social/kinfolk-phase95.js
+          node --check kinfolk-social/kinfolk-phase98.js
+          node --check kinfolk-social/kinfolk-phase81.js
+          node --check kinfolk-social/kinfolk-phase82.js
+          node --check kinfolk-social/tests/recovery177-login-form-mobile.test.cjs
+      - name: Login, content safety, music and appearance regressions
+        run: |
+          node --test kinfolk-social/tests/recovery177-login-form-mobile.test.cjs
+          node --test kinfolk-social/tests/recovery174-rating-modal-guard.test.cjs
+          node --test kinfolk-social/tests/recovery175-music-pause.test.cjs
+          node --test kinfolk-social/tests/recovery176-appearance-account-guards.test.cjs
