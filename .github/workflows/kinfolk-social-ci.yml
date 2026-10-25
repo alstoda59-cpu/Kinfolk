@@ -30,6 +30,7 @@ jobs:
           python test_recovery137.py
           python test_recovery138.py
           python test_recovery139.py
+          python test_recovery141.py
       - name: JavaScript syntax
         run: |
           for f in kinfolk-social/kinfolk-*.js kinfolk-social/service-worker.js; do node --check "$f"; done
