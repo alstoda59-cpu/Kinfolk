@@ -41,6 +41,7 @@ function fixture({ stay = false, session = true, error = null } = {}) {
     location: { origin: 'https://isolated-qa.supabase.co' },
     localStorage: { getItem() { return null; }, removeItem() {}, setItem(key, value) { localWrites.push([key, value]); } },
     sessionStorage: {
+      getItem() { return null; },
       setItem(key, value) { tabWrites.push(['set', key, value]); },
       removeItem(key) { tabWrites.push(['remove', key]); },
     },
