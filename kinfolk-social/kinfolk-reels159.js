@@ -18,7 +18,7 @@
  .kf159-top{padding:10px;display:flex;gap:10px;align-items:center;justify-content:space-between}
  @media(max-width:600px){
  .kf159-top{padding:8px 12px;background:#08080b;color:#fff}
- .kf159-feed{height:calc(100dvh - 152px - env(safe-area-inset-bottom,0px));min-height:380px;border-radius:0;background:#000;scroll-snap-type:y mandatory}
+ .kf159-feed{height:var(--kf159-viewport-height,calc(100dvh - 152px - env(safe-area-inset-bottom,0px)));min-height:240px;border-radius:0;background:#000;scroll-snap-type:y mandatory}
  .kf159-slide{height:100%;min-height:380px;background:#000}
  .kf159-slide video{width:100%;height:100%;object-fit:cover;background:#000}
  .kf159-actions{right:8px;bottom:74px;gap:9px;max-height:calc(100% - 110px)}
@@ -32,9 +32,9 @@
  @media(prefers-reduced-motion:reduce){.kf159-feed{scroll-behavior:auto}}
  `;
  document.head.appendChild(style);
- const active={observer:null,root:null,pausedByUser:new Set(),generation:0,scrollHandler:null};
+ const active={observer:null,root:null,pausedByUser:new Set(),generation:0,scrollHandler:null,resizeController:null};
  window.kf161ToggleSound=function(id){const v=document.getElementById('kf159-video-'+id);if(!v)return;v.muted=!v.muted;const slide=v.closest('.kf159-slide');const b=[...slide.querySelectorAll('.kf159-actions button')].find(x=>x.textContent.includes('Sound')||x.textContent.includes('Mute'));if(b)b.innerHTML=v.muted?'<span>🔇</span>Sound':'<span>🔊</span>Mute'};
- function teardown(){active.generation++;if(active.root&&active.scrollHandler)active.root.removeEventListener('scroll',active.scrollHandler);active.scrollHandler=null;active.observer?.disconnect();active.root?.querySelectorAll('video').forEach(v=>v.pause());active.observer=null;active.root=null;active.pausedByUser.clear()}
+ function teardown(){active.resizeController?.abort();active.resizeController=null;active.generation++;if(active.root&&active.scrollHandler)active.root.removeEventListener('scroll',active.scrollHandler);active.scrollHandler=null;active.observer?.disconnect();active.root?.querySelectorAll('video').forEach(v=>v.pause());active.observer=null;active.root=null;active.pausedByUser.clear()}
  window.kf159StopReels=teardown;
  document.addEventListener('visibilitychange',()=>{if(document.hidden)active.root?.querySelectorAll('video').forEach(v=>v.pause());else if(active.root){const visible=[...active.root.querySelectorAll('.kf159-slide')].find(slide=>{const a=slide.getBoundingClientRect(),b=active.root.getBoundingClientRect();return Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>a.height*.65});const video=visible?.querySelector('video');if(video&&!active.pausedByUser.has(visible.dataset.id)){pauseOthers(video);video.play().catch(()=>{})}}});
  function pauseOthers(current){document.querySelectorAll('.kf159-slide video').forEach(v=>{if(v!==current)v.pause()})}
@@ -96,7 +96,21 @@
   }
   if(!isCurrent())return;
   main.innerHTML=`<div class="kf159-top"><b>Reels & Shorts</b><button class="btn small" onclick="openVideoModal()">＋ Upload</button></div><div class="kf159-feed" id="kf159-feed" aria-label="Swipe up or down for reels">${cards.join('')}</div>`;
+  active.resizeController=new AbortController();
   const feed=main.querySelector('#kf159-feed');active.root=feed;
+  // Size to the actual space above the app's bottom navigation rather than guessing header height.
+  const fitViewport=()=>{
+   if(!isCurrent()||!feed.isConnected)return;
+   const top=feed.getBoundingClientRect().top;
+   const nav=[...document.querySelectorAll('nav,footer,[role="navigation"],.bottomNav,.bottom-nav,.mobileNav,.mobile-nav')]
+     .filter(el=>el.isConnected&&el!==feed&&getComputedStyle(el).position==='fixed')
+     .map(el=>el.getBoundingClientRect()).filter(r=>r.height>0&&r.top>top&&r.top<window.innerHeight);
+   const bottom=nav.length?Math.min(...nav.map(r=>r.top)):window.innerHeight;
+   const height=Math.max(240,Math.floor(bottom-top));
+   feed.style.setProperty('--kf159-viewport-height',height+'px');
+  };
+  fitViewport();
+  window.addEventListener('resize',fitViewport,{signal:active.resizeController.signal});
   const updatePlayback=()=>{const root=feed.getBoundingClientRect();let winner=null,best=0;for(const slide of feed.querySelectorAll('.kf159-slide')){const rect=slide.getBoundingClientRect();const ratio=rect.height?Math.max(0,Math.min(rect.bottom,root.bottom)-Math.max(rect.top,root.top))/rect.height:0;if(ratio>best){best=ratio;winner=slide}}const v=best>=.65&&!document.hidden?winner?.querySelector('video'):null;if(!v){pauseOthers(null);return}pauseOthers(v);if(!v||active.pausedByUser.has(winner.dataset.id))return;if(v.paused)v.play().catch(()=>{})};
   if(typeof IntersectionObserver==='function'){
    const obs=new IntersectionObserver(updatePlayback,{root:feed,threshold:[0,.65,1]});
