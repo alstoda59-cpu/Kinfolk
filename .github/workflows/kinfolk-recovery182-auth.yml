@@ -5,6 +5,7 @@ on:
       - kinfolk-social/recovery182-login-session-identity
       - kinfolk-social/recovery185-login-runtime-regressions
       - kinfolk-social/recovery186-login-token-identity
+      - kinfolk-social/recovery187-login-submit-isolation
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,6 +24,7 @@ jobs:
           node --check kinfolk-social/kinfolk-phase79.js
           node --check kinfolk-social/tests/recovery182-login-session-identity.test.cjs
           node --check kinfolk-social/tests/recovery183-login-activation-feedback.test.cjs
+          node --check kinfolk-social/tests/recovery187-login-submit-isolation.test.cjs
       - name: Verify offline auth regressions
         run: |
-          node --test kinfolk-social/tests/recovery179-signup-session-tab.test.cjs kinfolk-social/tests/recovery180-signup-storage-atomic.test.cjs kinfolk-social/tests/recovery181-signup-account-switch.test.cjs kinfolk-social/tests/recovery182-login-session-identity.test.cjs kinfolk-social/tests/recovery183-login-activation-feedback.test.cjs
+          node --test kinfolk-social/tests/recovery179-signup-session-tab.test.cjs kinfolk-social/tests/recovery180-signup-storage-atomic.test.cjs kinfolk-social/tests/recovery181-signup-account-switch.test.cjs kinfolk-social/tests/recovery182-login-session-identity.test.cjs kinfolk-social/tests/recovery183-login-activation-feedback.test.cjs kinfolk-social/tests/recovery187-login-submit-isolation.test.cjs
