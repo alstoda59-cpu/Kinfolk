@@ -1,0 +1,1 @@
+const fs=require('node:fs'),assert=require('node:assert/strict');const s=fs.readFileSync(__dirname+'/kinfolk-reels159.js','utf8');new Function(s);assert.ok(s.includes('if(!v){pauseOthers(null);return}'));assert.ok(s.includes('if(v.paused)v.play().catch(()=>{})'));assert.ok(s.includes("feed.addEventListener('play'"));console.log('Recovery171 autoplay safety source checks passed');
