@@ -50,8 +50,23 @@ with sync_playwright() as p:
  page.locator('#kf73Email').fill('qa@example.test')
  page.locator('#kf73Password').fill('valid-long-password-123')
  page.locator('#kf73Stay').uncheck()
+ # Delay the synthetic token endpoint and submit twice to catch overlapping
+ # requests on slow mobile connections. No real backend traffic is sent.
+ page.evaluate("""() => {
+   window.__loginTokenCalls=0;
+   const original=window.fetch;
+   window.fetch=async (...args)=>{
+     if(String(args[0]).includes('/auth/v1/token')){
+       window.__loginTokenCalls++;
+       await new Promise(resolve=>setTimeout(resolve,180));
+     }
+     return original(...args);
+   };
+ }""")
  page.locator('.kf73Primary').click()
+ page.evaluate("document.querySelector('#authForm').requestSubmit()")
  page.wait_for_timeout(2800)
+ assert page.evaluate('window.__loginTokenCalls')==1,'duplicate login token requests'
  print('AFTER LOGIN',page.locator('#main').count(),page.locator('.kf73Title').all_inner_texts(),'session',page.evaluate('!!window.__kfMock.session'),'tab',page.evaluate("sessionStorage.getItem('kinfolk_session_tab')"),'errors',errors[-5:])
  assert page.locator('#main').count()==1,'login did not open main app'
  assert page.evaluate('window.state.user?.id')=='11111111-1111-4111-8111-111111111111'
