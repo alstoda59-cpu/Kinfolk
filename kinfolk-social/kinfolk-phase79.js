@@ -114,7 +114,9 @@
         options:{...(redirect?{emailRedirectTo:redirect}:{}),data:{display_name,signup_birthdate:birthdate}}
       });
       if(error)throw error;
-      saveStay(stay);
+      // An email-confirmation signup has no authenticated session yet.
+      // Do not persist Stay Logged In until signup actually returns a session.
+      if(data?.session)saveStay(stay);
       if(data?.session)show(form,'Account created. Opening Kinfolk…',true);
       else show(form,'Account created. Check your email to confirm it, then log in.',true);
       // Email-confirmation signups do not have a session yet. Keep the form
