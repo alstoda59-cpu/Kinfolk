@@ -92,6 +92,22 @@
    active.scrollHandler=updatePlayback;feed.addEventListener('scroll',updatePlayback,{passive:true});
    updatePlayback();
   }
+  feed.addEventListener('play',e=>{
+   if(e.target.tagName!=='VIDEO')return;
+   pauseOthers(e.target);
+   const icon=e.target.parentElement?.querySelector('.kf159-playicon');
+   if(icon)icon.textContent='';
+  },true);
+  feed.addEventListener('pause',e=>{
+   if(e.target.tagName!=='VIDEO')return;
+   const icon=e.target.parentElement?.querySelector('.kf159-playicon');
+   if(icon)icon.textContent='▶';
+  },true);
+  feed.addEventListener('error',e=>{
+   if(e.target.tagName!=='VIDEO')return;
+   const icon=e.target.parentElement?.querySelector('.kf159-playicon');
+   if(icon)icon.textContent='Video unavailable';
+  },true);
   feed.addEventListener('keydown',e=>{if(e.key!=='ArrowDown'&&e.key!=='ArrowUp')return;e.preventDefault();feed.scrollBy({top:(e.key==='ArrowDown'?1:-1)*feed.clientHeight,behavior:'smooth'})});
   feed.tabIndex=0;
  };
