@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery186 (2026-10-25)
+
+Latest isolated checkpoint: [RECOVERY186.md](RECOVERY186.md). Password login now requires the identity in the password-token response to match the adopted Supabase session before account activation. **4/4 targeted offline V8 scenarios passed; new Node tests committed but CI execution, real backend and device tests remain unverified.** Preview `dpl_Cgj4an9DY756poAMiGggQjcDAxWR` READY, target null. No production, Kinfolksworld, or shared live Supabase changes.
+
 # Kinfolk Social | Recovery185 (2026-10-25)
 
 Latest isolated checkpoint: [RECOVERY185.md](RECOVERY185.md). Expanded offline login activation regression coverage and repaired the synthetic DOM fixture to model a connected form. **13/13 offline runtime cases passed in a V8 adapter harness, plus source-order checks.** Vercel preview `dpl_E1oAMPRxBG3X2erM7siHnAMEbajC` is READY (target null), but Node CI, real browser/backend login and mobile-device testing are unverified. No production, Kinfolksworld or shared live Supabase changes.
