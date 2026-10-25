@@ -1,0 +1,20 @@
+name: Kinfolk Recovery174 Safety Regression
+on:
+  push:
+    branches:
+      - 'kinfolk-social/recovery174-rating-modal-guard'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  modal-account-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        run: node --check kinfolk-social/kinfolk-phase82.js
+      - name: Synthetic account-switch regression
+        run: node kinfolk-social/tests/recovery174-rating-modal-guard.test.cjs
