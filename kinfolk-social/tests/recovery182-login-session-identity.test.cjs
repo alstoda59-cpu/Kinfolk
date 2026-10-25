@@ -6,7 +6,7 @@ const vm=require('node:vm');
 const source=fs.readFileSync('kinfolk-social/kinfolk-phase95.js','utf8');
 
 // Entirely offline: no real credentials, network, users or Supabase mutations.
-function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionError=null,stay=false,activationError=null,missingActivation=false,disconnectOnActivation=false,holdActivation=false}={}){
+function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionError=null,stay=false,activationError=null,missingActivation=false,disconnectOnActivation=false,holdActivation=false,tokenUserId='login'}={}){
   let read=0,activated=0,adoptions=0,message,releaseActivation;
   const local=new Map([['kinfolk_stay_logged_in_v1','1'],['kinfolk_stay_logged_in','1']]);
   const tab=new Map();
@@ -45,7 +45,7 @@ function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionEr
   const timers=[];
   vm.runInNewContext(source,{
     window,document,sb,console,AbortController,
-    fetch:async()=>({ok:true,json:async()=>({access_token:'synthetic',refresh_token:'synthetic'})}),
+    fetch:async()=>({ok:true,json:async()=>({access_token:'synthetic',refresh_token:'synthetic',user:tokenUserId?{id:tokenUserId}:null})}),
     localStorage:storage(local),sessionStorage:storage(tab),
     MutationObserver:class{observe(){}},
     setInterval(){},
@@ -155,4 +155,20 @@ test('pending activation cannot announce login success early',async()=>{
   f.releaseActivation();
   await pending;
   assert.match(f.message,/Logged in/);
+});
+
+
+test('password response user must match adopted Supabase session',async()=>{
+  const f=fixture({tokenUserId:'different'});
+  assert.match(await f.submit(),/authenticated account does not match the login response/);
+  assert.equal(f.activated,0);
+  assert.equal(f.local.get('kinfolk_stay_logged_in_v1'),'1');
+  assert.equal(f.tab.has('kinfolk_session_tab'),false);
+});
+test('password response without user identity is rejected before adoption',async()=>{
+  const f=fixture({tokenUserId:null});
+  assert.match(await f.submit(),/incomplete login session/);
+  assert.equal(f.adoptions,0);
+  assert.equal(f.activated,0);
+  assert.equal(f.local.get('kinfolk_stay_logged_in_v1'),'1');
 });
