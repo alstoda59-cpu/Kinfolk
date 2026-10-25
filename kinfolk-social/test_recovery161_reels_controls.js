@@ -1,0 +1,1 @@
+const fs=require('node:fs'),assert=require('node:assert/strict');const s=fs.readFileSync(__dirname+'/kinfolk-reels159.js','utf8');new Function(s);for(const x of ['kf161ToggleSound','v.muted=!v.muted','endsWith(ext)','pausedByUser.has','savedKinfolkVideoIds().includes'])assert.ok(s.includes(x),x);console.log('Recovery161 Reels control static checks passed');
