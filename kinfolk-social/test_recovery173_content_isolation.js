@@ -1,0 +1,43 @@
+'use strict';
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const source=fs.readFileSync(__dirname+'/kinfolk-phase82.js','utf8');
+new Function(source);
+function harness({storageBlocked=false,lookup}={}){
+  const viewed=[];
+  const state={user:{id:'adult-A'},view:'reels',videos:[{id:'general',content_rating:'general'},{id:'adult',content_rating:'xxx'}],feed:[]};
+  const storage={getItem(){if(storageBlocked)throw Error('storage blocked');return 'xxx'},setItem(){if(storageBlocked)throw Error('storage blocked')}};
+  const document={head:{appendChild(){}},documentElement:{},createElement(){return{style:{},innerHTML:'',firstElementChild:{}}},querySelectorAll(){return[]},getElementById(){return null}};
+  const window={renderReels:async()=>{viewed.push(state.videos.map(x=>x.id))},renderHome:async()=>{}};
+  const sb={from(){return{select(){return{eq(_key,id){return{maybeSingle:()=>lookup(id)}}}}}}}};
+  const context={window,document,state,localStorage:storage,sb,MutationObserver:class{observe(){}},setTimeout(){},console:{warn(){}},renderApp:async()=>{},toast(){}};
+  vm.runInNewContext(source,context);
+  return{window,state,viewed};
+}
+(async()=>{
+  const adult={data:{birth_date:'1990-01-01',mature_content_preference:'allow'},error:null};
+  const teen={data:{birth_date:'2011-01-01',mature_content_preference:'hide'},error:null};
+  const h=harness({lookup:async id=>id==='adult-A'?adult:teen});
+  await h.window.kf82Lane('xxx');
+  await h.window.renderReels({isConnected:true,querySelector(){return null},insertAdjacentHTML(){}});
+  assert.deepEqual(h.viewed.at(-1),['adult'],'adult explicitly enabled lane');
+  h.state.user={id:'teen-B'};
+  await h.window.renderReels({isConnected:true,querySelector(){return null},insertAdjacentHTML(){}});
+  assert.deepEqual(h.viewed.at(-1),['general'],'new account fails closed before lookup');
+  await h.window.kf82Lane('xxx');
+  await h.window.renderReels({isConnected:true,querySelector(){return null},insertAdjacentHTML(){}});
+  assert.deepEqual(h.viewed.at(-1),['general'],'teen cannot inherit adult lane');
+  let resolveOld;
+  const pending=harness({lookup:id=>id==='adult-A'?new Promise(r=>{resolveOld=r}):Promise.resolve(teen)});
+  const oldLane=pending.window.kf82Lane('xxx');
+  pending.state.user={id:'teen-B'};
+  await pending.window.renderReels({isConnected:true,querySelector(){return null},insertAdjacentHTML(){}});
+  resolveOld(adult);
+  await oldLane;
+  await pending.window.renderReels({isConnected:true,querySelector(){return null},insertAdjacentHTML(){}});
+  assert.deepEqual(pending.viewed.at(-1),['general'],'late adult response cannot unlock teen');
+  const blocked=harness({storageBlocked:true,lookup:async()=>teen});
+  blocked.state.user={id:'teen-B'};
+  await blocked.window.renderReels({isConnected:true,querySelector(){return null},insertAdjacentHTML(){}});
+  assert.deepEqual(blocked.viewed.at(-1),['general'],'blocked Web Storage fails closed');
+  console.log('Recovery173 account-isolated content lane checks passed (synthetic)');
+})().catch(e=>{console.error(e);process.exitCode=1});
