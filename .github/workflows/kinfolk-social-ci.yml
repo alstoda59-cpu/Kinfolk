@@ -82,6 +82,8 @@ jobs:
         run: node kinfolk-social/test_recovery171_playback_safety.js
       - name: Reels manual pause regression
         run: node kinfolk-social/test_recovery172_manual_pause.js
+      - name: Account-isolated content lane regression (synthetic only)
+        run: node kinfolk-social/test_recovery173_content_isolation.js
       - name: JavaScript syntax
         run: |
           for f in kinfolk-social/kinfolk-*.js kinfolk-social/service-worker.js; do node --check "$f"; done
