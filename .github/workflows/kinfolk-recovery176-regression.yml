@@ -1,0 +1,29 @@
+name: Kinfolk Recovery176 account-isolation regressions
+on:
+  push:
+    branches:
+      - kinfolk-social/recovery176-appearance-account-guards
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-and-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: |
+          node --check kinfolk-social/kinfolk-phase81.js
+          node --check kinfolk-social/kinfolk-phase82.js
+          node --check kinfolk-social/tests/recovery174-rating-modal-guard.test.cjs
+          node --check kinfolk-social/tests/recovery175-music-pause.test.cjs
+          node --check kinfolk-social/tests/recovery176-appearance-account-guards.test.cjs
+      - name: Account safety and appearance regressions
+        run: |
+          node --test kinfolk-social/tests/recovery174-rating-modal-guard.test.cjs
+          node --test kinfolk-social/tests/recovery175-music-pause.test.cjs
+          node --test kinfolk-social/tests/recovery176-appearance-account-guards.test.cjs
