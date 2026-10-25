@@ -36,6 +36,23 @@ with sync_playwright() as p:
     page.wait_for_timeout(150)
     assert page.evaluate('window.__kfMock.signupCalls')==0
     assert '13' in page.locator('.kf73Msg').inner_text()
+    # A backend-rejected signup must not overwrite an existing Stay Logged In
+    # preference. Only an accepted Supabase signup may persist that choice.
+    page.evaluate("""() => {
+      localStorage.setItem('kinfolk_stay_logged_in_v1','1');
+      localStorage.setItem('kinfolk_stay_logged_in','1');
+      window.__signupBeforeFailure=window.__kfMock.client.auth.signUp;
+      window.__kfMock.client.auth.signUp=async()=>({data:null,error:new Error('Synthetic signup rejection')});
+    }""")
+    page.locator('#kf79Birthdate').fill('2000-01-01')
+    page.locator('#kf73Stay').uncheck()
+    page.locator('.kf73Primary').click()
+    page.wait_for_timeout(150)
+    assert 'Synthetic signup rejection' in page.locator('.kf73Msg').inner_text()
+    assert page.locator('.kf73Primary').is_enabled()
+    assert page.evaluate("localStorage.getItem('kinfolk_stay_logged_in_v1')")=='1'
+    assert page.evaluate("localStorage.getItem('kinfolk_stay_logged_in')")=='1'
+    page.evaluate("window.__kfMock.client.auth.signUp=window.__signupBeforeFailure")
     # Same form, after rejected age: adult signup must not be lost to a
     # competing legacy submit handler.
     page.locator('#kf79Birthdate').fill('2000-01-01')
