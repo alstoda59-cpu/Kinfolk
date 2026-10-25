@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery177 (2026-10-25)
+
+Latest isolated development checkpoint: [`RECOVERY177.md`](RECOVERY177.md). The existing login form cleanup now uses event-driven observation plus a 2-second foreground-only fallback instead of an 80ms background poll. Five synthetic checks passed against committed source; real backend, GitHub Actions Node results and device QA remain pending. Recovery176 appearance, Recovery175 music and Recovery174 safety protections are preserved. Production and Kinfolksworld are excluded.
+
 # Kinfolk Social | Recovery176 (2026-10-25)
 
 Latest isolated development checkpoint: [`RECOVERY176.md`](RECOVERY176.md). Main app source is in this folder; Kinfolksworld and production are excluded. Recovery176 protects delayed color/music saves and appearance reads across account switches. Five new synthetic regression cases were added, alongside prior music and safety suites. **Real backend and physical-device QA remain pending.**
