@@ -1,0 +1,24 @@
+name: Kinfolk Recovery180 auth regressions
+on:
+  push:
+    branches:
+      - kinfolk-social/recovery180-signup-storage-atomic
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-auth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check signup and regression syntax
+        run: |
+          node --check kinfolk-social/kinfolk-phase79.js
+          node --check kinfolk-social/tests/recovery179-signup-session-tab.test.cjs
+          node --check kinfolk-social/tests/recovery180-signup-storage-atomic.test.cjs
+      - name: Verify signup persistence and blocked-storage behavior
+        run: node --test kinfolk-social/tests/recovery179-signup-session-tab.test.cjs kinfolk-social/tests/recovery180-signup-storage-atomic.test.cjs
