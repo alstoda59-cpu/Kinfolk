@@ -16,7 +16,20 @@
  .kf159-playicon{position:absolute;z-index:2;top:50%;left:50%;transform:translate(-50%,-50%);font-size:56px;text-shadow:0 2px 8px black;pointer-events:none}
  .kf159-actions{z-index:3}.kf159-info{z-index:2;pointer-events:none}
  .kf159-top{padding:10px;display:flex;gap:10px;align-items:center;justify-content:space-between}
- @media(max-width:600px){.kf159-feed{height:calc(100dvh - 175px);border-radius:0}.kf159-slide{min-height:360px}}
+ @media(max-width:600px){
+ .kf159-top{padding:8px 12px;background:#08080b;color:#fff}
+ .kf159-feed{height:calc(100dvh - 152px - env(safe-area-inset-bottom,0px));min-height:380px;border-radius:0;background:#000;scroll-snap-type:y mandatory}
+ .kf159-slide{height:100%;min-height:380px;background:#000}
+ .kf159-slide video{width:100%;height:100%;object-fit:cover;background:#000}
+ .kf159-actions{right:8px;bottom:74px;gap:9px;max-height:calc(100% - 110px)}
+ .kf159-actions button{min-width:54px;min-height:48px;padding:3px;background:rgba(0,0,0,.28);border:0;border-radius:12px;font-size:11px;text-shadow:0 1px 3px #000}
+ .kf159-actions button span{font-size:27px}
+ .kf159-info{bottom:34px;left:14px;right:76px;font-size:14px}
+ .kf159-info p{margin:6px 0 0;max-height:3.6em;overflow:hidden}
+ .kf159-overlay{background:linear-gradient(transparent 55%,rgba(0,0,0,.72))}
+ .kf159-playicon{font-size:48px}
+ }
+ @media(prefers-reduced-motion:reduce){.kf159-feed{scroll-behavior:auto}}
  `;
  document.head.appendChild(style);
  const active={observer:null,root:null,pausedByUser:new Set(),generation:0,scrollHandler:null};
