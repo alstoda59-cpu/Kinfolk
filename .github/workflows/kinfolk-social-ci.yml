@@ -36,6 +36,10 @@ jobs:
         run: node kinfolk-social/test_recovery148_reactions.js
       - name: Offline session restoration regression (no live Supabase)
         run: node kinfolk-social/test_recovery149_session_retry.js
+      - name: Auth event and login preference regressions (synthetic only)
+        run: |
+          node kinfolk-social/test_recovery150_auth_event.js
+          node kinfolk-social/test_recovery151_auth_preference.js
       - name: JavaScript syntax
         run: |
           for f in kinfolk-social/kinfolk-*.js kinfolk-social/service-worker.js; do node --check "$f"; done
