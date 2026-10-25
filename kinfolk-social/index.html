@@ -25,8 +25,8 @@
 @supports (padding: max(0px)) { body { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); } .bottomnav { height: calc(68px + env(safe-area-inset-bottom, 0px)); } .topbar { padding-top: env(safe-area-inset-top, 0px); height: calc(60px + env(safe-area-inset-top, 0px)); } }
 </style>
 <style id="kinfolk-mobile-accessibility">
-:where(button,a,input,select,textarea,[role="button"],[tabindex]):focus-visible{
-  outline:3px solid #ffb4d2;
+:is(button,a,input,select,textarea,[role="button"],[tabindex]):focus-visible{
+  outline:3px solid #ffb4d2!important;
   outline-offset:3px;
 }
 @media (prefers-reduced-motion:reduce){
