@@ -22,6 +22,14 @@ test('mobile reels retain keyboard, playback, and accessibility controls',()=>{
  assert.match(reels,/ArrowUp/);
  assert.match(reels,/prefers-reduced-motion:reduce/);
 });
-test('authentication code remains present in main app',()=>{
- assert.ok(auth.length>1000,'main app authentication module missing');
+test('login preference code preserves persistent and tab-scoped session choices',()=>{
+ assert.match(auth,/PREF1='kinfolk_stay_logged_in_v1'/);
+ assert.match(auth,/TAB='kinfolk_session_tab'/);
+ assert.match(auth,/localStorage\.setItem\(PREF1,stay\?'1':'0'\)/);
+ assert.match(auth,/if\(stay\)sessionStorage\.removeItem\(TAB\);else sessionStorage\.setItem\(TAB,'1'\)/);
+ assert.match(auth,/const restore=\(\)=>/,'failed preference updates must be reversible');
+});
+test('login waits for an authenticated session before account adoption',()=>{
+ assert.match(auth,/sb\.auth\.getSession\(\)/);
+ assert.match(auth,/sb\.auth\.setSession/);
 });
