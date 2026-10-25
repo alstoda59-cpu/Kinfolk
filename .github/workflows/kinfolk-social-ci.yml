@@ -56,6 +56,8 @@ jobs:
         run: node kinfolk-social/test_recovery158_video_actions.js
       - name: Immersive Reels regression (synthetic only)
         run: node kinfolk-social/test_recovery159_immersive_reels.js
+      - name: Reels playback lifecycle regression (synthetic only)
+        run: node kinfolk-social/test_recovery160_reels_lifecycle.js
       - name: JavaScript syntax
         run: |
           for f in kinfolk-social/kinfolk-*.js kinfolk-social/service-worker.js; do node --check "$f"; done
