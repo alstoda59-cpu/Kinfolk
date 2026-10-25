@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery181 (2026-10-25)
+
+Current isolated checkpoint: [RECOVERY181.md](RECOVERY181.md). Signup now rejects delayed responses from another active account before saving Stay Logged In preferences, rechecks account ownership before local sign-out after storage failure, and warns when sign-out itself fails. **14/14 synthetic V8-harness scenarios passed across Recovery179–181; GitHub Actions Node results, real Supabase, rendered browser and devices remain unverified.** Isolated preview `dpl_6xWXjoYwfY7mPSF56EJzSeq2mXwD` is READY (target null) and served the updated Phase79 script over HTTP 200. Production, Kinfolksworld and shared live Supabase remain untouched.
+
 # Kinfolk Social | Recovery180 (2026-10-25)
 
 Current isolated checkpoint: [RECOVERY180.md](RECOVERY180.md). Signup now rolls back partial Stay Logged In storage writes and attempts local sign-out when browser storage is blocked, rather than claiming an authenticated session was opened. Recovery179 regression fixtures were updated for realistic Web Storage reads. **9/9 synthetic V8-harness cases passed; Node CI, real Supabase, rendered browser and physical devices remain unverified.** Preview `dpl_3cedAWQGgoHito1LadgrzRh7M4of` is READY, target null. Production, Kinfolksworld and shared live Supabase remain untouched.
