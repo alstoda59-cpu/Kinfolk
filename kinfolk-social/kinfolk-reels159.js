@@ -19,9 +19,9 @@
  @media(max-width:600px){.kf159-feed{height:calc(100dvh - 175px);border-radius:0}.kf159-slide{min-height:360px}}
  `;
  document.head.appendChild(style);
- const active={observer:null,root:null,pausedByUser:new Set(),generation:0};
+ const active={observer:null,root:null,pausedByUser:new Set(),generation:0,scrollHandler:null};
  window.kf161ToggleSound=function(id){const v=document.getElementById('kf159-video-'+id);if(!v)return;v.muted=!v.muted;const slide=v.closest('.kf159-slide');const b=[...slide.querySelectorAll('.kf159-actions button')].find(x=>x.textContent.includes('Sound')||x.textContent.includes('Mute'));if(b)b.innerHTML=v.muted?'<span>🔇</span>Sound':'<span>🔊</span>Mute'};
- function teardown(){active.generation++;active.observer?.disconnect();active.root?.querySelectorAll('video').forEach(v=>v.pause());active.observer=null;active.root=null;active.pausedByUser.clear()}
+ function teardown(){active.generation++;if(active.root&&active.scrollHandler)active.root.removeEventListener('scroll',active.scrollHandler);active.scrollHandler=null;active.observer?.disconnect();active.root?.querySelectorAll('video').forEach(v=>v.pause());active.observer=null;active.root=null;active.pausedByUser.clear()}
  window.kf159StopReels=teardown;
  document.addEventListener('visibilitychange',()=>{if(document.hidden)active.root?.querySelectorAll('video').forEach(v=>v.pause());else if(active.root){const visible=[...active.root.querySelectorAll('.kf159-slide')].find(slide=>{const a=slide.getBoundingClientRect(),b=active.root.getBoundingClientRect();return Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>a.height*.65});const video=visible?.querySelector('video');if(video&&!active.pausedByUser.has(visible.dataset.id)){pauseOthers(video);video.play().catch(()=>{})}}});
  function pauseOthers(current){document.querySelectorAll('.kf159-slide video').forEach(v=>{if(v!==current)v.pause()})}
@@ -84,8 +84,14 @@
   if(!isCurrent())return;
   main.innerHTML=`<div class="kf159-top"><b>Reels & Shorts</b><button class="btn small" onclick="openVideoModal()">＋ Upload</button></div><div class="kf159-feed" id="kf159-feed" aria-label="Swipe up or down for reels">${cards.join('')}</div>`;
   const feed=main.querySelector('#kf159-feed');active.root=feed;
-  const obs=new IntersectionObserver(()=>{const root=feed.getBoundingClientRect();let winner=null,best=0;for(const slide of feed.querySelectorAll('.kf159-slide')){const rect=slide.getBoundingClientRect();const ratio=rect.height?Math.max(0,Math.min(rect.bottom,root.bottom)-Math.max(rect.top,root.top))/rect.height:0;if(ratio>best){best=ratio;winner=slide}}const v=best>=.65&&!document.hidden?winner?.querySelector('video'):null;pauseOthers(v);if(!v||active.pausedByUser.has(winner.dataset.id))return;if(v.paused)v.play().then(()=>{const icon=v.parentElement.querySelector('.kf159-playicon');if(icon)icon.textContent=''}).catch(()=>{})},{root:feed,threshold:[0,.65,1]});
-  active.observer=obs;feed.querySelectorAll('.kf159-slide').forEach(el=>obs.observe(el));
+  const updatePlayback=()=>{const root=feed.getBoundingClientRect();let winner=null,best=0;for(const slide of feed.querySelectorAll('.kf159-slide')){const rect=slide.getBoundingClientRect();const ratio=rect.height?Math.max(0,Math.min(rect.bottom,root.bottom)-Math.max(rect.top,root.top))/rect.height:0;if(ratio>best){best=ratio;winner=slide}}const v=best>=.65&&!document.hidden?winner?.querySelector('video'):null;pauseOthers(v);if(!v||active.pausedByUser.has(winner.dataset.id))return;if(v.paused)v.play().then(()=>{const icon=v.parentElement.querySelector('.kf159-playicon');if(icon)icon.textContent=''}).catch(()=>{})};
+  if(typeof IntersectionObserver==='function'){
+   const obs=new IntersectionObserver(updatePlayback,{root:feed,threshold:[0,.65,1]});
+   active.observer=obs;feed.querySelectorAll('.kf159-slide').forEach(el=>obs.observe(el));
+  }else{
+   active.scrollHandler=updatePlayback;feed.addEventListener('scroll',updatePlayback,{passive:true});
+   updatePlayback();
+  }
   feed.addEventListener('keydown',e=>{if(e.key!=='ArrowDown'&&e.key!=='ArrowUp')return;e.preventDefault();feed.scrollBy({top:(e.key==='ArrowDown'?1:-1)*feed.clientHeight,behavior:'smooth'})});
   feed.tabIndex=0;
  };
