@@ -31,14 +31,31 @@
   }
 
   function saveStay(v){
+    const prefKeys=['kinfolk_stay_logged_in_v1','kinfolk_stay_logged_in'];
+    const tabKey='kinfolk_session_tab';
+    let previous;
     try{
-      localStorage.setItem('kinfolk_stay_logged_in_v1',v?'1':'0');
-      localStorage.setItem('kinfolk_stay_logged_in',v?'1':'0');
+      // Snapshot before writing: partial storage failure must not silently
+      // leave the opposite persistence choice on a newly created account.
+      previous=[localStorage.getItem(prefKeys[0]),localStorage.getItem(prefKeys[1]),sessionStorage.getItem(tabKey)];
+      localStorage.setItem(prefKeys[0],v?'1':'0');
+      localStorage.setItem(prefKeys[1],v?'1':'0');
       // A one-tab session needs its marker before auth-state restoration checks.
-      // Without this, signup with Stay Logged In unchecked is signed out immediately.
-      if(v)sessionStorage.removeItem('kinfolk_session_tab');
-      else sessionStorage.setItem('kinfolk_session_tab','1');
-    }catch{}
+      if(v)sessionStorage.removeItem(tabKey);
+      else sessionStorage.setItem(tabKey,'1');
+    }catch(error){
+      if(previous){
+        try{
+          for(let i=0;i<prefKeys.length;i++){
+            if(previous[i]===null)localStorage.removeItem(prefKeys[i]);
+            else localStorage.setItem(prefKeys[i],previous[i]);
+          }
+          if(previous[2]===null)sessionStorage.removeItem(tabKey);
+          else sessionStorage.setItem(tabKey,previous[2]);
+        }catch(rollbackError){console.warn('Kinfolk signup preference rollback failed',rollbackError)}
+      }
+      throw new Error('Account created, but this device could not save the Stay Logged In setting.');
+    }
   }
 
   function mountSignupGate(){
@@ -120,7 +137,20 @@
       if(error)throw error;
       // An email-confirmation signup has no authenticated session yet.
       // Do not persist Stay Logged In until signup actually returns a session.
-      if(data?.session)saveStay(stay);
+      if(data?.session){
+        try{saveStay(stay)}
+        catch(storageError){
+          // A created account must not remain silently authenticated when the
+          // requested session lifetime cannot be recorded on this device.
+          try{
+            const out=await sb.auth.signOut({scope:'local'});
+            if(out?.error)throw out.error;
+          }catch(signOutError){console.warn('Kinfolk signup local sign-out failed',signOutError)}
+          show(form,storageError.message+' Enable browser storage, then log in again.');
+          if(btn){btn.disabled=false;btn.textContent='Create account'}
+          return;
+        }
+      }
       if(data?.session)show(form,'Account created. Opening Kinfolk…',true);
       else show(form,'Account created. Check your email to confirm it, then log in.',true);
       // Email-confirmation signups do not have a session yet. Keep the form
