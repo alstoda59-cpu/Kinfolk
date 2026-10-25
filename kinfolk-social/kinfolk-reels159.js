@@ -105,7 +105,7 @@
    const nav=[...document.querySelectorAll('nav,footer,[role="navigation"],.bottomNav,.bottom-nav,.mobileNav,.mobile-nav')]
      .filter(el=>el.isConnected&&el!==feed&&getComputedStyle(el).position==='fixed')
      .map(el=>el.getBoundingClientRect()).filter(r=>r.height>0&&r.top>top&&r.top<window.innerHeight);
-   const viewportBottom=window.visualViewport?window.visualViewport.offsetTop+window.visualViewport.height:window.innerHeight;
+   const viewportBottom=window.visualViewport?Math.min(window.innerHeight,window.visualViewport.offsetTop+window.visualViewport.height):window.innerHeight;
    const bottom=nav.length?Math.min(viewportBottom,...nav.map(r=>r.top)):viewportBottom;
    const height=Math.max(120,Math.floor(bottom-top));
    feed.style.setProperty('--kf159-viewport-height',height+'px');
