@@ -97,7 +97,7 @@
     }).catch(()=>{});
   },true);
 
-  let musicKey='',player=null,ensureBusy=false;
+  let musicKey='',player=null,ensureBusy=false,pausedKey='';
   function ytId(u){try{const z=new URL(u);if(z.hostname.includes('youtu.be'))return z.pathname.split('/').filter(Boolean)[0]||'';if(z.hostname.includes('youtube.com'))return z.searchParams.get('v')||(z.pathname.includes('/shorts/')?z.pathname.split('/shorts/')[1]?.split('/')[0]:'')||(z.pathname.includes('/embed/')?z.pathname.split('/embed/')[1]?.split('/')[0]:'')}catch{}return''}
   function directAudio(u){return /\.(mp3|m4a|aac|ogg|wav)(\?|#|$)/i.test(u||'')}
 
@@ -125,6 +125,7 @@
     if(uid===state?.user?.id){
       try{
         const {data}=await sb.from('kinfolk_profile_extras').select('music_url').eq('user_id',uid).maybeSingle();
+        if(state?.user?.id!==uid)return url;
         if(data?.music_url)url=data.music_url;
         if(url&&p?.profile_music_url!==url){
           const {data:updated}=await sb.from('profiles').update({profile_music_url:url}).eq('id',uid).select().single();
@@ -138,12 +139,16 @@
   async function ensureMusic(force=false){
     if(ensureBusy)return;
     if(!state?.user||state.view!=='profile'){if(player)stopMusic();return}
-    const uid=state.profileViewId||state.user.id;
+    const viewerId=state.user.id;
+    const uid=state.profileViewId||viewerId;
     const hero=document.querySelector('.profileHero');if(!hero)return;
     ensureBusy=true;
     try{
       const url=await musicUrlFor(uid);
+      // Ignore lookups from a profile that has been replaced or signed out.
+      if(!state?.user||state.user.id!==viewerId||state.view!=='profile'||(state.profileViewId||state.user.id)!==uid||document.querySelector('.profileHero')!==hero)return;
       const key=uid+'|'+url;
+      const isPaused=pausedKey===viewerId+'|'+key;
       if(!url){if(player)stopMusic();return}
       if(!force&&player&&musicKey===key&&document.getElementById('kf81-profile-player')===player.ctl)return;
       if(player)stopMusic();
@@ -154,17 +159,17 @@
       const ctl=attachControl(url,directAudio(url)?'audio':ytId(url)?'youtube':'link');if(!ctl)return;
       const btn=$q('.kf81Play',ctl),status=$q('.kf81Status',ctl);
       if(directAudio(url)){
-        const audio=new Audio(url);audio.loop=true;audio.preload='auto';audio.autoplay=true;audio.setAttribute('playsinline','');
+        const audio=new Audio(url);audio.loop=true;audio.preload='auto';audio.autoplay=!isPaused;audio.setAttribute('playsinline','');
         player={type:'audio',audio,url,ctl};
-        const play=async()=>{try{await audio.play();status.textContent='Playing';btn.textContent='⏸ Pause';return true}catch{status.textContent='Autoplay blocked. Tap Play.';btn.textContent='▶ Play music';return false}};
-        btn.onclick=async()=>{if(audio.paused)await play();else{audio.pause();status.textContent='Paused';btn.textContent='▶ Play music'}};
-        await play();
+        const play=async()=>{try{await audio.play();pausedKey='';status.textContent='Playing';btn.textContent='⏸ Pause';return true}catch{status.textContent='Autoplay blocked. Tap Play.';btn.textContent='▶ Play music';return false}};
+        btn.onclick=async()=>{if(audio.paused)await play();else{pausedKey=viewerId+'|'+key;audio.pause();status.textContent='Paused';btn.textContent='▶ Play music'}};
+        if(isPaused){status.textContent='Paused';btn.textContent='▶ Play music'}else await play();
       }else if(ytId(url)){
         const id=ytId(url);const iframe=document.createElement('iframe');iframe.id='kf81YT';iframe.allow='autoplay; encrypted-media';iframe.referrerPolicy='strict-origin-when-cross-origin';iframe.style.cssText='position:fixed;width:2px;height:2px;opacity:.001;pointer-events:none;left:-20px;top:-20px;border:0';document.body.appendChild(iframe);
-        const src=()=>`https://www.youtube.com/embed/${encodeURIComponent(id)}?enablejsapi=1&autoplay=1&playsinline=1&controls=0&loop=1&playlist=${encodeURIComponent(id)}`;
-        iframe.src=src();player={type:'youtube',iframe,url,ctl};status.textContent='Autoplay requested. Tap Play if silent.';
-        btn.textContent='⏸ Pause';player.paused=false;
-        btn.onclick=()=>{if(player?.iframe!==iframe)return;player.paused=!player.paused;iframe.contentWindow?.postMessage(JSON.stringify({event:'command',func:player.paused?'pauseVideo':'playVideo',args:[]}), 'https://www.youtube.com');status.textContent=player.paused?'Paused':'Playing requested';btn.textContent=player.paused?'▶ Resume':'⏸ Pause'};
+        const src=()=>`https://www.youtube.com/embed/${encodeURIComponent(id)}?enablejsapi=1&autoplay=${isPaused?0:1}&playsinline=1&controls=0&loop=1&playlist=${encodeURIComponent(id)}`;
+        iframe.src=src();player={type:'youtube',iframe,url,ctl};status.textContent=isPaused?'Paused':'Autoplay requested. Tap Play if silent.';
+        btn.textContent=isPaused?'▶ Play music':'⏸ Pause';player.paused=isPaused;
+        btn.onclick=()=>{if(player?.iframe!==iframe)return;player.paused=!player.paused;pausedKey=player.paused?viewerId+'|'+key:'';iframe.contentWindow?.postMessage(JSON.stringify({event:'command',func:player.paused?'pauseVideo':'playVideo',args:[]}), 'https://www.youtube.com');status.textContent=player.paused?'Paused':'Playing requested';btn.textContent=player.paused?'▶ Resume':'⏸ Pause'};
       }else{
         player={type:'link',url,ctl};status.textContent='This link opens in its music service.';btn.textContent='Open music';btn.onclick=()=>window.open(url,'_blank','noopener');
       }
