@@ -6,7 +6,7 @@ const vm=require('node:vm');
 const source=fs.readFileSync('kinfolk-social/kinfolk-phase95.js','utf8');
 
 // Entirely offline: no real credentials, network, users or Supabase mutations.
-function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionError=null,stay=false}={}){
+function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionError=null,stay=false,activationError=null,missingActivation=false,disconnectOnActivation=false}={}){
   let read=0,activated=0,adoptions=0,message;
   const local=new Map([['kinfolk_stay_logged_in_v1','1'],['kinfolk_stay_logged_in','1']]);
   const tab=new Map();
@@ -20,6 +20,7 @@ function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionEr
     '.kf73Primary':{disabled:false,textContent:'Log in'}
   };
   const form={
+    isConnected:true,
     querySelector:key=>key==='.kf73Msg'?message:(fields[key]||null),
     onsubmit:null,
     appendChild:element=>{message=element}
@@ -39,7 +40,8 @@ function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionEr
       return {data:{session:{user:adoptedId?{id:adoptedId}:null}},error:setSessionError};
     }
   }};
-  const window={async kf129ActivateSession(){activated++}};
+  const window={};
+  if(!missingActivation)window.kf129ActivateSession=async()=>{activated++;if(disconnectOnActivation)form.isConnected=false;if(activationError)throw activationError};
   const timers=[];
   vm.runInNewContext(source,{
     window,document,sb,console,AbortController,
@@ -107,4 +109,36 @@ test('setSession error restores preferences and blocks activation',async()=>{
   assert.match(await f.submit(),/synthetic session rejection/);
   assert.equal(f.activated,0);
   assert.equal(f.local.get('kinfolk_stay_logged_in_v1'),'1');
+});
+
+test('successful activation shows success only after activation completes',async()=>{
+  const f=fixture();
+  assert.match(await f.submit(),/Logged in/);
+  assert.equal(f.activated,1);
+});
+test('missing activation handler reports error and restores Stay Logged In',async()=>{
+  const f=fixture({missingActivation:true});
+  assert.match(await f.submit(),/could not open your account/);
+  assert.equal(f.activated,0);
+  assert.equal(f.local.get('kinfolk_stay_logged_in_v1'),'1');
+  assert.equal(f.tab.has('kinfolk_session_tab'),false);
+});
+test('activation rejection reports error and restores Stay Logged In',async()=>{
+  const f=fixture({activationError:Error('synthetic activation failure')});
+  assert.match(await f.submit(),/synthetic activation failure/);
+  assert.equal(f.activated,1);
+  assert.equal(f.local.get('kinfolk_stay_logged_in_v1'),'1');
+  assert.equal(f.tab.has('kinfolk_session_tab'),false);
+});
+test('account switch during activation reports error and restores preference',async()=>{
+  const f=fixture({ids:[null,null,'login','login','other']});
+  assert.match(await f.submit(),/active account changed while opening Kinfolk/);
+  assert.equal(f.activated,1);
+  assert.equal(f.local.get('kinfolk_stay_logged_in_v1'),'1');
+  assert.equal(f.tab.has('kinfolk_session_tab'),false);
+});
+test('detached form does not receive stale success message',async()=>{
+  const f=fixture({disconnectOnActivation:true});
+  assert.doesNotMatch(await f.submit(),/Logged in/);
+  assert.equal(f.activated,1);
 });
