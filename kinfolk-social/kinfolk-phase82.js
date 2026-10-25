@@ -4,8 +4,9 @@
 
   const KEY='kinfolk_content_lane_v1';
   const native=!!(window.Capacitor&&window.Capacitor.isNativePlatform?.());
-  let lane=!native&&localStorage.getItem(KEY)==='xxx'?'xxx':'general';
-  let safetyCache={known:false,adult:false,allow:false};
+  let lane='general';
+  try{if(!native&&localStorage.getItem(KEY)==='xxx')lane='xxx'}catch{}
+  let safetyCache={known:false,adult:false,allow:false,userId:null};
   let safetyAt=0,safetyPending=null;
   const baseHome=window.renderHome;
   const baseReels=window.renderReels;
@@ -14,24 +15,41 @@
 
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function calcAge(v){if(!v)return null;const d=new Date(v+'T00:00:00');if(Number.isNaN(d.getTime()))return null;const n=new Date();let a=n.getFullYear()-d.getFullYear(),m=n.getMonth()-d.getMonth();if(m<0||(m===0&&n.getDate()<d.getDate()))a--;return a}
+  // A content entitlement must never outlive the account that supplied it.
+  function syncSafetyUser(){
+    const userId=state?.user?.id||null;
+    if(safetyCache.userId!==userId){
+      safetyCache={known:false,adult:false,allow:false,userId};
+      safetyAt=0;
+      safetyPending=null;
+      lane='general';
+      try{localStorage.setItem(KEY,lane)}catch{}
+    }
+    return userId;
+  }
   async function refreshSafety(force=false){
+    const userId=syncSafetyUser();
+    if(!userId)return safetyCache;
     if(!force&&safetyCache.known&&Date.now()-safetyAt<30000)return safetyCache;
     if(safetyPending)return safetyPending;
-    safetyPending=(async()=>{
+    const pending=(async()=>{
       try{
-        if(typeof sb==='undefined'||!state?.user?.id)return safetyCache;
-        const {data,error}=await sb.from('kinfolk_safety_settings').select('birth_date,mature_content_preference').eq('user_id',state.user.id).maybeSingle();
+        if(typeof sb==='undefined')return safetyCache;
+        const {data,error}=await sb.from('kinfolk_safety_settings').select('birth_date,mature_content_preference').eq('user_id',userId).maybeSingle();
         if(error)throw error;
+        // A late response from another account cannot unlock this account's feed.
+        if(syncSafetyUser()!==userId)return safetyCache;
         const adult=calcAge(data?.birth_date)>=18;
-        safetyCache={known:true,adult,allow:adult&&data?.mature_content_preference==='allow'};
+        safetyCache={known:true,adult,allow:adult&&data?.mature_content_preference==='allow',userId};
         safetyAt=Date.now();
         if((!adult||native)&&lane==='xxx'){lane='general';try{localStorage.setItem(KEY,lane)}catch{}}
         updateBars();
         return safetyCache;
       }catch(e){console.warn('Kinfolk content filter read',e);return safetyCache}
-      finally{safetyPending=null}
+      finally{if(safetyPending===pending)safetyPending=null}
     })();
-    return safetyPending;
+    safetyPending=pending;
+    return pending;
   }
 
   const st=document.createElement('style');
@@ -40,10 +58,11 @@
   document.head.appendChild(st);
 
   function barHTML(){
+    syncSafetyUser();
     const adult=safetyCache.known&&safetyCache.adult&&!native;
     return `<div class="card kf82filter" data-kf82-filter><div class="cardpad"><div class="sectionTitle">Content filter</div><div class="kf82lanes"><button class="kf82lane ${lane==='general'?'on':''}" type="button" onclick="kf82Lane('general')">General</button>${adult?`<button class="kf82lane xxx ${lane==='xxx'?'on':''}" type="button" onclick="kf82Lane('xxx')">XXX · 18+</button>`:''}</div>${lane==='xxx'?`<div class="kf82note">${safetyCache.allow?'Viewing the separate XXX 18+ feed.':'Adult content is off until you enable it.'}</div>`:''}</div></div>`;
   }
-  function addBar(main){if(!main?.isConnected)return;main.querySelector('[data-kf82-filter]')?.remove();main.insertAdjacentHTML('afterbegin',barHTML())}
+  function addBar(main,expectedView){if(!main?.isConnected||state.view!==expectedView)return;main.querySelector('[data-kf82-filter]')?.remove();main.insertAdjacentHTML('afterbegin',barHTML())}
   function updateBars(){document.querySelectorAll('[data-kf82-filter]').forEach(old=>{const wrap=document.createElement('div');wrap.innerHTML=barHTML();old.replaceWith(wrap.firstElementChild)})}
 
   function generalOnly(x){return (x?.content_rating||'general')==='general'}
@@ -62,24 +81,26 @@
   }
 
   if(typeof baseHome==='function')window.renderHome=async main=>{
+    syncSafetyUser();
     const all=Array.isArray(state.feed)?state.feed:[];
     const permitted=lane==='xxx'?(safetyCache.adult&&safetyCache.allow&&!native?all.filter(chosen):all.filter(generalOnly)):all.filter(generalOnly);
     state.feed=permitted;
     try{await baseHome(main)}catch(e){renderHomeFallback(main,permitted,e)}finally{state.feed=all}
-    addBar(main);
+    addBar(main,'home');
     refreshSafety(false);
   };
 
   if(typeof baseReels==='function')window.renderReels=async main=>{
+    syncSafetyUser();
     const all=Array.isArray(state.videos)?state.videos:[];
     if(lane==='xxx'&&safetyCache.known&&safetyCache.adult&&!safetyCache.allow&&!native){
       main.innerHTML=`<div class="card"><div class="kf82gate"><b>XXX content is off</b><p>Enable the adult filter to open this separate video lane.</p><button class="btn primary" type="button" onclick="kf82Enable(this)">Enable XXX content</button></div></div>`;
-      addBar(main);return;
+      addBar(main,'reels');return;
     }
     const permitted=lane==='xxx'?(safetyCache.adult&&safetyCache.allow&&!native?all.filter(chosen):[]):all.filter(generalOnly);
     state.videos=permitted;
     try{await baseReels(main)}catch(e){renderReelsFallback(main,permitted,e)}finally{state.videos=all}
-    addBar(main);
+    addBar(main,'reels');
     refreshSafety(false);
   };
 
@@ -96,16 +117,18 @@
   };
 
   window.kf82Enable=async btn=>{
+    const userId=syncSafetyUser();
     if(btn){btn.disabled=true;btn.textContent='Enabling…'}
     try{
-      const s=await refreshSafety(true);if(native||!s.adult)throw Error('XXX content is for adult web accounts only.');
-      const {error}=await sb.from('kinfolk_safety_settings').update({mature_content_preference:'allow',daily_limit_minutes:null,updated_at:new Date().toISOString()}).eq('user_id',state.user.id);if(error)throw error;
+      const s=await refreshSafety(true);if(!userId||syncSafetyUser()!==userId||native||!s.adult)throw Error('XXX content is for adult web accounts only.');
+      const {error}=await sb.from('kinfolk_safety_settings').update({mature_content_preference:'allow',daily_limit_minutes:null,updated_at:new Date().toISOString()}).eq('user_id',userId);if(error)throw error;
+      if(syncSafetyUser()!==userId)throw Error('Account changed; please try again.');
       safetyCache={...s,known:true,allow:true};safetyAt=Date.now();lane='xxx';try{localStorage.setItem(KEY,lane)}catch{}
       await renderApp();
     }catch(e){if(btn){btn.disabled=false;btn.textContent='Enable XXX content'}toast?.(e.message||'Could not enable XXX content.','danger')}
   };
 
-  function ratingOptions(select,s){if(!select)return;select.innerHTML=`<option value="general">General audience</option>${s.adult&&!native?'<option value="xxx">XXX · 18+ explicit</option>':''}`}
+  function ratingOptions(select,s){if(!select)return;const adult=s?.known&&s.userId===syncSafetyUser()&&s.adult&&!native;select.innerHTML=`<option value="general">General audience</option>${adult?'<option value="xxx">XXX · 18+ explicit</option>':''}`}
   function refreshModalRatings(kind){refreshSafety(false).then(s=>{const x=document.getElementById(kind==='post'?'postRating':'videoRating');ratingOptions(x,s)})}
   if(typeof basePost==='function')window.openPostModal=(photo=false)=>{const r=basePost(photo);setTimeout(()=>{ratingOptions(document.getElementById('postRating'),safetyCache);refreshModalRatings('post')},0);return r};
   if(typeof baseVideo==='function')window.openVideoModal=()=>{const r=baseVideo();setTimeout(()=>{ratingOptions(document.getElementById('videoRating'),safetyCache);refreshModalRatings('video')},0);return r};
