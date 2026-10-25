@@ -1,6 +1,6 @@
 # Kinfolk Social | Recovery178 (2026-10-25)
 
-Latest isolated checkpoint: [RECOVERY178.md](RECOVERY178.md). Added a guarded **nonproduction Supabase authentication smoke harness** and offline tests for login, session refresh, logout, optional synthetic adult signup and live-project refusal. The app source and prior Recovery174–177 changes remain intact. **No real backend credentials were used, and no real backend/device tests passed in this checkpoint.** The shared live Supabase project, Kinfolksworld and production remain untouched.
+Latest isolated checkpoint: [RECOVERY178.md](RECOVERY178.md). Added a guarded **nonproduction Supabase authentication smoke harness** and offline tests for login, session refresh, logout, optional synthetic adult signup and live-project refusal. Also fixed signup so **Stay Logged In** is not saved before email confirmation creates a session, with new regression coverage. Prior Recovery174–177 features remain intact. **No real backend credentials were used, and no real backend/device tests passed in this checkpoint.** The shared live Supabase project, Kinfolksworld and production remain untouched.
 
 # Kinfolk Social | Recovery177 (2026-10-25)
 
