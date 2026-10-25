@@ -25,7 +25,7 @@
  window.kf159StopReels=teardown;
  document.addEventListener('visibilitychange',()=>{if(document.hidden)active.root?.querySelectorAll('video').forEach(v=>v.pause());else if(active.root){const visible=[...active.root.querySelectorAll('.kf159-slide')].find(slide=>{const a=slide.getBoundingClientRect(),b=active.root.getBoundingClientRect();return Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>a.height*.65});const video=visible?.querySelector('video');if(video&&!active.pausedByUser.has(visible.dataset.id)){pauseOthers(video);video.play().catch(()=>{})}}});
  function pauseOthers(current){document.querySelectorAll('.kf159-slide video').forEach(v=>{if(v!==current)v.pause()})}
- function tap(id){const v=document.getElementById('kf159-video-'+id);if(!v)return;const icon=v.parentElement.querySelector('.kf159-playicon');if(v.paused){active.pausedByUser.delete(id);pauseOthers(v);v.play().then(()=>{if(icon)icon.textContent='' }).catch(()=>{if(icon)icon.textContent='▶'})}else{active.pausedByUser.add(id);v.pause();if(icon)icon.textContent='▶'}}
+ function tap(id){const v=document.getElementById('kf159-video-'+id);if(!v)return;const icon=v.parentElement.querySelector('.kf159-playicon');if(v.paused){active.pausedByUser.delete(id);pauseOthers(v);v.play().catch(()=>{if(icon)icon.textContent='▶'})}else{active.pausedByUser.add(id);v.pause();if(icon)icon.textContent='▶'}}
  window.kf159TogglePlayback=tap;
  document.addEventListener('kinfolk:video-saved',e=>{
    const slide=active.root?.querySelectorAll('.kf159-slide');
