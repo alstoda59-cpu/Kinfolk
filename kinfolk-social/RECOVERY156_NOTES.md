@@ -1,0 +1,7 @@
+# Recovery156: profile playback and Reels/Channels reactions
+
+Based on Recovery155 isolated branch. Existing phase81 profile music player includes Play/Pause for direct audio and iframe command-based Pause/Resume for YouTube (not yet device verified). Phase76 competing autoplay handler disabled in Recovery155.
+
+Recovery156 adds thumbs-up Like and thumbs-down Dislike buttons and counts to the shared `renderVideoGrid` in index.html, used by Reels and Channels. UI reads `kinfolk_video_reactions`, saves a single reaction per user/video through upsert, and toggles the same reaction off via delete. If table is unavailable, controls are disabled and no writes occur. Code commit e3dbb29953c330cea16a0f410944241639cdb3fb. The backend table does not yet exist in verified source; SQL draft at security/drafts/recovery156_video_reactions_REVIEW_ONLY.sql commit 37bbd4f22ecab7d6056224a7cb402af9efb450d5. DRAFT ONLY: review video visibility, teen restrictions and RLS before applying to an isolated staging project. Do not apply to shared production Supabase without owner authorization.
+
+Synthetic source/syntax check performed in isolated JavaScript and passed; test file commit 2b33874694dac1dbba9e0e0f46a754e62ec0cc9a, CI wiring 6735d9275b619bf7d50524ac8d12fc739a840027. Full CI and real backend testing not verified. Preview deployment dpl_8JMSag8ywBokQRVyHQNLCVZU8eH9 at https://kinfolk-social-demo-kom8ovrfx-alstoda59-9779.vercel.app/ initially INITIALIZING. No production, Kinfolksworld or live Supabase mutation.
