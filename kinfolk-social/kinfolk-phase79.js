@@ -106,7 +106,6 @@
     if(age>99){show(form,'Enter a valid birthday for ages 13–99.');return}
     signupBusy=true;
     if(btn){btn.disabled=true;btn.textContent='Creating account…'}
-    saveStay(stay);
     try{
       if(typeof sb==='undefined'||!sb?.auth?.signUp)throw new Error('Kinfolk signup is not ready. Try again in a moment.');
       const redirect=emailRedirect();
@@ -115,6 +114,7 @@
         options:{...(redirect?{emailRedirectTo:redirect}:{}),data:{display_name,signup_birthdate:birthdate}}
       });
       if(error)throw error;
+      saveStay(stay);
       if(data?.session)show(form,'Account created. Opening Kinfolk…',true);
       else show(form,'Account created. Check your email to confirm it, then log in.',true);
       // Email-confirmation signups do not have a session yet. Keep the form
