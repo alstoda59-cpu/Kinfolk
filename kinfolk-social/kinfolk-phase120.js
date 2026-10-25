@@ -1,0 +1,1 @@
+(()=>{if(window.__kinfolkPhase120)return;window.__kinfolkPhase120=true;const m=document.querySelector('link[rel="manifest"]');if(!m){const l=document.createElement('link');l.rel='manifest';l.href='/manifest.webmanifest';document.head.appendChild(l)}console.log('Kinfolk Phase120 install shell ready')})();

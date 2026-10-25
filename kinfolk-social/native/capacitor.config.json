@@ -1,0 +1,14 @@
+{
+  "appId": "social.kinfolk.app",
+  "appName": "Kinfolk Social",
+  "webDir": "www",
+  "backgroundColor": "#17151c",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  }
+}

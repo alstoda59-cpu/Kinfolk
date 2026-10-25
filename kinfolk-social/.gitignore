@@ -1,0 +1,8 @@
+native/www/
+native/node_modules/
+native/android/
+native/ios/
+.env
+.env.*
+!.env.example
+__pycache__/

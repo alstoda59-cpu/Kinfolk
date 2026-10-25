@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#17151c">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kinfolk">
+<meta name="application-name" content="Kinfolk Social">
+<title>Kinfolk Social | Recovery131 Preview</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#111015;--panel:#1a181f;--panel2:#221f29;--line:#302c38;--text:#f8f5fa;--muted:#a8a0ad;--pink:#e85a9b;--pink2:#ff8abd;--good:#55d69e;--bad:#ff6f7d;--shadow:0 14px 45px rgba(0,0,0,.28);--r:18px}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 20% -10%,#2a1830 0,#111015 28rem);color:var(--text);font:15px/1.45 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}body{padding-bottom:78px}button,input,textarea,select{font:inherit}button{cursor:pointer}a{color:var(--pink2)}img,video{max-width:100%}.hide{display:none!important}.muted{color:var(--muted)}.danger{color:var(--bad)}.good{color:var(--good)}
+#app{min-height:100vh}.topbar{position:sticky;top:0;z-index:30;height:60px;background:rgba(17,16,21,.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 14px}.brand{font-weight:900;font-size:24px;letter-spacing:-.8px;background:linear-gradient(90deg,var(--pink2),#ffd0e4);-webkit-background-clip:text;background-clip:text;color:transparent}.spacer{flex:1}.iconbtn{border:0;background:var(--panel2);color:var(--text);width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:18px}.iconbtn:hover{filter:brightness(1.1)}
+.shell{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:230px minmax(0,650px) 300px;gap:18px;padding:18px}.left,.right{position:sticky;top:78px;height:max-content}.sidecard,.card{background:linear-gradient(180deg,rgba(32,29,38,.98),rgba(24,22,29,.98));border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}.sidecard{padding:10px}.sideitem{display:flex;gap:12px;align-items:center;width:100%;border:0;background:transparent;color:var(--text);padding:12px;border-radius:13px;text-align:left}.sideitem:hover,.sideitem.active{background:#29242f}.sideitem b{font-size:15px}.count{margin-left:auto;background:#3a2b38;color:#ffd5e7;border-radius:999px;padding:2px 8px;font-size:12px}.main{min-width:0}.card{margin-bottom:14px;overflow:hidden}.cardpad{padding:14px}.quick{display:flex;gap:10px;align-items:center}.avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;background:linear-gradient(135deg,#5b354d,#2c2632);border:1px solid #4a3a46;display:grid;place-items:center;font-weight:800}.avatar.sm{width:34px;height:34px}.avatar.lg{width:88px;height:88px;border:4px solid #1b1820}.quickbtn{flex:1;border:1px solid var(--line);background:#28242d;color:#cfc7d2;border-radius:999px;padding:11px 16px;text-align:left}.miniAction{border:0;background:transparent;color:#efbad0;font-weight:700}.stories{display:flex;gap:10px;overflow:auto;padding:12px;scrollbar-width:none}.stories::-webkit-scrollbar{display:none}.story{flex:0 0 112px;height:168px;border-radius:16px;overflow:hidden;position:relative;background:linear-gradient(145deg,#342536,#19171d);border:1px solid var(--line);cursor:pointer}.story img{width:100%;height:100%;object-fit:cover}.storyShade{position:absolute;inset:auto 0 0;padding:42px 9px 10px;background:linear-gradient(transparent,rgba(0,0,0,.82));font-weight:800;font-size:13px}.createStory{display:grid;place-items:center;text-align:center}.plusbubble{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--pink);font-size:28px;font-weight:900;margin-bottom:9px}.postHead{display:flex;gap:10px;align-items:center;padding:14px 14px 8px}.clickable{cursor:pointer}.postBody{padding:4px 14px 12px;white-space:pre-wrap;word-break:break-word}.postMedia{display:block;width:100%;max-height:620px;object-fit:cover;background:#0b0a0d}.postStats{padding:10px 14px;color:var(--muted);font-size:13px;border-bottom:1px solid var(--line)}.postActions{display:flex}.postActions button{flex:1;border:0;background:transparent;color:#d7cedb;padding:12px}.postActions button:hover{background:#27232c}.comments{padding:0 14px 14px}.comment{display:flex;gap:8px;margin:10px 0}.bubble{background:#28242d;border-radius:14px;padding:8px 10px;flex:1}.commentForm{display:flex;gap:8px}.field,.textarea{width:100%;border:1px solid #393441;background:#141218;color:var(--text);border-radius:12px;padding:11px 12px;outline:none}.field:focus,.textarea:focus{border-color:#a94b79;box-shadow:0 0 0 3px rgba(232,90,155,.12)}.textarea{resize:vertical;min-height:90px}.btn{border:0;border-radius:12px;padding:11px 14px;background:#2d2833;color:var(--text);font-weight:800}.btn.primary{background:linear-gradient(135deg,#e85a9b,#bd3d78)}.btn.ghost{background:transparent;border:1px solid var(--line)}.btn.small{padding:7px 10px;font-size:13px}.btn.full{width:100%}.btn:disabled{opacity:.55;cursor:not-allowed}.chips{display:flex;gap:8px;overflow:auto;padding-bottom:4px}.chip{white-space:nowrap;border:1px solid var(--line);background:#24202a;color:#d8cfdb;border-radius:999px;padding:8px 12px}.chip.active{background:#f1d1df;color:#25141c;border-color:transparent}.empty{padding:34px;text-align:center;color:var(--muted)}
+.bottomnav{position:fixed;z-index:40;bottom:0;left:0;right:0;height:68px;background:rgba(17,16,21,.96);backdrop-filter:blur(18px);border-top:1px solid var(--line);display:none;grid-template-columns:repeat(6,1fr);padding-bottom:env(safe-area-inset-bottom)}.bottomnav button{border:0;background:transparent;color:#aaa0ad;font-size:11px;display:grid;place-items:center;gap:1px}.bottomnav .navIcon{font-size:21px}.bottomnav button.active{color:#ff83b7}.sectionTitle{font-size:20px;font-weight:900;margin:0 0 12px}.videoGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.videoCard{overflow:hidden;background:#1d1a21;border:1px solid var(--line);border-radius:14px}.videoThumb{aspect-ratio:16/9;background:#0b0a0d;display:grid;place-items:center;overflow:hidden}.videoThumb video,.videoThumb img{width:100%;height:100%;object-fit:cover}.videoMeta{padding:10px}.channelCard{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;padding:12px;border-bottom:1px solid var(--line)}.channelCard:last-child{border-bottom:0}.channelBanner{height:190px;background:linear-gradient(135deg,#63354f,#27212c);position:relative;overflow:hidden}.channelBanner img{width:100%;height:100%;object-fit:cover}.channelHero{padding:0 18px 18px}.channelAvatar{margin-top:-44px;position:relative;z-index:2}.profileCover{height:210px;background:linear-gradient(135deg,#63354f,#29222e);overflow:hidden}.profileCover img{width:100%;height:100%;object-fit:cover}.profileHero{padding:0 18px 18px;display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}.profileHero .avatar{margin-top:-46px}.profileText{flex:1;min-width:190px;padding-top:8px}.profileTabs{display:flex;overflow:auto;border-top:1px solid var(--line)}.profileTabs button{border:0;background:transparent;color:#b9afbd;padding:13px 16px;white-space:nowrap}.profileTabs button.active{color:#fff;border-bottom:2px solid var(--pink)}.aboutGrid{display:grid;grid-template-columns:140px 1fr;gap:8px 12px}.bannerSmall{padding:10px 12px;background:linear-gradient(135deg,rgba(232,90,155,.18),rgba(82,48,95,.18));border:1px solid #5d394e;border-radius:13px;color:#f1c6d8}.modalBack{position:fixed;inset:0;background:rgba(0,0,0,.74);z-index:100;display:grid;place-items:center;padding:14px}.modal{width:min(620px,100%);max-height:92vh;overflow:auto;background:#1b1820;border:1px solid #38313d;border-radius:20px;box-shadow:0 30px 90px rgba(0,0,0,.55)}.modalHead{display:flex;align-items:center;padding:15px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#1b1820;z-index:2}.modalHead h3{margin:0}.modalBody{padding:16px}.formRow{display:grid;grid-template-columns:1fr 1fr;gap:10px}.label{font-size:12px;color:#b6abb9;margin:11px 0 5px;font-weight:700}.toast{position:fixed;z-index:150;top:74px;left:50%;transform:translateX(-50%);max-width:min(92vw,520px);padding:11px 14px;background:#302a35;border:1px solid #4a3f4d;border-radius:12px;box-shadow:var(--shadow)}.photoGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.photoTile{aspect-ratio:1/1;border:0;padding:0;background:#0c0b0e;border-radius:10px;overflow:hidden}.photoTile img{width:100%;height:100%;object-fit:cover}.stack{display:grid;gap:10px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.grow{flex:1}.divider{height:1px;background:var(--line);margin:12px 0}.checkrow{display:flex;gap:9px;align-items:flex-start;padding:9px;border:1px solid var(--line);border-radius:11px;margin:7px 0}.checkrow input{margin-top:4px}
+.authWrap{min-height:100vh;display:grid;place-items:center;padding:20px}.authCard{width:min(440px,100%);padding:22px;background:rgba(26,24,31,.96);border:1px solid var(--line);border-radius:24px;box-shadow:0 30px 80px rgba(0,0,0,.45)}.authLogo{font-size:42px;font-weight:1000;letter-spacing:-1.5px;background:linear-gradient(90deg,#ff8abd,#f7d8e5);-webkit-background-clip:text;background-clip:text;color:transparent}.authTabs{display:grid;grid-template-columns:1fr 1fr;background:#141218;border-radius:12px;padding:4px;margin:18px 0}.authTabs button{border:0;background:transparent;color:#aaa0ad;border-radius:9px;padding:9px}.authTabs button.active{background:#302a35;color:#fff}.right .sidecard{margin-bottom:14px}.trend{padding:10px 4px;border-bottom:1px solid var(--line)}.trend:last-child{border-bottom:0}
+@media(max-width:1020px){.shell{grid-template-columns:200px minmax(0,1fr)}.right{display:none}}
+@media(max-width:760px){body{padding-bottom:76px}.topbar{height:56px}.shell{display:block;padding:10px 0;max-width:650px}.left{display:none}.bottomnav{display:grid}.card{border-left:0;border-right:0;border-radius:0;margin-bottom:10px;box-shadow:none}.storiesCard{border-radius:0}.main{width:100%}.videoGrid{grid-template-columns:1fr}.profileCover,.channelBanner{height:170px}.formRow{grid-template-columns:1fr}.desktopOnly{display:none}.brand{font-size:22px}.topbar{padding:0 10px}.aboutGrid{grid-template-columns:110px 1fr}}
+
+@supports (padding: max(0px)) { body { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); } .bottomnav { height: calc(68px + env(safe-area-inset-bottom, 0px)); } .topbar { padding-top: env(safe-area-inset-top, 0px); height: calc(60px + env(safe-area-inset-top, 0px)); } }
+</style>
+</head>
+<body>
+<div id="app"><div class="authWrap"><div class="muted">Loading Kinfolk…</div></div></div>
+<div id="toast" class="toast hide"></div>
+<div id="modalRoot"></div>
+<script>
+const SB_URL='https://zojajuzmfjpvubzibzgg.supabase.co';
+const SB_KEY='sb_publishable_1te_hrDXQciMD7Gp1EXmRw_dvQmszvi';
+const sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const state={user:null,profile:null,extras:null,view:'home',profileViewId:null,profileTab:'posts',channelViewId:null,channelTab:'videos',feed:[],profiles:new Map(),likes:new Map(),comments:new Map(),stories:[],channels:[],subscriptions:new Map(),videos:[],friendRequests:[],notifications:[],signed:new Map(),busy:false};
+window.state=state; // Share the same app state with the existing phase modules.
+const $=s=>document.querySelector(s); const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+function toast(msg,type=''){const t=$('#toast');t.textContent=msg;t.className='toast '+(type||'');setTimeout(()=>t.classList.add('hide'),3300)}
+function safeName(n){return String(n||'file').replace(/[^a-zA-Z0-9._-]/g,'_').slice(-90)}
+function initials(p){const n=(p?.display_name||p?.username||'?').trim();return n.split(/\s+/).slice(0,2).map(x=>x[0]?.toUpperCase()).join('')||'?'}
+function fmt(d){if(!d)return'';const x=new Date(d),diff=Date.now()-x;const m=Math.floor(diff/60000);if(m<1)return'now';if(m<60)return m+'m';const h=Math.floor(m/60);if(h<24)return h+'h';const days=Math.floor(h/24);if(days<7)return days+'d';return x.toLocaleDateString()}
+async function signed(bucket,path){if(!path)return null;if(/^https?:\/\//i.test(path))return path;const k=bucket+':'+path;const cached=state.signed.get(k);if(cached&&cached.exp>Date.now())return cached.url;const {data,error}=await sb.storage.from(bucket).createSignedUrl(path,3600);if(error)return null;state.signed.set(k,{url:data.signedUrl,exp:Date.now()+3300000});return data.signedUrl}
+async function avatarHtml(p,cls=''){if(p?.avatar_url){const u=await signed('kinfolk-media',p.avatar_url);if(u)return `<img class="avatar ${cls}" src="${esc(u)}" alt="">`}return `<div class="avatar ${cls}">${esc(initials(p))}</div>`}
+function navLabel(v){return({home:'Home',reels:'Reels',channels:'Channels',friends:'People',notifications:'Notifications',profile:'Profile'}[v]||'Home')}
+function loadingCard(txt='Loading…'){return `<div class="card"><div class="empty">${esc(txt)}</div></div>`}
+// Recovery129: a single, idempotent auth transition owner. No login-triggered reloads.
+let kf129Epoch=0,kf129ReadyUid=null,kf129InFlight=null;
+function kf129Error(message){const app=$('#app');if(!app)return;app.innerHTML=`<div class="authWrap"><div class="authCard" role="alert"><div class="authLogo">Kinfolk</div><h2>We couldn't finish loading your account</h2><p class="muted" style="overflow-wrap:anywhere">${esc(message||'Please check your connection and try again.')}</p><button class="btn primary full" type="button" onclick="kf129Retry()">Try again</button><button class="btn full" style="margin-top:10px" type="button" onclick="logout()">Log out</button></div></div>`}
+function kf129Timeout(task,ms,label){let timer;return Promise.race([Promise.resolve(task),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' took too long. Check your connection and try again.')),ms)})]).finally(()=>clearTimeout(timer))}
+async function kf129ActivateSession(session){
+  const uid=session?.user?.id||null;
+  if(!uid){++kf129Epoch;kf129ReadyUid=null;kf129InFlight=null;try{window.closeKinfolkSettings?.()}catch{}document.getElementById('kf78-overlay')?.remove();document.getElementById('kf115-delete-overlay')?.remove();document.getElementById('modalRoot')?.replaceChildren();document.body.style.overflow='';state.user=null;state.profile=null;state.extras=null;state.feed=[];state.videos=[];state.stories=[];state.notifications=[];state.profiles.clear();state.signed.clear();renderAuth('login');return true}
+  if(kf129ReadyUid===uid&&state.user?.id===uid&&state.profile&&document.querySelector('#main'))return true;
+  if(kf129InFlight?.uid===uid)return kf129InFlight.promise;
+  const epoch=++kf129Epoch;
+  if(state.user?.id!==uid){state.profile=null;state.extras=null;state.profiles.clear();state.signed.clear()}
+  state.user=session.user;
+  $('#app').innerHTML='<div class="authWrap"><div class="muted" role="status">Opening your Kinfolk account…</div></div>';
+  const task=(async()=>{try{
+    await kf129Timeout(hydrateUser(),15000,'Profile loading');if(epoch!==kf129Epoch)return false;
+    await kf129Timeout(loadCore(),20000,'Feed loading');if(epoch!==kf129Epoch)return false;
+    await kf129Timeout(renderApp(),20000,'Screen loading');if(epoch!==kf129Epoch)return false;
+    kf129ReadyUid=uid;return true;
+  }catch(error){if(epoch===kf129Epoch){console.error('Kinfolk account startup',error);kf129Error(error?.message||String(error))}return false}
+  finally{if(kf129InFlight?.epoch===epoch)kf129InFlight=null}})();
+  kf129InFlight={uid,epoch,promise:task};return task;
+}
+window.kf129ActivateSession=kf129ActivateSession;
+window.kf129Retry=async()=>{try{const{data,error}=await sb.auth.getSession();if(error)throw error;await kf129ActivateSession(data?.session||null)}catch(error){kf129Error(error?.message||String(error))}};
+async function boot(){
+  // With Stay Logged In unchecked, a refresh in this tab is allowed, a new tab is not.
+  try{
+    const{data,error}=await sb.auth.getSession();if(error)throw error;
+    let session=data?.session||null;
+    const keep=localStorage.getItem('kinfolk_stay_logged_in_v1')!=='0'&&localStorage.getItem('kinfolk_stay_logged_in')!=='0';
+    if(session&&!keep&&sessionStorage.getItem('kinfolk_session_tab')!=='1'){
+      const out=await sb.auth.signOut({scope:'local'});if(out?.error)throw out.error;session=null;
+    }
+    await kf129ActivateSession(session);
+  }catch(error){console.error('Kinfolk initial session',error);kf129Error(error?.message||String(error))}
+  sb.auth.onAuthStateChange((event,session)=>{
+    if(event==='SIGNED_OUT'){void kf129ActivateSession(null);return}
+    if((event==='SIGNED_IN'||event==='USER_UPDATED')&&session?.user?.id){
+      // Supabase may deliver multiple events during one login; coalesce them.
+      if(kf129ReadyUid!==session.user.id||!document.querySelector('#main'))void kf129ActivateSession(session);
+    }
+  });
+}
+async function hydrateUser(){const uid=state.user.id;let {data:p}=await sb.from('profiles').select('*').eq('id',uid).maybeSingle();if(!p){const meta=state.user.user_metadata||{};const uname=(meta.username||('user_'+uid.slice(0,8))).replace(/[^A-Za-z0-9_]/g,'').slice(0,24)||('user_'+uid.slice(0,8));const ins=await sb.from('profiles').upsert({id:uid,username:uname,display_name:meta.display_name||uname},{onConflict:'id'}).select().single();p=ins.data}state.profile=p||null;const {data:e}=await sb.from('kinfolk_profile_extras').select('*').eq('user_id',uid).maybeSingle();if(!e){const insExtra=await sb.from('kinfolk_profile_extras').insert({user_id:uid});if(insExtra.error&&!String(insExtra.error.message||'').toLowerCase().includes('duplicate'))console.warn('profile extras',insExtra.error);const r=await sb.from('kinfolk_profile_extras').select('*').eq('user_id',uid).maybeSingle();state.extras=r.data||{}}else state.extras=e}
+async function loadCore(){await Promise.all([loadFeed(),loadStories(),loadChannels(),loadVideos(),loadFriendRequests(),loadNotifications()])}
+async function loadProfiles(ids){ids=[...new Set(ids.filter(Boolean))];const miss=ids.filter(id=>!state.profiles.has(id));if(!miss.length)return;const {data}=await sb.from('profiles').select('*').in('id',miss);(data||[]).forEach(p=>state.profiles.set(p.id,p));if(state.profile)state.profiles.set(state.profile.id,state.profile)}
+async function loadFeed(){const {data,error}=await sb.from('posts').select('*').order('created_at',{ascending:false}).limit(40);if(error){console.error(error);state.feed=[];return}state.feed=data||[];await loadProfiles(state.feed.map(x=>x.author_id));const ids=state.feed.map(x=>x.id);if(ids.length){const [{data:likes},{data:com}]=await Promise.all([sb.from('post_likes').select('*').in('post_id',ids),sb.from('comments').select('*').in('post_id',ids).order('created_at',{ascending:true})]);state.likes.clear();(likes||[]).forEach(l=>{if(!state.likes.has(l.post_id))state.likes.set(l.post_id,[]);state.likes.get(l.post_id).push(l)});state.comments.clear();(com||[]).forEach(c=>{if(!state.comments.has(c.post_id))state.comments.set(c.post_id,[]);state.comments.get(c.post_id).push(c)});await loadProfiles((com||[]).map(c=>c.author_id))}}
+async function loadStories(){const {data}=await sb.from('kinfolk_stories').select('*').gt('expires_at',new Date().toISOString()).order('created_at',{ascending:false}).limit(30);state.stories=data||[];await loadProfiles(state.stories.map(x=>x.owner_id))}
+async function loadChannels(){const {data}=await sb.from('kinfolk_pages').select('*').order('created_at',{ascending:false}).limit(60);state.channels=data||[];await loadProfiles(state.channels.map(x=>x.owner_id));const {data:subs}=await sb.from('kinfolk_channel_subscriptions').select('*');state.subscriptions.clear();(subs||[]).forEach(s=>{if(!state.subscriptions.has(s.channel_id))state.subscriptions.set(s.channel_id,[]);state.subscriptions.get(s.channel_id).push(s)})}
+async function loadVideos(){const {data}=await sb.from('kinfolk_videos').select('*').order('created_at',{ascending:false}).limit(80);state.videos=data||[];await loadProfiles(state.videos.map(x=>x.creator_id))}
+async function loadFriendRequests(){const {data}=await sb.from('friend_requests').select('*').order('created_at',{ascending:false});state.friendRequests=data||[];await loadProfiles(state.friendRequests.flatMap(x=>[x.sender_id,x.receiver_id]))}
+async function loadNotifications(){const {data}=await sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(50);state.notifications=data||[];await loadProfiles(state.notifications.map(x=>x.actor_id))}
+function renderAuth(mode='login'){const signup=mode==='signup';$('#app').innerHTML=`<div class="authWrap"><div class="authCard"><div class="authLogo">Kinfolk</div><div class="muted">People, profiles, creators, all in one place.</div><div class="authTabs"><button id="loginTab" class="${!signup?'active':''}">Log in</button><button id="signupTab" class="${signup?'active':''}">Create account</button></div><form id="authForm">${signup?`<div class="label">Display name</div><input class="field" id="displayName" autocomplete="name" placeholder="Your display name" maxlength="50"><div class="label">Username</div><input class="field" id="username" autocomplete="username" placeholder="Choose a username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" required><div class="muted" style="font-size:12px;margin-top:5px">3–24 letters, numbers, or _. Capital letters are allowed.</div>`:''}<div class="label">Email</div><input class="field" id="email" type="email" autocomplete="email" placeholder="you@example.com" required><div class="label">Password</div><input class="field" id="password" type="password" autocomplete="${signup?'new-password':'current-password'}" placeholder="Password" ${signup?'minlength="5" maxlength="12"':''} required>${signup?'<div class="muted" style="font-size:12px;margin-top:5px">Password must be 5–12 characters. If the authentication server requires a stronger minimum, Kinfolk will show that requirement.</div>':''}<div id="authMsg" class="danger" style="min-height:22px;margin-top:10px"></div><button class="btn primary full" id="authBtn">${signup?'Create account':'Log in'}</button></form><div style="text-align:center;margin-top:14px" class="muted">Phase 31 preview</div></div></div>`;$('#loginTab').onclick=()=>renderAuth('login');$('#signupTab').onclick=()=>renderAuth('signup');$('#authForm').onsubmit=async e=>{e.preventDefault();const btn=$('#authBtn');btn.disabled=true;$('#authMsg').textContent='';try{const email=$('#email').value.trim(),password=$('#password').value;if(signup){const username=$('#username').value.trim(),display_name=$('#displayName').value.trim()||username;if(password.length<5||password.length>12)throw new Error('Password must be 5–12 characters.');const {data,error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:location.origin,data:{username,display_name}}});if(error)throw error;if(data.session){toast('Account created');}else{$('#authMsg').className='good';$('#authMsg').textContent='Account created. Check your email to confirm, then log in.'}}else{const {error}=await sb.auth.signInWithPassword({email,password});if(error)throw error}}catch(err){$('#authMsg').textContent=err.message||String(err)}finally{btn.disabled=false}}}
+function layout(){return `<header class="topbar"><button class="iconbtn desktopOnly" onclick="setView('home')">☰</button><div class="brand clickable" onclick="setView('home')">Kinfolk</div><div class="spacer"></div><button class="iconbtn" title="Create" onclick="openCreateMenu()">＋</button><button class="iconbtn" title="Search" onclick="openSearch()">⌕</button><button class="iconbtn" title="Messages" onclick="openMessages()">✉</button></header><div class="shell"><aside class="left"><div class="sidecard">${['home','reels','channels','friends','notifications','profile'].map(v=>`<button class="sideitem ${state.view===v?'active':''}" onclick="setView('${v}')"><span>${({home:'⌂',reels:'▶',channels:'▣',friends:'♧',notifications:'♢',profile:'☺'}[v])}</span><b>${navLabel(v)}</b>${v==='notifications'&&state.notifications.filter(n=>!n.read_at).length?`<span class="count">${state.notifications.filter(n=>!n.read_at).length}</span>`:''}</button>`).join('')}<button class="sideitem" onclick="logout()"><span>↪</span><b>Log out</b></button></div></aside><main class="main" id="main"></main><aside class="right"><div class="sidecard"><b>Kinfolk creator tools</b><div class="trend"><div>📺 Channels</div><small class="muted">Create a channel and build subscribers.</small></div><div class="trend"><div>🎨 Custom profiles</div><small class="muted">Wallpaper, music, bio and more.</small></div><div class="trend"><div>📱 Cross-device</div><small class="muted">Designed for Android, iPhone and PC.</small></div></div><div class="bannerSmall">Phase 31 infrastructure is active in this preview.</div></aside></div><nav class="bottomnav">${['home','reels','channels','friends','notifications','profile'].map(v=>`<button class="${state.view===v?'active':''}" onclick="setView('${v}')"><span class="navIcon">${({home:'⌂',reels:'▶',channels:'▣',friends:'♧',notifications:'♢',profile:'☺'}[v])}</span><span>${v==='channels'?'Channels':navLabel(v)}</span></button>`).join('')}</nav>`}
+async function renderApp(){if(!state.user)return renderAuth();$('#app').innerHTML=layout();const main=$('#main');main.innerHTML=loadingCard();if(state.view==='home')await renderHome(main);else if(state.view==='reels')await renderReels(main);else if(state.view==='channels')await renderChannels(main);else if(state.view==='friends')await renderPeople(main);else if(state.view==='notifications')await renderNotifications(main);else if(state.view==='profile')await renderProfile(main,state.profileViewId||state.user.id);}
+async function setView(v){state.view=v;if(v!=='profile')state.profileViewId=null;await renderApp();window.scrollTo({top:0,behavior:'smooth'})}
+async function renderHome(main){const meA=await avatarHtml(state.profile,'sm');let stories=`<div class="card storiesCard"><div class="stories"><div class="story createStory" onclick="openStoryModal()"><div><div class="plusbubble">+</div><b>Create story</b></div></div>`;for(const s of state.stories){const p=state.profiles.get(s.owner_id);const u=s.media_url?await signed('kinfolk-media',s.media_url):null;stories+=`<div class="story" onclick="viewStory('${s.id}')">${u?`<img src="${esc(u)}">`:''}<div class="storyShade">${esc(p?.display_name||p?.username||'Kinfolk')}</div></div>`}stories+='</div></div>';main.innerHTML=`<div class="card"><div class="cardpad quick">${meA}<button class="quickbtn" onclick="openPostModal()">What’s happening?</button><button class="miniAction" onclick="openPostModal(true)">▧ Photo</button></div></div>${stories}<div id="feed"></div>`;await renderFeed($('#feed'),state.feed)}
+async function renderFeed(root,posts){if(!posts.length){root.innerHTML='<div class="card"><div class="empty">No posts yet. Start the conversation.</div></div>';return}let html='';for(const p of posts){const prof=state.profiles.get(p.author_id);const av=await avatarHtml(prof,'sm');const media=p.media_url?await signed('kinfolk-media',p.media_url):null;const likes=state.likes.get(p.id)||[],comments=state.comments.get(p.id)||[],liked=likes.some(l=>l.user_id===state.user.id);html+=`<article class="card"><div class="postHead">${av}<div class="clickable" onclick="openProfile('${p.author_id}')"><b>${esc(prof?.display_name||prof?.username||'Kinfolk user')}</b><div class="muted" style="font-size:12px">@${esc(prof?.username||'user')} · ${fmt(p.created_at)}</div></div><div class="spacer"></div>${p.author_id===state.user.id?`<button class="iconbtn" style="width:32px;height:32px" onclick="deletePost('${p.id}')">⋯</button>`:''}</div>${p.body?`<div class="postBody">${linkify(p.body)}</div>`:''}${media?`<img class="postMedia" src="${esc(media)}" loading="lazy">`:''}<div class="postStats">${likes.length} like${likes.length===1?'':'s'} · ${comments.length} comment${comments.length===1?'':'s'}</div><div class="postActions"><button onclick="toggleLike('${p.id}')">${liked?'♥':'♡'} ${liked?'Liked':'Like'}</button><button onclick="toggleComments('${p.id}')">◯ Comment</button><button onclick="sharePost('${p.id}')">↗ Share</button></div><div class="comments hide" id="comments-${p.id}">${await commentsHtml(p.id,comments)}</div></article>`}root.innerHTML=html}
+function linkify(text){return esc(text).replace(/(^|\s)(#[A-Za-z0-9_]+)/g,'$1<span style="color:#ff92be">$2</span>')}
+async function commentsHtml(pid,comments){let h='';for(const c of comments){const p=state.profiles.get(c.author_id);const av=await avatarHtml(p,'sm');h+=`<div class="comment">${av}<div class="bubble"><b>${esc(p?.display_name||p?.username||'User')}</b><div>${esc(c.body)}</div></div></div>`}h+=`<form class="commentForm" onsubmit="addComment(event,'${pid}')"><input class="field" name="body" placeholder="Write a comment…" required><button class="btn small primary">Post</button></form>`;return h}
+function toggleComments(id){$('#comments-'+id)?.classList.toggle('hide')}
+async function toggleLike(pid){const liked=(state.likes.get(pid)||[]).some(l=>l.user_id===state.user.id);const q=liked?sb.from('post_likes').delete().eq('post_id',pid).eq('user_id',state.user.id):sb.from('post_likes').insert({post_id:pid,user_id:state.user.id});const {error}=await q;if(error)return toast(error.message,'danger');await loadFeed();await renderApp()}
+async function addComment(e,pid){e.preventDefault();const body=e.target.body.value.trim();if(!body)return;const {error}=await sb.from('comments').insert({post_id:pid,author_id:state.user.id,body});if(error)return toast(error.message,'danger');await loadFeed();await renderApp();setTimeout(()=>{$('#comments-'+pid)?.classList.remove('hide')},50)}
+async function deletePost(id){if(!confirm('Delete this post?'))return;const {error}=await sb.from('posts').delete().eq('id',id);if(error)return toast(error.message,'danger');await loadFeed();await renderApp();toast('Post deleted')}
+function sharePost(id){navigator.clipboard?.writeText(location.origin+'/#post-'+id);toast('Post link copied')}
+function openPostModal(photo=false){modal('Create post',`<form id="postForm"><textarea class="textarea" id="postBody" placeholder="What’s happening?"></textarea><div class="label">Photo (optional)</div><input class="field" id="postFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" ${photo?'autofocus':''}><div id="postProgress" class="muted" style="margin:10px 0"></div><button class="btn primary full">Post</button></form>`);$('#postForm').onsubmit=createPost}
+async function createPost(e){e.preventDefault();const body=$('#postBody').value.trim(),file=$('#postFile').files[0];if(!body&&!file)return toast('Add text or a photo');let path=null;try{if(file){$('#postProgress').textContent='Uploading photo…';path=`${state.user.id}/posts/${crypto.randomUUID()}-${safeName(file.name)}`;const {error}=await sb.storage.from('kinfolk-media').upload(path,file,{upsert:false});if(error)throw error}const {error}=await sb.from('posts').insert({author_id:state.user.id,body:body||'',media_url:path});if(error)throw error;closeModal();await loadFeed();await renderApp();toast('Posted to Kinfolk','good')}catch(err){toast(err.message,'danger')}}
+function openStoryModal(){modal('Create story',`<form id="storyForm"><textarea class="textarea" id="storyBody" placeholder="Add a caption…"></textarea><div class="label">Story image</div><input class="field" id="storyFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><div class="muted" style="font-size:12px;margin:8px 0">Stories expire after 24 hours.</div><button class="btn primary full">Share story</button></form>`);$('#storyForm').onsubmit=createStory}
+async function createStory(e){e.preventDefault();const file=$('#storyFile').files[0],body=$('#storyBody').value.trim();let path=null;try{if(file){path=`${state.user.id}/stories/${crypto.randomUUID()}-${safeName(file.name)}`;const {error}=await sb.storage.from('kinfolk-media').upload(path,file);if(error)throw error}if(!file&&!body)throw new Error('Add a photo or text.');const {error}=await sb.from('kinfolk_stories').insert({owner_id:state.user.id,body,media_url:path});if(error)throw error;closeModal();await loadStories();await renderApp();toast('Story shared','good')}catch(err){toast(err.message,'danger')}}
+async function viewStory(id){const s=state.stories.find(x=>x.id===id);if(!s)return;const p=state.profiles.get(s.owner_id),u=s.media_url?await signed('kinfolk-media',s.media_url):null;modal(p?.display_name||'Story',`${u?`<img src="${esc(u)}" style="width:100%;max-height:70vh;object-fit:contain;background:#0b0a0d;border-radius:14px">`:''}<div style="padding:12px 2px;font-size:17px">${esc(s.body)}</div><div class="muted">${fmt(s.created_at)} · expires in 24h</div>`)}
+async function renderReels(main){const reels=state.videos.filter(v=>['reel','short'].includes(v.kind));main.innerHTML=`<div class="card"><div class="cardpad"><div class="sectionTitle">Reels & Shorts</div><div class="chips"><button class="chip active">For you</button><button class="chip" onclick="setView('channels')">Subscriptions</button><button class="btn small primary" style="margin-left:auto" onclick="openVideoModal()">＋ Upload</button></div></div></div><div class="videoGrid" id="reelGrid"></div>`;await renderVideoGrid($('#reelGrid'),reels)}
+async function renderVideoGrid(root,arr){if(!arr.length){root.innerHTML='<div class="card"><div class="empty">No videos yet.</div></div>';return}let h='';for(const v of arr){const p=state.profiles.get(v.creator_id);const u=v.source_type==='upload'&&v.storage_path?await signed('kinfolk-video',v.storage_path):v.video_url;h+=`<div class="videoCard"><div class="videoThumb">${u?videoEmbed(u,v.source_type):'<span class="muted">No preview</span>'}</div><div class="videoMeta"><b>${esc(v.title)}</b><div class="muted" style="font-size:12px">${esc(p?.display_name||p?.username||'Creator')} · ${fmt(v.created_at)}</div></div></div>`}root.innerHTML=h}
+function videoEmbed(u,type){if(type==='external'&&/youtu(?:\.be|be\.com)/i.test(u)){return `<a href="${esc(u)}" target="_blank" class="btn">Open video ↗</a>`}return `<video src="${esc(u)}" controls playsinline preload="metadata"></video>`}
+function openVideoModal(){const opts=state.channels.filter(c=>c.owner_id===state.user.id).map(c=>`<option value="${c.id}">${esc(c.title)}</option>`).join('');modal('Upload video',`<form id="videoForm"><div class="label">Title</div><input class="field" id="videoTitle" maxlength="120" required><div class="formRow"><div><div class="label">Type</div><select class="field" id="videoKind"><option value="reel">Reel / Short</option><option value="video">Video</option></select></div><div><div class="label">Channel</div><select class="field" id="videoChannel"><option value="">Personal profile</option>${opts}</select></div></div><div class="label">Video file</div><input class="field" id="videoFile" type="file" accept="video/mp4,video/webm,video/quicktime" required><div id="videoProgress" class="muted" style="margin:9px 0"></div><button class="btn primary full">Upload video</button></form>`);$('#videoForm').onsubmit=uploadVideo}
+async function uploadVideo(e){e.preventDefault();const f=$('#videoFile').files[0],title=$('#videoTitle').value.trim(),kind=$('#videoKind').value,channel_id=$('#videoChannel').value||null;if(!f)return;try{$('#videoProgress').textContent='Uploading…';const path=`${state.user.id}/videos/${crypto.randomUUID()}-${safeName(f.name)}`;const {error:up}=await sb.storage.from('kinfolk-video').upload(path,f,{contentType:f.type,upsert:false});if(up)throw up;const {error}=await sb.from('kinfolk_videos').insert({creator_id:state.user.id,title,kind,source_type:'upload',storage_path:path,source_mime:f.type,source_size:f.size,channel_id,visibility:'public',processing_status:'ready',transcode_status:'not_required'});if(error)throw error;closeModal();await loadVideos();await renderApp();toast('Video uploaded','good')}catch(err){toast(err.message,'danger')}}
+async function renderChannels(main){const mine=state.channels.filter(c=>c.owner_id===state.user.id),subIds=[...state.subscriptions.entries()].filter(([_,a])=>a.some(s=>s.user_id===state.user.id)).map(([id])=>id);const subVideos=state.videos.filter(v=>v.channel_id&&subIds.includes(v.channel_id));main.innerHTML=`<div class="card"><div class="cardpad"><div style="display:flex;align-items:center;gap:10px"><div><div class="sectionTitle" style="margin:0">Creator Channels</div><div class="muted">Build an audience beyond your personal profile.</div></div><div class="spacer"></div><button class="btn primary" onclick="openChannelModal()">＋ Create channel</button></div><div class="chips" style="margin-top:14px"><button class="chip active" onclick="channelFilter('discover',this)">Discover</button><button class="chip" onclick="channelFilter('subscriptions',this)">Subscriptions</button><button class="chip" onclick="channelFilter('mine',this)">My channels (${mine.length})</button></div></div></div><div id="channelBody"></div>`;await renderChannelList($('#channelBody'),state.channels);window.__channelSets={mine,subIds,subVideos}}
+async function channelFilter(kind,btn){const root=$('#channelBody');document.querySelectorAll('.chips .chip').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');if(kind==='mine')return renderChannelList(root,window.__channelSets.mine);if(kind==='subscriptions'){root.innerHTML='<div class="card"><div class="cardpad"><div class="sectionTitle">Subscription feed</div><div id="subVideos" class="videoGrid"></div></div></div>';return renderVideoGrid($('#subVideos'),window.__channelSets.subVideos)}await renderChannelList(root,state.channels)}
+async function renderChannelList(root,arr){if(!arr.length){root.innerHTML='<div class="card"><div class="empty">No channels here yet.</div></div>';return}let h='<div class="card">';for(const c of arr){const p=state.profiles.get(c.owner_id),av=c.avatar_url?await signed('kinfolk-media',c.avatar_url):null,subs=state.subscriptions.get(c.id)||[],isSub=subs.some(s=>s.user_id===state.user.id);h+=`<div class="channelCard"><div>${av?`<img class="avatar" src="${esc(av)}">`:`<div class="avatar">${esc((c.title||'?')[0])}</div>`}</div><div class="clickable" onclick="openChannel('${c.id}')"><b>${esc(c.title)}</b><div class="muted">${subs.length} subscriber${subs.length===1?'':'s'} · ${esc(c.category||'creator')}</div><div class="muted" style="font-size:12px">${esc(c.description||'')}</div></div>${c.owner_id===state.user.id?`<button class="btn small" onclick="openChannel('${c.id}')">Manage</button>`:`<button class="btn small ${isSub?'ghost':'primary'}" onclick="toggleSubscribe('${c.id}')">${isSub?'Subscribed':'Subscribe'}</button>`}</div>`}h+='</div>';root.innerHTML=h}
+function openChannelModal(id=null){const c=id?state.channels.find(x=>x.id===id):null;modal(c?'Edit channel':'Create channel',`<form id="channelForm"><div class="label">Channel name</div><input class="field" id="channelTitle" value="${esc(c?.title||'')}" maxlength="80" required><div class="label">Channel handle</div><input class="field" id="channelSlug" value="${esc(c?.slug||'')}" placeholder="my_channel" pattern="[A-Za-z0-9_]{3,30}" maxlength="30"><div class="label">About</div><textarea class="textarea" id="channelDesc" maxlength="600">${esc(c?.description||'')}</textarea><div class="formRow"><div><div class="label">Avatar</div><input class="field" id="channelAvatar" type="file" accept="image/*"></div><div><div class="label">Banner</div><input class="field" id="channelBanner" type="file" accept="image/*"></div></div><button class="btn primary full">${c?'Save channel':'Create channel'}</button></form>`);$('#channelForm').onsubmit=e=>saveChannel(e,id)}
+async function saveChannel(e,id){e.preventDefault();try{const title=$('#channelTitle').value.trim(),slug=$('#channelSlug').value.trim()||null,description=$('#channelDesc').value.trim(),obj={owner_id:state.user.id,title,slug,description,updated_at:new Date().toISOString()};for(const [input,key,folder] of [['#channelAvatar','avatar_url','channels/avatar'],['#channelBanner','banner_url','channels/banner']]){const f=$(input).files[0];if(f){const path=`${state.user.id}/${folder}/${crypto.randomUUID()}-${safeName(f.name)}`;const {error}=await sb.storage.from('kinfolk-media').upload(path,f);if(error)throw error;obj[key]=path}}const q=id?sb.from('kinfolk_pages').update(obj).eq('id',id):sb.from('kinfolk_pages').insert(obj);const {error}=await q;if(error)throw error;closeModal();await loadChannels();await renderApp();toast(id?'Channel updated':'Channel created','good')}catch(err){toast(err.message,'danger')}}
+async function openChannel(id){state.channelViewId=id;const c=state.channels.find(x=>x.id===id);if(!c)return;state.view='channels';$('#app').innerHTML=layout();const main=$('#main');const banner=c.banner_url?await signed('kinfolk-media',c.banner_url):null,av=c.avatar_url?await signed('kinfolk-media',c.avatar_url):null,subs=state.subscriptions.get(c.id)||[],mineSub=subs.find(s=>s.user_id===state.user.id),isSub=!!mineSub;const vids=state.videos.filter(v=>v.channel_id===id);main.innerHTML=`<div class="card"><div class="channelBanner">${banner?`<img src="${esc(banner)}">`:''}</div><div class="channelHero"><div class="channelAvatar">${av?`<img class="avatar lg" src="${esc(av)}">`:`<div class="avatar lg">${esc((c.title||'?')[0])}</div>`}</div><div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap"><div><h2 style="margin:8px 0 2px">${esc(c.title)}</h2><div class="muted">${c.slug?'@'+esc(c.slug)+' · ':''}${subs.length} subscribers · ${vids.length} videos</div></div><div class="spacer"></div>${c.owner_id===state.user.id?`<button class="btn" onclick="openChannelModal('${c.id}')">Edit channel</button><button class="btn primary" onclick="openVideoModal()">Upload</button>`:`<button class="btn ${isSub?'ghost':'primary'}" onclick="toggleSubscribe('${c.id}')">${isSub?'Subscribed':'Subscribe'}</button>${isSub?`<button class="btn" onclick="openSubscriptionPrefs('${c.id}')">🔔 ${mineSub?.notify_level||'all'}</button>`:''}`}</div><p>${esc(c.description||'')}</p></div><div class="profileTabs"><button id="channelVideosTab" class="active" onclick="showChannelVideos('${id}')">Videos</button><button id="channelPlaylistsTab" onclick="showChannelPlaylists('${id}')">Playlists</button><button onclick="showChannelAbout('${id}')">About</button></div></div><div id="channelPane"></div>`;await showChannelVideos(id)}
+async function toggleSubscribe(cid){const arr=state.subscriptions.get(cid)||[],is=arr.some(s=>s.user_id===state.user.id);const q=is?sb.from('kinfolk_channel_subscriptions').delete().eq('channel_id',cid).eq('user_id',state.user.id):sb.from('kinfolk_channel_subscriptions').insert({channel_id:cid,user_id:state.user.id,notify_level:'all'});const {error}=await q;if(error)return toast(error.message,'danger');await loadChannels();if(state.channelViewId===cid)await openChannel(cid);else await renderApp();toast(is?'Unsubscribed':'Subscribed','good')}
+function openSubscriptionPrefs(cid){const sub=(state.subscriptions.get(cid)||[]).find(s=>s.user_id===state.user.id);if(!sub)return toast('Subscribe first.');modal('Subscription notifications',`<form id="subPrefsForm"><div class="label">Notifications for this channel</div><select class="field" id="subNotify"><option value="all" ${sub.notify_level==='all'?'selected':''}>All uploads</option><option value="personalized" ${sub.notify_level==='personalized'?'selected':''}>Personalized</option><option value="none" ${sub.notify_level==='none'?'selected':''}>None</option></select><button class="btn primary full" style="margin-top:14px">Save</button></form>`);$('#subPrefsForm').onsubmit=async e=>{e.preventDefault();const {error}=await sb.from('kinfolk_channel_subscriptions').update({notify_level:$('#subNotify').value}).eq('channel_id',cid).eq('user_id',state.user.id);if(error)return toast(error.message,'danger');closeModal();await loadChannels();await openChannel(cid);toast('Notification preference saved','good')}}
+async function showChannelVideos(id){document.querySelectorAll('.profileTabs button').forEach(b=>b.classList.remove('active'));$('#channelVideosTab')?.classList.add('active');const pane=$('#channelPane');if(!pane)return;pane.className='videoGrid';await renderVideoGrid(pane,state.videos.filter(v=>v.channel_id===id))}
+async function showChannelAbout(id){document.querySelectorAll('.profileTabs button').forEach(b=>b.classList.remove('active'));const c=state.channels.find(x=>x.id===id),pane=$('#channelPane');if(!c||!pane)return;pane.className='card';pane.innerHTML=`<div class="cardpad"><div class="sectionTitle">About ${esc(c.title)}</div><p>${esc(c.description||'No description yet.')}</p><div class="muted">${c.slug?'@'+esc(c.slug)+' · ':''}Created ${new Date(c.created_at).toLocaleDateString()}</div></div>`}
+async function renderPeople(main){const {data:people}=await sb.from('profiles').select('*').neq('id',state.user.id).limit(60);(people||[]).forEach(p=>state.profiles.set(p.id,p));const accepted=state.friendRequests.filter(r=>r.status==='accepted'),pending=state.friendRequests.filter(r=>r.status==='pending'&&r.receiver_id===state.user.id);main.innerHTML=`<div class="card"><div class="cardpad"><div class="sectionTitle">People & Friends</div><input class="field" id="peopleSearch" placeholder="Search people…"><div style="margin-top:12px"><b>Friend requests</b><div id="requestList"></div></div></div></div><div class="card"><div class="cardpad"><b>Discover people</b></div><div id="peopleList"></div></div>`;$('#peopleSearch').oninput=e=>renderPeopleList($('#peopleList'),(people||[]).filter(p=>(p.display_name+' '+p.username).toLowerCase().includes(e.target.value.toLowerCase())));await renderRequests($('#requestList'),pending);await renderPeopleList($('#peopleList'),people||[])}
+async function renderRequests(root,arr){if(!arr.length){root.innerHTML='<div class="muted" style="padding:10px 0">No pending requests.</div>';return}let h='';for(const r of arr){const p=state.profiles.get(r.sender_id),av=await avatarHtml(p,'sm');h+=`<div class="channelCard" style="grid-template-columns:42px 1fr auto">${av}<div><b>${esc(p?.display_name||p?.username)}</b><div class="muted">@${esc(p?.username||'')}</div></div><button class="btn small primary" onclick="acceptFriend('${r.id}')">Accept</button></div>`}root.innerHTML=h}
+async function renderPeopleList(root,arr){let h='';for(const p of arr){const av=await avatarHtml(p,'sm');const relation=state.friendRequests.find(r=>(r.sender_id===state.user.id&&r.receiver_id===p.id)||(r.receiver_id===state.user.id&&r.sender_id===p.id));h+=`<div class="channelCard" style="grid-template-columns:42px 1fr auto">${av}<div class="clickable" onclick="openProfile('${p.id}')"><b>${esc(p.display_name||p.username)}</b><div class="muted">@${esc(p.username)}</div></div>${relation?`<span class="muted">${relation.status==='accepted'?'Friends':relation.sender_id===state.user.id?'Requested':'Respond'}</span>`:`<button class="btn small" onclick="sendFriend('${p.id}')">Add friend</button>`}</div>`}root.innerHTML=h||'<div class="empty">No people found.</div>'}
+async function sendFriend(id){const existing=state.friendRequests.find(r=>(r.sender_id===state.user.id&&r.receiver_id===id)||(r.receiver_id===state.user.id&&r.sender_id===id));if(existing)return toast(existing.status==='accepted'?'You are already friends.':'A friend request already exists.');const {error}=await sb.from('friend_requests').insert({sender_id:state.user.id,receiver_id:id,status:'pending'});if(error)return toast(error.message,'danger');await loadFriendRequests();await renderApp();toast('Friend request sent')}
+async function acceptFriend(id){const {error}=await sb.from('friend_requests').update({status:'accepted'}).eq('id',id);if(error)return toast(error.message,'danger');await loadFriendRequests();await renderApp();toast('Friend added','good')}
+async function renderNotifications(main){main.innerHTML=`<div class="card"><div class="cardpad"><div style="display:flex"><div class="sectionTitle">Notifications</div><div class="spacer"></div><button class="btn small" onclick="markAllRead()">Mark all read</button></div><div id="notifs"></div></div></div>`;const root=$('#notifs');if(!state.notifications.length){root.innerHTML='<div class="empty">Nothing new yet.</div>';return}let h='';for(const n of state.notifications){const p=state.profiles.get(n.actor_id);h+=`<div class="trend"><b>${esc(n.kind.replaceAll('_',' '))}</b><div>${p?esc(p.display_name||p.username)+' ':''}${esc(n.data?.message||'')}</div><small class="muted">${fmt(n.created_at)} ${n.read_at?'':'· new'}</small></div>`}root.innerHTML=h}
+async function markAllRead(){const ids=state.notifications.filter(n=>!n.read_at).map(n=>n.id);if(!ids.length)return;await sb.from('notifications').update({read_at:new Date().toISOString()}).in('id',ids);await loadNotifications();await renderApp()}
+async function openProfile(id){state.profileViewId=id;state.view='profile';await renderApp();window.scrollTo({top:0,behavior:'smooth'})}
+async function renderProfile(main,id){let p=state.profiles.get(id);if(!p){const {data}=await sb.from('profiles').select('*').eq('id',id).maybeSingle();p=data;if(p)state.profiles.set(id,p)}if(!p){main.innerHTML='<div class="card"><div class="empty">Profile not found.</div></div>';return}const {data:ex}=await sb.from('kinfolk_profile_extras').select('*').eq('user_id',id).maybeSingle();const cover=p.wallpaper_url?await signed('kinfolk-media',p.wallpaper_url):null,av=await avatarHtml(p,'lg'),own=id===state.user.id;const posts=state.feed.filter(x=>x.author_id===id),videos=state.videos.filter(x=>x.creator_id===id),friends=state.friendRequests.filter(r=>r.status==='accepted'&&(r.sender_id===id||r.receiver_id===id));const relation=own?null:state.friendRequests.find(r=>(r.sender_id===state.user.id&&r.receiver_id===id)||(r.receiver_id===state.user.id&&r.sender_id===id));main.innerHTML=`<div class="card"><div class="profileCover">${cover?`<img src="${esc(cover)}">`:''}</div><div class="profileHero">${av}<div class="profileText"><h2 style="margin:0">${esc(p.display_name||p.username)}</h2><div class="muted">@${esc(p.username)} · ${friends.length} friends</div></div>${own?`<button class="btn primary" onclick="openEditProfile()">Edit profile</button>`:`<button class="btn" onclick="openDm('${p.id}')">Message</button>${relation?`<span class="muted">${relation.status==='accepted'?'Friends':'Request pending'}</span>`:`<button class="btn primary" onclick="sendFriend('${p.id}')">Add friend</button>`}`}</div><div class="profileTabs">${['posts','about','friends','photos','videos'].map(t=>`<button class="${state.profileTab===t?'active':''}" onclick="profileTab('${t}','${id}')">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div></div><div id="profileContent"></div>`;await renderProfileContent($('#profileContent'),state.profileTab,p,ex,posts,friends,videos)}
+async function profileTab(t,id){state.profileTab=t;await renderProfile($('#main'),id)}
+async function renderProfileContent(root,tab,p,ex,posts,friends,videos){if(tab==='posts')return renderFeed(root,posts);if(tab==='videos'){root.innerHTML='<div class="videoGrid" id="pvids"></div>';return renderVideoGrid($('#pvids'),videos)}if(tab==='about'){root.innerHTML=`<div class="card"><div class="cardpad"><div class="sectionTitle">About</div><div class="aboutGrid"><b>Bio</b><div>${esc(p.bio||'Not added')}</div><b>Location</b><div>${esc(ex?.location_text||'Not added')}</div><b>Website</b><div>${ex?.website_url?`<a target="_blank" rel="noopener" href="${esc(ex.website_url)}">${esc(ex.website_url)}</a>`:'Not added'}</div><b>Relationship</b><div>${esc(ex?.relationship_status||'Not added')}</div><b>Gender</b><div>${esc(ex?.gender||'Not added')}</div><b>Preference</b><div>${esc(ex?.orientation||'Not added')}</div><b>Profile music</b><div>${ex?.music_url?`<a target="_blank" rel="noopener" href="${esc(ex.music_url)}">Open music link ↗</a>`:'Not added'}</div></div></div></div>`;return}if(tab==='friends'){const ids=friends.map(r=>r.sender_id===p.id?r.receiver_id:r.sender_id);await loadProfiles(ids);return renderPeopleList(root,ids.map(id=>state.profiles.get(id)).filter(Boolean))}if(tab==='photos'){const {data:albums}=await sb.from('photo_albums').select('*').eq('owner_id',p.id).order('created_at',{ascending:false});root.innerHTML=`<div class="card"><div class="cardpad"><div class="row"><div class="sectionTitle grow">Photo albums</div>${p.id===state.user.id?'<button class="btn primary small" onclick="openAlbumModal()">＋ New album</button>':''}</div>${(albums||[]).map(a=>`<button class="sideitem" onclick="viewAlbum('${a.id}')"><span>▧</span><span><b>${esc(a.title)}</b><div class="muted">${esc(a.description||'')} · ${esc(a.visibility)}</div></span></button>`).join('')||'<div class="empty">No albums yet.</div>'}</div></div>`}}
+function openEditProfile(){const p=state.profile,ex=state.extras||{};modal('Edit profile',`<form id="profileForm"><div class="formRow"><div><div class="label">Display name</div><input class="field" id="editDisplay" maxlength="50" value="${esc(p.display_name||'')}"></div><div><div class="label">Username</div><input class="field" id="editUsername" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" value="${esc(p.username||'')}"></div></div><div class="label">Bio</div><textarea class="textarea" id="editBio" maxlength="500">${esc(p.bio||'')}</textarea><div class="formRow"><div><div class="label">Profile photo</div><input class="field" id="editAvatar" type="file" accept="image/*"></div><div><div class="label">Wallpaper</div><input class="field" id="editWallpaper" type="file" accept="image/*,.gif"></div></div><div class="formRow"><div><div class="label">Location</div><input class="field" id="editLocation" value="${esc(ex.location_text||'')}"></div><div><div class="label">Website</div><input class="field" id="editWebsite" type="url" value="${esc(ex.website_url||'')}"></div></div><div class="label">Profile music URL</div><input class="field" id="editMusic" type="url" placeholder="YouTube or music link" value="${esc(ex.music_url||'')}"><div class="formRow"><div><div class="label">Gender</div><input class="field" id="editGender" value="${esc(ex.gender||'')}"></div><div><div class="label">Sexual preference / orientation</div><input class="field" id="editOrientation" value="${esc(ex.orientation||'')}"></div></div><div class="formRow"><div><div class="label">Relationship status</div><input class="field" id="editRelationship" value="${esc(ex.relationship_status||'')}"></div><div><div class="label">Birthday</div><input class="field" id="editBirthday" type="date" value="${esc(ex.birthday||'')}"></div></div><button class="btn primary full" style="margin-top:16px">Save profile</button></form>`);$('#profileForm').onsubmit=saveProfile}
+async function saveProfile(e){e.preventDefault();try{const po={display_name:$('#editDisplay').value.trim(),username:$('#editUsername').value.trim(),bio:$('#editBio').value.trim()};for(const [sel,key,folder] of [['#editAvatar','avatar_url','avatars'],['#editWallpaper','wallpaper_url','wallpapers']]){const f=$(sel).files[0];if(f){const path=`${state.user.id}/${folder}/${crypto.randomUUID()}-${safeName(f.name)}`;const {error}=await sb.storage.from('kinfolk-media').upload(path,f);if(error)throw error;po[key]=path}}const ex={user_id:state.user.id,location_text:$('#editLocation').value.trim()||null,website_url:$('#editWebsite').value.trim()||null,music_url:$('#editMusic').value.trim()||null,gender:$('#editGender').value.trim()||null,orientation:$('#editOrientation').value.trim()||null,relationship_status:$('#editRelationship').value.trim()||null,birthday:$('#editBirthday').value||null,updated_at:new Date().toISOString()};const [{error:e1},{error:e2}]=await Promise.all([sb.from('profiles').update(po).eq('id',state.user.id),sb.from('kinfolk_profile_extras').upsert(ex,{onConflict:'user_id'})]);if(e1)throw e1;if(e2)throw e2;closeModal();await hydrateUser();state.profiles.set(state.user.id,state.profile);await loadCore();await renderApp();toast('Profile updated','good')}catch(err){toast(err.message,'danger')}}
+function openCreateMenu(){modal('Create on Kinfolk',`<div style="display:grid;gap:10px"><button class="btn" onclick="closeModal();openPostModal()">✎ Create post</button><button class="btn" onclick="closeModal();openStoryModal()">◫ Create story</button><button class="btn" onclick="closeModal();openVideoModal()">▶ Upload reel/video</button><button class="btn" onclick="closeModal();openChannelModal()">▣ Create channel</button><button class="btn" onclick="closeModal();openAlbumModal()">▧ Create album</button><button class="btn" onclick="closeModal();openGroups()">☻ Group chats</button></div>`)}
+function openSearch(){modal('Search Kinfolk',`<input class="field" id="globalSearch" placeholder="People or channels…" autofocus><div id="searchResults" style="margin-top:12px"></div>`);$('#globalSearch').oninput=async e=>{const q=e.target.value.trim().toLowerCase(),r=$('#searchResults');if(q.length<2){r.innerHTML='';return}const people=[...state.profiles.values()].filter(p=>(p.display_name+' '+p.username).toLowerCase().includes(q)).slice(0,8),channels=state.channels.filter(c=>(c.title+' '+(c.slug||'')).toLowerCase().includes(q)).slice(0,8);r.innerHTML=`${people.map(p=>`<button class="sideitem" onclick="closeModal();openProfile('${p.id}')">☺ <b>${esc(p.display_name||p.username)}</b><span class="muted">@${esc(p.username)}</span></button>`).join('')}${channels.map(c=>`<button class="sideitem" onclick="closeModal();openChannel('${c.id}')">▣ <b>${esc(c.title)}</b><span class="muted">${c.slug?'@'+esc(c.slug):''}</span></button>`).join('')||'<div class="muted">No matches</div>'}`}}
+async function openMessages(){const {data,error}=await sb.from('messages').select('*').or(`sender_id.eq.${state.user.id},receiver_id.eq.${state.user.id}`).order('created_at',{ascending:false}).limit(50);if(error)return toast(error.message,'danger');const ids=(data||[]).flatMap(m=>[m.sender_id,m.receiver_id]);await loadProfiles(ids);const peers=[];(data||[]).forEach(m=>{const id=m.sender_id===state.user.id?m.receiver_id:m.sender_id;if(!peers.includes(id))peers.push(id)});modal('Messages',`<div class="row"><button class="btn primary">Direct messages</button><button class="btn" onclick="openGroups()">Group chats</button></div><div class="divider"></div>${peers.length?peers.map(id=>{const p=state.profiles.get(id);return `<button class="sideitem" onclick="openDm('${id}')">✉ <b>${esc(p?.display_name||p?.username||'User')}</b><span class="muted">@${esc(p?.username||'')}</span></button>`}).join(''):'<div class="empty">No direct conversations yet. Open a profile to message someone.</div>'}`)}
+async function openDm(peer){const p=state.profiles.get(peer);const {data}=await sb.from('messages').select('*').or(`and(sender_id.eq.${state.user.id},receiver_id.eq.${peer}),and(sender_id.eq.${peer},receiver_id.eq.${state.user.id})`).order('created_at',{ascending:true}).limit(100);modal(p?.display_name||'Message',`<div id="dmList" style="max-height:55vh;overflow:auto">${(data||[]).map(m=>`<div style="display:flex;justify-content:${m.sender_id===state.user.id?'flex-end':'flex-start'};margin:8px 0"><div class="bubble" style="max-width:78%;flex:0 1 auto">${esc(m.body)}</div></div>`).join('')}</div><form id="dmForm" class="commentForm"><input class="field" name="body" placeholder="Message…" required><button class="btn primary">Send</button></form>`);$('#dmForm').onsubmit=async e=>{e.preventDefault();const body=e.target.body.value.trim();const {error}=await sb.from('messages').insert({sender_id:state.user.id,receiver_id:peer,body});if(error)return toast(error.message,'danger');await openDm(peer)}}
+function openAlbumModal(){modal('Create photo album',`<form id="albumForm"><div class="label">Album name</div><input class="field" id="albumTitle" maxlength="80" required><div class="label">Description</div><textarea class="textarea" id="albumDesc" maxlength="500"></textarea><div class="label">Visibility</div><select class="field" id="albumVisibility"><option value="public">Public</option><option value="private">Private</option></select><div class="label">Photos</div><input class="field" id="albumFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple><div id="albumProgress" class="muted" style="margin:8px 0"></div><button class="btn primary full">Create album</button></form>`);$('#albumForm').onsubmit=createAlbum}
+async function createAlbum(e){e.preventDefault();try{const title=$('#albumTitle').value.trim(),description=$('#albumDesc').value.trim(),visibility=$('#albumVisibility').value;const {data:album,error}=await sb.from('photo_albums').insert({owner_id:state.user.id,title,description,visibility}).select().single();if(error)throw error;const files=[...$('#albumFiles').files];for(let i=0;i<files.length;i++){const f=files[i];$('#albumProgress').textContent=`Uploading ${i+1} of ${files.length}…`;const path=`${state.user.id}/albums/${album.id}/${crypto.randomUUID()}-${safeName(f.name)}`;const up=await sb.storage.from('kinfolk-media').upload(path,f);if(up.error)throw up.error;const ins=await sb.from('album_photos').insert({album_id:album.id,owner_id:state.user.id,storage_path:path,caption:''});if(ins.error)throw ins.error}closeModal();state.profileTab='photos';await renderApp();toast('Album created','good')}catch(err){toast(err.message,'danger')}}
+async function viewAlbum(id){const [{data:album,error:e1},{data:photos,error:e2}]=await Promise.all([sb.from('photo_albums').select('*').eq('id',id).single(),sb.from('album_photos').select('*').eq('album_id',id).order('created_at',{ascending:true})]);if(e1||e2)return toast((e1||e2).message,'danger');modal(album.title,`<div class="muted" style="margin-bottom:10px">${esc(album.description||'')} · ${esc(album.visibility)}</div><div class="photoGrid" id="albumPhotoGrid"></div>${album.owner_id===state.user.id?`<div class="divider"></div><button class="btn primary full" onclick="addPhotosToAlbum('${id}')">＋ Add photos</button>`:''}`);const root=$('#albumPhotoGrid');let h='';for(const ph of photos||[]){const u=await signed('kinfolk-media',ph.storage_path);if(u)h+=`<button class="photoTile" onclick="window.open('${esc(u)}','_blank')"><img src="${esc(u)}" loading="lazy"></button>`}root.innerHTML=h||'<div class="empty">No photos yet.</div>'}
+function addPhotosToAlbum(id){modal('Add photos',`<form id="albumAddForm"><input class="field" id="albumAddFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple required><div id="albumAddProgress" class="muted" style="margin:8px 0"></div><button class="btn primary full">Upload photos</button></form>`);$('#albumAddForm').onsubmit=async e=>{e.preventDefault();try{const files=[...$('#albumAddFiles').files];for(let i=0;i<files.length;i++){const f=files[i];$('#albumAddProgress').textContent=`Uploading ${i+1} of ${files.length}…`;const path=`${state.user.id}/albums/${id}/${crypto.randomUUID()}-${safeName(f.name)}`;const up=await sb.storage.from('kinfolk-media').upload(path,f);if(up.error)throw up.error;const ins=await sb.from('album_photos').insert({album_id:id,owner_id:state.user.id,storage_path:path,caption:''});if(ins.error)throw ins.error}await viewAlbum(id);toast('Photos added','good')}catch(err){toast(err.message,'danger')}}}
+async function showChannelPlaylists(cid){document.querySelectorAll('.profileTabs button').forEach(b=>b.classList.remove('active'));$('#channelPlaylistsTab')?.classList.add('active');const pane=$('#channelPane'),c=state.channels.find(x=>x.id===cid);if(!pane||!c)return;pane.className='card';const {data,error}=await sb.from('kinfolk_playlists').select('*').eq('channel_id',cid).order('created_at',{ascending:false});if(error){pane.innerHTML=`<div class="empty">${esc(error.message)}</div>`;return}pane.innerHTML=`<div class="cardpad"><div class="row"><div class="sectionTitle grow">Playlists</div>${c.owner_id===state.user.id?`<button class="btn primary small" onclick="openPlaylistModal('${cid}')">＋ New playlist</button>`:''}</div>${(data||[]).map(p=>`<button class="sideitem" onclick="openPlaylist('${p.id}')"><span>▶</span><span><b>${esc(p.title)}</b><div class="muted">${esc(p.description||'')} · ${esc(p.visibility)}</div></span></button>`).join('')||'<div class="empty">No playlists yet.</div>'}</div>`}
+function openPlaylistModal(cid){modal('Create playlist',`<form id="playlistForm"><div class="label">Title</div><input class="field" id="playlistTitle" maxlength="100" required><div class="label">Description</div><textarea class="textarea" id="playlistDesc" maxlength="500"></textarea><div class="label">Visibility</div><select class="field" id="playlistVisibility"><option value="public">Public</option><option value="unlisted">Unlisted</option><option value="private">Private</option></select><button class="btn primary full" style="margin-top:14px">Create</button></form>`);$('#playlistForm').onsubmit=async e=>{e.preventDefault();const {data,error}=await sb.from('kinfolk_playlists').insert({channel_id:cid,owner_id:state.user.id,title:$('#playlistTitle').value.trim(),description:$('#playlistDesc').value.trim(),visibility:$('#playlistVisibility').value}).select().single();if(error)return toast(error.message,'danger');closeModal();await managePlaylist(data.id)}}
+async function openPlaylist(id){const {data:p,error}=await sb.from('kinfolk_playlists').select('*').eq('id',id).single();if(error)return toast(error.message,'danger');const {data:items}=await sb.from('kinfolk_playlist_items').select('*').eq('playlist_id',id).order('position',{ascending:true});const vids=(items||[]).map(i=>state.videos.find(v=>v.id===i.video_id)).filter(Boolean);modal(p.title,`<div class="muted">${esc(p.description||'')} · ${esc(p.visibility)}</div><div class="divider"></div><div id="playlistVideos" class="videoGrid"></div>${p.owner_id===state.user.id?`<button class="btn primary full" style="margin-top:14px" onclick="managePlaylist('${id}')">Manage playlist</button>`:''}`);await renderVideoGrid($('#playlistVideos'),vids)}
+async function managePlaylist(id){const {data:p,error}=await sb.from('kinfolk_playlists').select('*').eq('id',id).single();if(error)return toast(error.message,'danger');const {data:items}=await sb.from('kinfolk_playlist_items').select('*').eq('playlist_id',id);const selected=new Set((items||[]).map(i=>i.video_id));const candidates=state.videos.filter(v=>!p.channel_id||v.channel_id===p.channel_id);modal('Manage playlist',`<form id="playlistManageForm"><div class="label">Choose videos</div>${candidates.map(v=>`<label class="checkrow"><input type="checkbox" name="vid" value="${v.id}" ${selected.has(v.id)?'checked':''}><span><b>${esc(v.title)}</b><div class="muted">${esc(v.kind||'video')}</div></span></label>`).join('')||'<div class="empty">Upload videos to this channel first.</div>'}<button class="btn primary full" style="margin-top:12px">Save playlist</button></form>`);$('#playlistManageForm').onsubmit=async e=>{e.preventDefault();const ids=[...e.target.querySelectorAll('input[name=vid]:checked')].map(x=>x.value);const del=await sb.from('kinfolk_playlist_items').delete().eq('playlist_id',id);if(del.error)return toast(del.error.message,'danger');if(ids.length){const ins=await sb.from('kinfolk_playlist_items').insert(ids.map((video_id,position)=>({playlist_id:id,video_id,position})));if(ins.error)return toast(ins.error.message,'danger')}await openPlaylist(id);toast('Playlist updated','good')}}
+async function openGroups(){const {data,error}=await sb.from('group_conversations').select('*').order('created_at',{ascending:false});if(error)return toast(error.message,'danger');modal('Group chats',`<div class="row"><button class="btn" onclick="openMessages()">Direct messages</button><button class="btn primary">Group chats</button><div class="grow"></div><button class="btn small primary" onclick="openGroupCreate()">＋ New group</button></div><div class="divider"></div>${(data||[]).map(g=>`<button class="sideitem" onclick="openGroup('${g.id}')">☻ <b>${esc(g.title)}</b><span class="muted">${g.owner_id===state.user.id?'Owner':'Member'}</span></button>`).join('')||'<div class="empty">No group chats yet.</div>'}`)}
+async function openGroupCreate(){const friendIds=state.friendRequests.filter(r=>r.status==='accepted').map(r=>r.sender_id===state.user.id?r.receiver_id:r.sender_id);await loadProfiles(friendIds);modal('New group chat',`<form id="groupCreateForm"><div class="label">Group name</div><input class="field" id="groupTitle" maxlength="80" required><div class="label">Invite friends</div>${friendIds.map(id=>{const p=state.profiles.get(id);return `<label class="checkrow"><input type="checkbox" name="member" value="${id}"><span>${esc(p?.display_name||p?.username||'Friend')}</span></label>`}).join('')||'<div class="muted">Add friends first, or create the group now and invite later.</div>'}<button class="btn primary full" style="margin-top:12px">Create group</button></form>`);$('#groupCreateForm').onsubmit=async e=>{e.preventDefault();const {data:g,error}=await sb.from('group_conversations').insert({owner_id:state.user.id,title:$('#groupTitle').value.trim()}).select().single();if(error)return toast(error.message,'danger');const members=[...e.target.querySelectorAll('input[name=member]:checked')].map(x=>x.value);if(members.length){const ins=await sb.from('group_members').insert(members.map(user_id=>({conversation_id:g.id,user_id})));if(ins.error)return toast(ins.error.message,'danger')}await openGroup(g.id)}}
+async function openGroup(id){const [{data:g,error:e1},{data:msgs,error:e2}]=await Promise.all([sb.from('group_conversations').select('*').eq('id',id).single(),sb.from('group_messages').select('*').eq('conversation_id',id).order('created_at',{ascending:true}).limit(150)]);if(e1||e2)return toast((e1||e2).message,'danger');await loadProfiles((msgs||[]).map(m=>m.sender_id));modal(g.title,`<div id="groupMsgList" style="max-height:55vh;overflow:auto">${(msgs||[]).map(m=>{const p=state.profiles.get(m.sender_id);return `<div style="margin:9px 0"><div class="muted" style="font-size:11px">${esc(p?.display_name||p?.username||'User')}</div><div class="bubble">${esc(m.body)}</div></div>`}).join('')}</div><form id="groupMsgForm" class="commentForm"><input class="field" name="body" placeholder="Message group…" required><button class="btn primary">Send</button></form>`);$('#groupMsgForm').onsubmit=async e=>{e.preventDefault();const body=e.target.body.value.trim();if(!body)return;const {error}=await sb.from('group_messages').insert({conversation_id:id,sender_id:state.user.id,body});if(error)return toast(error.message,'danger');await openGroup(id)}}
+function modal(title,body){$('#modalRoot').innerHTML=`<div class="modalBack" onclick="if(event.target===this)closeModal()"><div class="modal"><div class="modalHead"><h3>${esc(title)}</h3><div class="spacer"></div><button class="iconbtn" onclick="closeModal()">×</button></div><div class="modalBody">${body}</div></div></div>`}
+function closeModal(){$('#modalRoot').innerHTML=''}
+async function logout(){await sb.auth.signOut();state.user=null;renderAuth('login')}
+window.addEventListener('error',e=>{console.error(e.error||e.message)});window.addEventListener('unhandledrejection',e=>{console.error(e.reason)});if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));boot();
+</script>
+<script>(()=>{const K='kinfolk_stay_logged_in_v1';const style=document.createElement('style');style.textContent='.stayRow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}.stayRow input{width:auto;accent-color:var(--pink)}';document.head.append(style);function addStay(){const f=document.querySelector('#authForm');if(!f||document.querySelector('#stayLogged')||document.querySelector('#username'))return;const msg=document.querySelector('#authMsg');if(!msg)return;const l=document.createElement('label');l.className='stayRow';l.innerHTML='<span>Stay logged in</span><input id="stayLogged" type="checkbox">';msg.before(l);const c=l.querySelector('input');c.checked=localStorage.getItem(K)!=='0';c.onchange=()=>localStorage.setItem(K,c.checked?'1':'0')}new MutationObserver(addStay).observe(document.documentElement,{childList:true,subtree:true});addStay();/* Recovery129: boot() owns the stay-logged-in session check. */sb.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_IN'&&session?.user?.id){const box=document.querySelector('#stayLogged');const stay=box?box.checked:localStorage.getItem(K)!=='0';localStorage.setItem(K,stay?'1':'0');sb.from('kinfolk_user_preferences').upsert({user_id:session.user.id,stay_signed_in:stay},{onConflict:'user_id'}).then(({error})=>{if(error)console.warn('Preference sync failed',error.message)})}});window.openDm=async function(peer){const p=state.profiles.get(peer);let q=await sb.from('messages').select('*').or(`and(sender_id.eq.${state.user.id},receiver_id.eq.${peer}),and(sender_id.eq.${peer},receiver_id.eq.${state.user.id})`).order('created_at',{ascending:true}).limit(100);if(q.error)return toast(q.error.message,'danger');let data=q.data||[];const unread=data.filter(m=>m.receiver_id===state.user.id&&!m.first_read_at);if(unread.length){await Promise.all(unread.map(m=>sb.rpc('kinfolk_mark_message_read',{p_message_id:m.id})));const fresh=await sb.from('messages').select('*').or(`and(sender_id.eq.${state.user.id},receiver_id.eq.${peer}),and(sender_id.eq.${peer},receiver_id.eq.${state.user.id})`).order('created_at',{ascending:true}).limit(100);if(!fresh.error)data=fresh.data||data}const pref=await sb.from('kinfolk_user_preferences').select('disappearing_messages_default').eq('user_id',state.user.id).maybeSingle();const def=!!pref.data?.disappearing_messages_default;modal(p?.display_name||'Message',`<div id="dmList" style="max-height:55vh;overflow:auto">${data.map(m=>`<div style="display:flex;justify-content:${m.sender_id===state.user.id?'flex-end':'flex-start'};margin:8px 0"><div class="bubble" style="max-width:78%;flex:0 1 auto">${esc(m.body)}${m.disappear_after_read?'<div class="muted" style="font-size:11px;margin-top:5px">⏳ Disappears 30 seconds after read</div>':''}</div></div>`).join('')}</div><form id="dmForm" class="commentForm"><input class="field" name="body" placeholder="Message…" required><label class="stayRow"><span>Disappear after read</span><input name="disappear" type="checkbox" ${def?'checked':''}></label><button class="btn primary">Send</button></form>`);$('#dmForm').onsubmit=async e=>{e.preventDefault();const body=e.target.body.value.trim();if(!body)return;const {error}=await sb.from('messages').insert({sender_id:state.user.id,receiver_id:peer,body,disappear_after_read:!!e.target.disappear.checked});if(error)return toast(error.message,'danger');await window.openDm(peer)}};})();
+;(()=> {
+  const extraStyle=document.createElement('style');
+  extraStyle.textContent=`
+    .kinfolk-settings-btn{margin-left:6px}
+    .kinfolk-layout-animated .profileCover{animation:kinfolkFloat 7s ease-in-out infinite}
+    .kinfolk-layout-animated .profileHero{background:linear-gradient(120deg,rgba(232,90,155,.08),rgba(119,91,246,.08),rgba(232,90,155,.08));background-size:220% 220%;animation:kinfolkGlow 10s ease infinite}
+    .kinfolk-layout-minimal .profileCover{height:150px;filter:saturate(.8)}
+    .kinfolk-layout-minimal .profileHero{background:#17151c}
+    .kinfolk-layout-retro .profileHero,.kinfolk-layout-retro .profileTabs{background-image:linear-gradient(rgba(232,90,155,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(232,90,155,.07) 1px,transparent 1px);background-size:18px 18px}
+    .kinfolk-layout-retro .profileCover{filter:saturate(1.15) contrast(1.05)}
+    @keyframes kinfolkFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+    @keyframes kinfolkGlow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+    .replyBtn{border:0;background:transparent;color:var(--pink2);font-weight:700;padding:3px 0;margin-top:4px}
+    .replyNest{margin-left:42px;border-left:2px solid var(--line);padding-left:10px}
+    .replyingTo{font-size:12px;color:var(--pink2);margin:7px 0}
+    .mediaComment{display:flex;gap:9px;margin:10px 0}
+    .mediaComment .bubble{flex:1}
+    .videoCommentBar{display:flex;gap:8px;padding:0 10px 10px}
+    .photoCommentWrap{display:flex;flex-direction:column;gap:6px}
+    .photoCommentWrap .btn{width:100%}
+  `;
+  document.head.append(extraStyle);
+
+  function selectReplace(id, options){
+    const old=document.getElementById(id);
+    if(!old || old.tagName==='SELECT') return;
+    const sel=document.createElement('select');
+    sel.id=id; sel.className=old.className||'field';
+    const current=old.value||'';
+    sel.innerHTML=options.map(([v,l])=>`<option value="${esc(v)}"${v===current?' selected':''}>${esc(l)}</option>`).join('');
+    old.replaceWith(sel);
+  }
+
+  function enhanceProfileForm(){
+    if(!document.querySelector('#profileForm')) return;
+    selectReplace('editGender',[
+      ['','Choose gender'],['Male','Male'],['Female','Female'],['Non-binary','Non-binary'],['Prefer not to say','Prefer not to say']
+    ]);
+    selectReplace('editOrientation',[
+      ['','Choose preference'],['Male','Male'],['Female','Female'],['Non-binary','Non-binary'],['Everyone','Everyone'],['Prefer not to say','Prefer not to say']
+    ]);
+  }
+
+  window.openKinfolkSettings=async function(){
+    const p=state.profile||{};
+    modal('Settings',`
+      <form id="kinfolkSettingsForm">
+        <div class="label">Profile layout</div>
+        <select class="field" id="profileLayout">
+          <option value="classic">Classic</option>
+          <option value="animated">Animated</option>
+          <option value="minimal">Minimal</option>
+          <option value="retro">Retro</option>
+        </select>
+        <label class="stayRow"><span>Animate profile layout</span><input id="profileAnimated" type="checkbox"></label>
+        <div class="muted" style="font-size:12px;margin:7px 0 14px">GIF wallpapers stay supported. Animated mode adds gentle motion to the profile itself.</div>
+        <button class="btn primary full">Save layout</button>
+      </form>`);
+    $('#profileLayout').value=p.profile_layout||'classic';
+    $('#profileAnimated').checked=!!p.profile_animated;
+    $('#kinfolkSettingsForm').onsubmit=async e=>{
+      e.preventDefault();
+      const profile_layout=$('#profileLayout').value;
+      const profile_animated=$('#profileAnimated').checked;
+      const {data,error}=await sb.from('profiles').update({profile_layout,profile_animated}).eq('id',state.user.id).select().single();
+      if(error)return toast(error.message,'danger');
+      state.profile=data;
+      state.profiles.set(data.id,data);
+      closeModal();
+      await renderApp();
+      toast('Profile layout saved','good');
+    };
+  };
+
+  function enhanceOwnProfile(){
+    if(state?.view!=='profile' || state.profileViewId!==state.user?.id) return;
+    const hero=document.querySelector('.profileHero');
+    if(!hero || document.querySelector('#kinfolkSettingsBtn')) return;
+    const edit=[...hero.querySelectorAll('button')].find(b=>b.textContent.trim()==='Edit profile');
+    if(!edit)return;
+    const b=document.createElement('button');
+    b.id='kinfolkSettingsBtn'; b.className='btn kinfolk-settings-btn'; b.textContent='⚙ Settings'; b.onclick=window.openKinfolkSettings;
+    edit.after(b);
+  }
+
+  function applyProfileLayout(){
+    if(state?.view!=='profile') return;
+    const id=state.profileViewId||state.user?.id;
+    const p=state.profiles?.get(id) || (id===state.user?.id?state.profile:null);
+    const card=document.querySelector('#main > .card');
+    if(!p||!card)return;
+    [...card.classList].filter(x=>x.startsWith('kinfolk-layout-')).forEach(x=>card.classList.remove(x));
+    const layout=p.profile_layout||'classic';
+    if(layout!=='classic')card.classList.add('kinfolk-layout-'+layout);
+    if(p.profile_animated)card.classList.add('kinfolk-layout-animated');
+  }
+
+  const postReplyParents={};
+  window.setPostReply=function(pid,cid){
+    postReplyParents[pid]=cid;
+    const form=document.querySelector(`#comments-${pid} .commentForm`);
+    if(form){
+      const input=form.querySelector('[name=body]');
+      if(input){input.placeholder='Write a reply…';input.focus();}
+      let lab=form.querySelector('.replyingTo');
+      if(!lab){lab=document.createElement('div');lab.className='replyingTo';form.prepend(lab);}
+      lab.innerHTML='Replying to comment · <button type="button" class="replyBtn">Cancel</button>';
+      lab.querySelector('button').onclick=()=>{postReplyParents[pid]=null;lab.remove();if(input)input.placeholder='Write a comment…';};
+    }
+  };
+
+  window.commentsHtml=async function(pid,comments){
+    const byParent=new Map();
+    for(const c of comments){
+      const k=c.parent_id||'root';
+      if(!byParent.has(k))byParent.set(k,[]);
+      byParent.get(k).push(c);
+    }
+    const renderOne=async(c,nested=false)=>{
+      const p=state.profiles.get(c.author_id), av=await avatarHtml(p,'sm');
+      let child='';
+      for(const r of (byParent.get(c.id)||[])) child+=await renderOne(r,true);
+      return `<div class="${nested?'replyNest':''}"><div class="comment">${av}<div class="bubble"><b>${esc(p?.display_name||p?.username||'User')}</b><div>${esc(c.body)}</div><button class="replyBtn" onclick="setPostReply('${pid}','${c.id}')">Reply</button></div></div>${child}</div>`;
+    };
+    let h='';
+    for(const c of (byParent.get('root')||[]))h+=await renderOne(c);
+    h+=`<form class="commentForm" onsubmit="addComment(event,'${pid}')"><input class="field" name="body" placeholder="Write a comment…" required><button class="btn small primary">Post</button></form>`;
+    return h;
+  };
+
+  window.addComment=async function(e,pid){
+    e.preventDefault();
+    const body=e.target.body.value.trim(); if(!body)return;
+    const parent_id=postReplyParents[pid]||null;
+    const {error}=await sb.from('comments').insert({post_id:pid,author_id:state.user.id,body,parent_id});
+    if(error)return toast(error.message,'danger');
+    postReplyParents[pid]=null;
+    await loadFeed(); await renderApp();
+    setTimeout(()=>{$('#comments-'+pid)?.classList.remove('hide')},50);
+  };
+
+  let mediaReplyParent=null;
+  window.setMediaReply=function(id){
+    mediaReplyParent=id;
+    const f=document.querySelector('#mediaCommentForm');
+    if(!f)return;
+    const input=f.querySelector('[name=body]'); if(input){input.placeholder='Write a reply…';input.focus();}
+    const lab=document.querySelector('#mediaReplyLabel'); if(lab){lab.classList.remove('hide');lab.textContent='Replying to a comment';}
+  };
+
+  async function mediaCommentsHtml(rows){
+    const ids=[...new Set(rows.map(x=>x.author_id))];
+    if(ids.length)await loadProfiles(ids);
+    const byParent=new Map();
+    rows.forEach(c=>{const k=c.parent_id||'root';if(!byParent.has(k))byParent.set(k,[]);byParent.get(k).push(c)});
+    const one=async(c,nested=false)=>{
+      const p=state.profiles.get(c.author_id), av=await avatarHtml(p,'sm');
+      let kids=''; for(const r of (byParent.get(c.id)||[]))kids+=await one(r,true);
+      return `<div class="${nested?'replyNest':''}"><div class="mediaComment">${av}<div class="bubble"><b>${esc(p?.display_name||p?.username||'User')}</b><div>${esc(c.body)}</div><button class="replyBtn" onclick="setMediaReply('${c.id}')">Reply</button></div></div>${kids}</div>`;
+    };
+    let out=''; for(const c of (byParent.get('root')||[]))out+=await one(c); return out;
+  }
+
+  window.openMediaComments=async function(type,id){
+    mediaReplyParent=null;
+    const {data,error}=await sb.from('media_comments').select('*').eq('target_type',type).eq('target_id',id).order('created_at',{ascending:true});
+    if(error)return toast(error.message,'danger');
+    const list=await mediaCommentsHtml(data||[]);
+    modal('Comments',`<div id="mediaCommentsList">${list||'<div class="empty">No comments yet.</div>'}</div><form id="mediaCommentForm" class="commentForm"><div id="mediaReplyLabel" class="replyingTo hide"></div><input class="field" name="body" placeholder="Write a comment…" required><button class="btn small primary">Post</button></form>`);
+    $('#mediaCommentForm').onsubmit=async e=>{
+      e.preventDefault();const body=e.target.body.value.trim();if(!body)return;
+      const {error}=await sb.from('media_comments').insert({target_type:type,target_id:id,parent_id:mediaReplyParent,author_id:state.user.id,body});
+      if(error)return toast(error.message,'danger');
+      await openMediaComments(type,id);
+    };
+  };
+
+  window.renderVideoGrid=async function(root,arr){
+    if(!arr.length){root.innerHTML='<div class="card"><div class="empty">No videos yet.</div></div>';return}
+    let h='';
+    for(const v of arr){
+      const p=state.profiles.get(v.creator_id);
+      const u=v.source_type==='upload'&&v.storage_path?await signed('kinfolk-video',v.storage_path):v.video_url;
+      h+=`<div class="videoCard"><div class="videoThumb">${u?videoEmbed(u,v.source_type):'<span class="muted">No preview</span>'}</div><div class="videoMeta"><b>${esc(v.title)}</b><div class="muted" style="font-size:12px">${esc(p?.display_name||p?.username||'Creator')} · ${fmt(v.created_at)}</div></div><div class="videoCommentBar"><button class="btn small" onclick="openMediaComments('video','${v.id}')">◯ Comments & replies</button></div></div>`;
+    }
+    root.innerHTML=h;
+  };
+
+  window.viewAlbum=async function(id){
+    const [{data:album,error:e1},{data:photos,error:e2}]=await Promise.all([
+      sb.from('photo_albums').select('*').eq('id',id).single(),
+      sb.from('album_photos').select('*').eq('album_id',id).order('created_at',{ascending:true})
+    ]);
+    if(e1||e2)return toast((e1||e2).message,'danger');
+    modal(album.title,`<div class="muted" style="margin-bottom:10px">${esc(album.description||'')} · ${esc(album.visibility)}</div><div class="photoGrid" id="albumPhotoGrid"></div>${album.owner_id===state.user.id?`<div class="divider"></div><button class="btn primary full" onclick="addPhotosToAlbum('${id}')">＋ Add photos</button>`:''}`);
+    const root=$('#albumPhotoGrid');let h='';
+    for(const ph of photos||[]){
+      const u=await signed('kinfolk-media',ph.storage_path);
+      if(u)h+=`<div class="photoCommentWrap"><button class="photoTile" onclick="window.open('${esc(u)}','_blank')"><img src="${esc(u)}" loading="lazy"></button><button class="btn small" onclick="openMediaComments('photo','${ph.id}')">◯ Comments & replies</button></div>`;
+    }
+    root.innerHTML=h||'<div class="empty">No photos yet.</div>';
+  };
+
+  function runEnhancements(){
+    enhanceProfileForm();
+    enhanceOwnProfile();
+    applyProfileLayout();
+  }
+  new MutationObserver(runEnhancements).observe(document.documentElement,{childList:true,subtree:true});
+  runEnhancements();
+})();</script><script>
+(()=>{
+  let peopleSearchTimer=null;
+
+  async function discoverPeopleSecure(query='',limit=30){
+    const {data,error}=await sb.rpc('kinfolk_discover_people',{
+      p_query:(query||'').trim()||null,
+      p_limit:limit
+    });
+    if(error) throw error;
+    const rows=data||[];
+    rows.forEach(p=>state.profiles.set(p.id,p));
+    return rows;
+  }
+
+  function friendActionHtml(p){
+    if(p.friend_status==='accepted') return '<span class="muted">Friends</span>';
+    if(p.friend_status==='pending' && p.friend_direction==='outgoing') return '<span class="muted">Requested</span>';
+    if(p.friend_status==='pending' && p.friend_direction==='incoming'){
+      const req=state.friendRequests.find(r=>r.status==='pending'&&r.sender_id===p.id&&r.receiver_id===state.user.id);
+      return req
+        ? `<button class="btn small primary" onclick="acceptFriend('${req.id}')">Accept</button>`
+        : '<span class="muted">Respond</span>';
+    }
+    return `<button class="btn small" onclick="sendFriend('${p.id}')">Add friend</button>`;
+  }
+
+  async function renderSecurePeopleList(root,arr){
+    let h='';
+    for(const p of arr){
+      const av=await avatarHtml(p,'sm');
+      h+=`<div class="channelCard" style="grid-template-columns:42px 1fr auto">${av}<div class="clickable" onclick="openProfile('${p.id}')"><b>${esc(p.display_name||p.username)}</b><div class="muted">@${esc(p.username)}${p.is_private?' · 🔒 Private':''}</div>${p.bio?`<div class="muted" style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${esc(p.bio)}</div>`:''}</div>${friendActionHtml(p)}</div>`;
+    }
+    root.innerHTML=h||'<div class="empty">No people found.</div>';
+  }
+
+  window.renderPeopleList=renderSecurePeopleList;
+
+  window.renderPeople=async function(main){
+    await loadFriendRequests();
+    let people=[];
+    try{ people=await discoverPeopleSecure('',30); }
+    catch(err){ console.error(err); toast('People discovery could not load.','danger'); }
+
+    const pending=state.friendRequests.filter(r=>r.status==='pending'&&r.receiver_id===state.user.id);
+    main.innerHTML=`<div class="card"><div class="cardpad"><div class="sectionTitle">People & Friends</div><input class="field" id="peopleSearch" placeholder="Search people…"><div class="muted" style="font-size:12px;margin-top:6px">Searches the live Kinfolk community. Blocked accounts stay hidden.</div><div style="margin-top:12px"><b>Friend requests</b><div id="requestList"></div></div></div></div><div class="card"><div class="cardpad"><b>Discover people</b></div><div id="peopleList"></div></div>`;
+
+    await renderRequests($('#requestList'),pending);
+    await renderSecurePeopleList($('#peopleList'),people);
+
+    $('#peopleSearch').oninput=e=>{
+      clearTimeout(peopleSearchTimer);
+      const q=e.target.value.trim();
+      const root=$('#peopleList');
+      peopleSearchTimer=setTimeout(async()=>{
+        try{
+          root.innerHTML='<div class="empty">Searching…</div>';
+          const rows=await discoverPeopleSecure(q,30);
+          await renderSecurePeopleList(root,rows);
+        }catch(err){
+          console.error(err);
+          root.innerHTML='<div class="empty">Search unavailable. Try again.</div>';
+        }
+      },250);
+    };
+  };
+
+  window.openSearch=function(){
+    modal('Search Kinfolk',`<input class="field" id="globalSearch" placeholder="People or channels…" autofocus><div id="searchResults" style="margin-top:12px"></div>`);
+    const input=$('#globalSearch'),root=$('#searchResults');
+    input.oninput=e=>{
+      clearTimeout(peopleSearchTimer);
+      const q=e.target.value.trim();
+      if(!q){root.innerHTML='';return;}
+      peopleSearchTimer=setTimeout(async()=>{
+        root.innerHTML='<div class="muted" style="padding:10px 0">Searching…</div>';
+        try{
+          const people=await discoverPeopleSecure(q,12);
+          const ql=q.toLowerCase();
+          const channels=(state.channels||[]).filter(c=>((c.title||'')+' '+(c.slug||'')).toLowerCase().includes(ql)).slice(0,8);
+          let out='';
+          if(people.length){
+            out+='<div class="label">People</div>';
+            for(const p of people){
+              const av=await avatarHtml(p,'sm');
+              out+=`<div class="channelCard" style="grid-template-columns:42px 1fr auto">${av}<div class="clickable" onclick="closeModal();openProfile('${p.id}')"><b>${esc(p.display_name||p.username)}</b><div class="muted">@${esc(p.username)}${p.is_private?' · 🔒':''}</div></div>${friendActionHtml(p)}</div>`;
+            }
+          }
+          if(channels.length){
+            out+='<div class="label" style="margin-top:14px">Channels</div>';
+            out+=channels.map(c=>`<button class="sideitem" onclick="closeModal();openChannel('${c.id}')">▣ <b>${esc(c.title)}</b><span class="muted">${c.slug?'@'+esc(c.slug):''}</span></button>`).join('');
+          }
+          root.innerHTML=out||'<div class="empty">No matches.</div>';
+        }catch(err){
+          console.error(err);
+          root.innerHTML='<div class="empty">Search unavailable. Try again.</div>';
+        }
+      },250);
+    };
+  };
+})();
+</script><script>(()=>{
+  let channelMode='discover';
+  let reelMode='for_you';
+
+  async function fetchChannelDirectory(mode='discover'){
+    const {data,error}=await sb.rpc('kinfolk_channel_directory',{p_mode:mode,p_limit:60});
+    if(error) throw error;
+    return data||[];
+  }
+
+  loadChannels=async function(){
+    const {data,error}=await sb.rpc('kinfolk_channel_directory',{p_mode:'discover',p_limit:60});
+    if(error){
+      console.error('channel directory',error);
+      state.channels=[];
+      state.subscriptions.clear();
+      return;
+    }
+    state.channels=data||[];
+    await loadProfiles(state.channels.map(x=>x.owner_id));
+    state.subscriptions.clear();
+    for(const c of state.channels){
+      if(c.is_subscribed){
+        state.subscriptions.set(c.id,[{
+          channel_id:c.id,
+          user_id:state.user.id,
+          notify_level:'all'
+        }]);
+      }
+    }
+  };
+
+  renderChannelList=async function(root,arr){
+    if(!arr.length){
+      root.innerHTML='<div class="card"><div class="empty">No channels here yet.</div></div>';
+      return;
+    }
+    let h='<div class="card">';
+    for(const c of arr){
+      const av=c.avatar_url?await signed('kinfolk-media',c.avatar_url):null;
+      const count=Number(c.subscriber_count||0);
+      const isSub=!!c.is_subscribed || (state.subscriptions.get(c.id)||[]).some(s=>s.user_id===state.user.id);
+      h+=`<div class="channelCard">
+        <div>${av?`<img class="avatar" src="${esc(av)}">`:`<div class="avatar">${esc((c.title||'?')[0])}</div>`}</div>
+        <div class="clickable" onclick="openChannel('${c.id}')">
+          <b>${esc(c.title)}</b>
+          <div class="muted">${c.slug?'@'+esc(c.slug)+' · ':''}${count} subscriber${count===1?'':'s'} · ${esc(c.category||'creator')}</div>
+          <div class="muted" style="font-size:12px">${esc(c.description||'')}</div>
+        </div>
+        ${c.owner_id===state.user.id
+          ?`<button class="btn small" onclick="openChannel('${c.id}')">Manage</button>`
+          :`<button class="btn small ${isSub?'ghost':'primary'}" onclick="toggleSubscribe('${c.id}')">${isSub?'Subscribed':'Subscribe'}</button>`}
+      </div>`;
+    }
+    h+='</div>';
+    root.innerHTML=h;
+  };
+
+  renderChannels=async function(main){
+    const mine=state.channels.filter(c=>c.owner_id===state.user.id);
+    const subscribed=state.channels.filter(c=>c.is_subscribed || (state.subscriptions.get(c.id)||[]).some(s=>s.user_id===state.user.id));
+    main.innerHTML=`<div class="card"><div class="cardpad">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div>
+          <div class="sectionTitle" style="margin:0">Creator Channels</div>
+          <div class="muted">Build an audience beyond your personal profile.</div>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn primary" onclick="openChannelModal()">＋ Create channel</button>
+      </div>
+      <div class="chips" id="channelFilters" style="margin-top:14px">
+        <button class="chip ${channelMode==='discover'?'active':''}" onclick="channelFilter('discover',this)">Discover</button>
+        <button class="chip ${channelMode==='subscriptions'?'active':''}" onclick="channelFilter('subscriptions',this)">Subscriptions (${subscribed.length})</button>
+        <button class="chip ${channelMode==='mine'?'active':''}" onclick="channelFilter('mine',this)">My channels (${mine.length})</button>
+      </div>
+    </div></div><div id="channelBody"></div>`;
+    window.__channelSets={mine,subscribed};
+    await channelFilter(channelMode,document.querySelector(`#channelFilters .chip:nth-child(${channelMode==='discover'?1:channelMode==='subscriptions'?2:3})`));
+  };
+
+  channelFilter=async function(kind,btn){
+    channelMode=kind||'discover';
+    const root=$('#channelBody');
+    if(!root)return;
+    document.querySelectorAll('#channelFilters .chip').forEach(x=>x.classList.remove('active'));
+    if(btn)btn.classList.add('active');
+    if(kind==='mine') return renderChannelList(root,window.__channelSets?.mine||[]);
+    if(kind==='subscriptions') return renderChannelList(root,window.__channelSets?.subscribed||[]);
+    return renderChannelList(root,state.channels||[]);
+  };
+
+  toggleSubscribe=async function(cid){
+    const c=state.channels.find(x=>x.id===cid);
+    const is=!!c?.is_subscribed || (state.subscriptions.get(cid)||[]).some(s=>s.user_id===state.user.id);
+    const q=is
+      ?sb.from('kinfolk_channel_subscriptions').delete().eq('channel_id',cid).eq('user_id',state.user.id)
+      :sb.from('kinfolk_channel_subscriptions').insert({channel_id:cid,user_id:state.user.id,notify_level:'all'});
+    const {error}=await q;
+    if(error)return toast(error.message,'danger');
+    await loadChannels();
+    if(state.channelViewId===cid) await openChannel(cid);
+    else await renderApp();
+    toast(is?'Unsubscribed':'Subscribed','good');
+  };
+
+  async function renderReelFeed(root,arr){
+    if(!arr.length){
+      root.innerHTML=`<div class="card"><div class="empty">${reelMode==='subscriptions'?'No reels from your subscribed channels yet.':'No reels yet. Be the first to upload one.'}</div></div>`;
+      return;
+    }
+    let h='';
+    for(const v of arr){
+      const p=state.profiles.get(v.creator_id);
+      const c=v.channel_id?state.channels.find(x=>x.id===v.channel_id):null;
+      const u=v.source_type==='upload'&&v.storage_path?await signed('kinfolk-video',v.storage_path):v.video_url;
+      h+=`<div class="videoCard">
+        <div class="videoThumb">${u?videoEmbed(u,v.source_type):'<span class="muted">No preview</span>'}</div>
+        <div class="videoMeta">
+          <b>${esc(v.title||'Untitled reel')}</b>
+          <div class="muted" style="font-size:12px">${esc(p?.display_name||p?.username||'Creator')}${c?' · '+esc(c.title):''} · ${Number(v.view_count||0)} view${Number(v.view_count||0)===1?'':'s'} · ${fmt(v.created_at)}</div>
+          ${v.content_rating&&v.content_rating!=='general'?`<div class="muted" style="font-size:11px">Rating: ${esc(v.content_rating)}</div>`:''}
+        </div>
+        <div class="videoCommentBar"><button class="btn small" onclick="openMediaComments('video','${v.id}')">💬 Comments & replies</button></div>
+      </div>`;
+    }
+    root.innerHTML=h;
+  }
+
+  window.reelFilter=async function(kind,btn){
+    reelMode=kind||'for_you';
+    document.querySelectorAll('#reelFilters .chip').forEach(x=>x.classList.remove('active'));
+    if(btn)btn.classList.add('active');
+    const root=$('#reelGrid');
+    if(!root)return;
+    let reels=(state.videos||[]).filter(v=>['reel','short'].includes(v.kind));
+    if(reelMode==='subscriptions'){
+      const subIds=new Set((state.channels||[]).filter(c=>c.is_subscribed || (state.subscriptions.get(c.id)||[]).some(s=>s.user_id===state.user.id)).map(c=>c.id));
+      reels=reels.filter(v=>v.channel_id&&subIds.has(v.channel_id));
+    }
+    await renderReelFeed(root,reels);
+  };
+
+  renderReels=async function(main){
+    const subCount=(state.channels||[]).filter(c=>c.is_subscribed || (state.subscriptions.get(c.id)||[]).some(s=>s.user_id===state.user.id)).length;
+    main.innerHTML=`<div class="card"><div class="cardpad">
+      <div class="sectionTitle">Reels & Shorts</div>
+      <div class="chips" id="reelFilters">
+        <button class="chip ${reelMode==='for_you'?'active':''}" onclick="reelFilter('for_you',this)">For you</button>
+        <button class="chip ${reelMode==='subscriptions'?'active':''}" onclick="reelFilter('subscriptions',this)">Subscriptions${subCount?` (${subCount})`:''}</button>
+        <button class="btn small primary" style="margin-left:auto" onclick="openVideoModal()">＋ Upload</button>
+      </div>
+    </div></div><div class="videoGrid" id="reelGrid"></div>`;
+    await reelFilter(reelMode,document.querySelector(`#reelFilters .chip:nth-child(${reelMode==='for_you'?1:2})`));
+  };
+})();
+</script>
+<script src="/kinfolk-phase76.js"></script>
+<script src="/kinfolk-phase78.js"></script>
+<script src="/kinfolk-phase79.js"></script>
+<script src="/kinfolk-phase82.js"></script>
+<script src="/kinfolk-phase81.js"></script>
+<!-- Recovery129: superseded duplicate auth handler kinfolk-phase83.js -->
+<!-- Recovery129: superseded duplicate auth handler kinfolk-phase84.js -->
+<script src="/kinfolk-phase88.js"></script>
+<script src="/kinfolk-phase90.js"></script>
+<script src="/kinfolk-phase95.js"></script>
+<script src="/kinfolk-phase98.js"></script>
+<script src="/kinfolk-phase100.js"></script>
+<script src="/kinfolk-phase103.js"></script>
+<script src="/kinfolk-phase106.js"></script>
+<script src="/kinfolk-phase107.js"></script>
+<script src="/kinfolk-phase108.js"></script>
+<script src="/kinfolk-phase109.js"></script>
+<script src="/kinfolk-phase114.js"></script>
+<script src="/kinfolk-phase115.js"></script>
+<script src="/kinfolk-phase116.js"></script>
+<script src="/kinfolk-phase117.js"></script>
+<script src="/kinfolk-phase120.js"></script>
+<script src="/kinfolk-phase127.js"></script>
+<script src="/kinfolk-phase129.js"></script>
+</body>
+</html>

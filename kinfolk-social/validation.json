@@ -1,0 +1,28 @@
+{
+  "source_version": "Recovery133",
+  "based_on": "Recovery132",
+  "date": "2026-10-24",
+  "changes": [
+    "Single capture-phase signup handler",
+    "Strict age date validation",
+    "Avoid nonpublic localhost email callback in Capacitor"
+  ],
+  "javascript_syntax_passed": 27,
+  "native_package_prepare_web": "PASS: 22 local modules present",
+  "mocked_recovery129_regression": "PASS: original run + three repeated full passes after handler fix; final run after redirect change PASS",
+  "mocked_recovery133_signup_edge_tests": "PASS: underage -> adult, duplicate same-tick submissions, 13 boundary, >99 rejection, configurable HTTPS callback, no page errors",
+  "local_http_browser_smoke": "BLOCKED by Chromium administrator network policy (net::ERR_BLOCKED_BY_ADMINISTRATOR), not an app test result",
+  "native_android_ios_built": false,
+  "real_backend_auth_tested": false,
+  "physical_mobile_tested": false,
+  "preview_deployed": false,
+  "production_changed": false,
+  "latest_verified_main_app_preview": "dpl_9p5ymsbuxSbMMChtRobYYznRsxFD",
+  "github_branch_preview_docs_only": "dpl_8KEdPtM1bK9n3nu7MxSAQvVKPpSx",
+  "known_blockers": [
+    "Real Supabase auth, storage, messaging, backend RLS not tested",
+    "No native signed APK/AAB/IPA or device QA",
+    "Store adult content policy and legal compliance unresolved",
+    "App ID ownership and native email deep-link callback unverified"
+  ]
+}

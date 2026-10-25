@@ -1,0 +1,30 @@
+name: Kinfolk Social source checks
+on:
+  push:
+    branches:
+      - 'kinfolk-social/**'
+    paths:
+      - 'kinfolk-social/**'
+      - '.github/workflows/kinfolk-social-ci.yml'
+  pull_request:
+    paths:
+      - 'kinfolk-social/**'
+      - '.github/workflows/kinfolk-social-ci.yml'
+jobs:
+  syntax-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: |
+          for f in kinfolk-social/kinfolk-*.js kinfolk-social/service-worker.js; do node --check "$f"; done
+      - name: Prepare local native web assets
+        working-directory: kinfolk-social/native
+        run: npm run prepare:web
+      - name: Check packaged login and signup module
+        run: |
+          cmp kinfolk-social/kinfolk-phase79.js kinfolk-social/native/www/kinfolk-phase79.js
+          test -s kinfolk-social/native/www/index.html
