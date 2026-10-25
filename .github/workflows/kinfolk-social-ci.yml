@@ -82,6 +82,9 @@ jobs:
         run: node kinfolk-social/test_recovery171_playback_safety.js
       - name: Reels manual pause regression
         run: node kinfolk-social/test_recovery172_manual_pause.js
+      - name: Android and iOS Shorts viewport regressions (synthetic mobile only)
+        run: |
+          node --test kinfolk-social/tests/recovery195-shorts-mobile-layout.test.cjs kinfolk-social/tests/recovery199-mobile-viewport.test.cjs
       - name: Account-isolated content lane regression (synthetic only)
         run: node kinfolk-social/test_recovery173_content_isolation.js
       - name: JavaScript syntax
