@@ -20,3 +20,11 @@ Replace the fail-open `return true` in the missing-getSession branch with a fail
 - Inspected Library Recovery133 and Recovery175 continuation notes and the existing Recovery181 synthetic signup tests.
 - Latest Vercel deployment listing included READY isolated previews through Recovery204 predecessor branches; no Recovery205 deployment requested.
 - No live backend or physical-device tests; no deployment or store submission.
+
+## Committed review artifacts
+- Synthetic regression test: `tests/recovery205-signup-session-guard.test.cjs`, commit `ec779f962e5d375a53cd79bddfbe3d14c8ab128c`. It covers missing verification, matching account, switched account, and verification error. It is **not** wired into CI because the missing-verification scenario is expected to fail until the application fix is applied.
+- Minimal patch for review: `patches/recovery205-signup-fail-closed.diff`, commit `955e20f2e89c6d0ea370b9ff8da8d3a375c2ea00`. It has **not** been applied to the application.
+- The test source parsed successfully in a V8 JavaScript syntax check. A complete Node test run and GitHub Actions result have **not** been obtained.
+
+## Safe next action
+Apply the minimal patch only after an authorized code-write path is available. Run `node --test kinfolk-social/tests/recovery205-signup-session-guard.test.cjs` and the existing Recovery179–181 regression suites; add the test to CI only when green.
