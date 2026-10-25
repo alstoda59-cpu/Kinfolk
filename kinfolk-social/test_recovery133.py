@@ -44,6 +44,9 @@ with sync_playwright() as p:
     assert page.evaluate('window.__kfMock.signupCalls')==1
     assert page.evaluate('window.__signupArgs.options.emailRedirectTo === undefined')
     assert page.evaluate('window.__signupArgs.options.data.signup_birthdate')=='2000-01-01'
+    # Email confirmation is still pending; keep the submit control available.
+    assert page.locator('.kf73Primary').is_enabled()
+    assert page.locator('.kf73Primary').inner_text()=='Create account'
     print('PASS underage -> adult, one SDK call for two same-tick submits; no localhost redirect')
     # A configured verified HTTPS callback may be supplied later by native
     # build configuration. It is not set in production by this test.
