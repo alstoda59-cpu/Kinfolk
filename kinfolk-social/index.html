@@ -105,8 +105,15 @@ async function boot(){
   sb.auth.onAuthStateChange((event,session)=>{
     if(event==='SIGNED_OUT'){void kf129ActivateSession(null);return}
     if((event==='SIGNED_IN'||event==='USER_UPDATED')&&session?.user?.id){
-      // Supabase may deliver multiple events during one login; coalesce them.
-      if(kf129ReadyUid!==session.user.id||!document.querySelector('#main'))void kf129ActivateSession(session);
+      // Auth callbacks must not await Supabase APIs directly (auth lock deadlock).
+      // Defer validation so SIGNED_IN / USER_UPDATED cannot bypass Stay Logged In.
+      setTimeout(async()=>{
+        try{
+          const allowed=await kf129RestorableSession();
+          if(!allowed||allowed.user?.id!==session.user.id)return;
+          if(kf129ReadyUid!==allowed.user.id||!document.querySelector('#main'))await kf129ActivateSession(allowed);
+        }catch(error){kf129Error(error?.message||String(error))}
+      },0);
     }
   });
 }
