@@ -4,7 +4,9 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const source=fs.readFileSync('kinfolk-social/kinfolk-reels159.js','utf8');
 test('mobile Shorts uses a full-height snapping vertical feed',()=>{
- assert.match(source,/height:calc\(100dvh - 152px - env\(safe-area-inset-bottom,0px\)\)/);
+ assert.match(source,/height:var\(--kf159-viewport-height,calc\(100dvh - 152px - env\(safe-area-inset-bottom,0px\)\)\)/);
+ assert.match(source,/\.kf159-slide\{height:100%;min-height:0;background:#000\}/);
+ assert.match(source,/\.kf159-feed\{height:var\(--kf159-viewport-height,[^\n]*min-height:120px/);
  assert.match(source,/scroll-snap-type:y mandatory/);
  assert.match(source,/\.kf159-slide video\{width:100%;height:100%;object-fit:cover/);
 });
