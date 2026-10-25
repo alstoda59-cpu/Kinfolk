@@ -84,7 +84,7 @@
   if(!isCurrent())return;
   main.innerHTML=`<div class="kf159-top"><b>Reels & Shorts</b><button class="btn small" onclick="openVideoModal()">＋ Upload</button></div><div class="kf159-feed" id="kf159-feed" aria-label="Swipe up or down for reels">${cards.join('')}</div>`;
   const feed=main.querySelector('#kf159-feed');active.root=feed;
-  const updatePlayback=()=>{const root=feed.getBoundingClientRect();let winner=null,best=0;for(const slide of feed.querySelectorAll('.kf159-slide')){const rect=slide.getBoundingClientRect();const ratio=rect.height?Math.max(0,Math.min(rect.bottom,root.bottom)-Math.max(rect.top,root.top))/rect.height:0;if(ratio>best){best=ratio;winner=slide}}const v=best>=.65&&!document.hidden?winner?.querySelector('video'):null;pauseOthers(v);if(!v||active.pausedByUser.has(winner.dataset.id))return;if(v.paused)v.play().then(()=>{const icon=v.parentElement.querySelector('.kf159-playicon');if(icon)icon.textContent=''}).catch(()=>{})};
+  const updatePlayback=()=>{const root=feed.getBoundingClientRect();let winner=null,best=0;for(const slide of feed.querySelectorAll('.kf159-slide')){const rect=slide.getBoundingClientRect();const ratio=rect.height?Math.max(0,Math.min(rect.bottom,root.bottom)-Math.max(rect.top,root.top))/rect.height:0;if(ratio>best){best=ratio;winner=slide}}const v=best>=.65&&!document.hidden?winner?.querySelector('video'):null;if(!v){pauseOthers(null);return}pauseOthers(v);if(!v||active.pausedByUser.has(winner.dataset.id))return;if(v.paused)v.play().catch(()=>{})};
   if(typeof IntersectionObserver==='function'){
    const obs=new IntersectionObserver(updatePlayback,{root:feed,threshold:[0,.65,1]});
    active.observer=obs;feed.querySelectorAll('.kf159-slide').forEach(el=>obs.observe(el));
