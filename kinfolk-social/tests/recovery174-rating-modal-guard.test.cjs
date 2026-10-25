@@ -1,4 +1,4 @@
-// Recovery174: synthetic account-switch and modal replacement regression.
+// Recovery174: synthetic account-switch and modal replacement regression.\n// Requires execution in CI or a local Node runtime; a committed test is not a passing test.
 // Run: node kinfolk-social/tests/recovery174-rating-modal-guard.test.cjs
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
