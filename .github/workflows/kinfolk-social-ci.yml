@@ -47,6 +47,8 @@ jobs:
       - name: JavaScript syntax
         run: |
           for f in kinfolk-social/kinfolk-*.js kinfolk-social/service-worker.js; do node --check "$f"; done
+      - name: Native script detection regression
+        run: node kinfolk-social/test_native_script_detection.js
       - name: Prepare local native web assets
         working-directory: kinfolk-social/native
         run: npm run prepare:web
