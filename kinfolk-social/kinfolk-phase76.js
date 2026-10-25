@@ -942,6 +942,19 @@ setTimeout(harden,0);setTimeout(harden,700);setInterval(unlockStuck,1200);
     if(p&&b)b.onclick=()=>{const show=p.type==='password';p.type=show?'text':'password';b.textContent=show?'Hide':'Show'};
   }
 
+  // Recovery143: native Capacitor WebViews use a nonpublic https://localhost origin.
+  // Never send that origin as a recovery email callback. Until a verified HTTPS
+  // recovery link is allowlisted, let Supabase use its configured Site URL.
+  function passwordResetRedirectOptions(){
+    const configured=window.KINFOLK_PASSWORD_RESET_REDIRECT_URL;
+    try{
+      const target=new URL(configured||location.origin);
+      const host=target.hostname.toLowerCase();
+      if(target.protocol!=='https:'||host==='localhost'||host.endsWith('.localhost')||['127.0.0.1','0.0.0.0','[::1]'].includes(host))return {};
+      return {redirectTo:configured?target.href:target.origin};
+    }catch{return {}}
+  }
+
   function render(next='login'){
     mode=next==='signup'?'signup':'login';
     const root=shell();if(!root)return;
@@ -950,7 +963,7 @@ setTimeout(harden,0);setTimeout(harden,700);setInterval(unlockStuck,1200);
     if(mode==='login'){
       form.innerHTML=`<div class="kf73Title">Welcome back</div><div class="kf73Text">Log in to Kinfolk with the email and password already connected to your account.</div><label for="kf73Email">Email</label><input id="kf73Email" type="email" required autocomplete="email" inputmode="email" placeholder="Email address"><label for="kf73Password">Password</label><div class="kf73Password"><input id="kf73Password" type="password" required minlength="5" maxlength="12" autocomplete="current-password" placeholder="Password"><button class="kf73Show" type="button">Show</button></div><div class="kf73Meta"><label><input id="kf73Stay" type="checkbox"> Stay logged in</label><button type="button" class="kf73Forgot">Forgot password?</button></div><button type="submit" class="kf73Primary">Log in</button><div class="kf73Divider">or</div><button type="button" class="kf73Switch">Need an account? Join Kinfolk</button><div class="kf73Msg"></div><div class="kf73Help">Use the same email and password you used when you created your account.</div>`;
       form.querySelector('.kf73Switch').onclick=()=>render('signup');
-      form.querySelector('.kf73Forgot').onclick=async()=>{const email=form.querySelector('#kf73Email').value.trim();if(!email){msg(form,'Enter your email first.');form.querySelector('#kf73Email').focus();return}try{const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin});if(error)throw error;msg(form,'Password reset email sent.',true)}catch(e){msg(form,e.message||'Could not send reset email.')}};
+      form.querySelector('.kf73Forgot').onclick=async()=>{const email=form.querySelector('#kf73Email').value.trim();if(!email){msg(form,'Enter your email first.');form.querySelector('#kf73Email').focus();return}try{const {error}=await sb.auth.resetPasswordForEmail(email,passwordResetRedirectOptions());if(error)throw error;msg(form,'Password reset email sent.',true)}catch(e){msg(form,e.message||'Could not send reset email.')}};
     }else{
       form.innerHTML=`<div class="kf73Steps"><i class="on"></i><i class="on"></i><i></i></div><div class="kf73Title">Create your Kinfolk</div><div class="kf73Text">Start with your display name, email and a new password. You can finish customizing your profile after signup.</div><label for="kf73Name">Display name</label><input id="kf73Name" type="text" required maxlength="40" autocomplete="name" placeholder="Your display name"><label for="kf73Email">Email</label><input id="kf73Email" type="email" required autocomplete="email" inputmode="email" placeholder="Email address"><label for="kf73Password">New password</label><div class="kf73Password"><input id="kf73Password" type="password" required minlength="5" maxlength="12" autocomplete="new-password" placeholder="Create a password (5–12 characters)"><button class="kf73Show" type="button">Show</button></div><div class="kf73Meta"><label><input id="kf73Stay" type="checkbox"> Stay logged in</label></div><button type="submit" class="kf73Primary">Create account</button><div class="kf73Divider">or</div><button type="button" class="kf73Switch">Already have an account? Log in</button><div class="kf73Msg"></div><div class="kf73Help">By creating an account, you agree to Kinfolk’s community rules and privacy terms.</div>`;
       form.querySelector('.kf73Switch').onclick=()=>render('login');
