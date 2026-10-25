@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery179 (2026-10-25)
+
+Latest isolated checkpoint: [RECOVERY179.md](RECOVERY179.md). Fixed the one-tab session marker after **immediate-session signup with Stay Logged In unchecked**. The Recovery178 fix for unconfirmed signups remains intact. Five new synthetic checks passed against updated Phase79 source; a Node CI workflow and regression file were committed, but GitHub Actions execution is not yet confirmed. Isolated Vercel preview `dpl_4Y4W7VRxTEGpk6Tuzuj7g9NtV6zg` is READY; updated Phase79 was fetched over HTTP 200. No real backend or device tests. Production, Kinfolksworld and shared Supabase remain untouched.
+
 # Kinfolk Social | Recovery178 (2026-10-25)
 
 Latest isolated checkpoint: [RECOVERY178.md](RECOVERY178.md). Added a guarded **nonproduction Supabase authentication smoke harness** and offline tests for login, session refresh, logout, optional synthetic adult signup and live-project refusal. Also fixed signup so **Stay Logged In** is not saved before email confirmation creates a session, with new regression coverage. Prior Recovery174–177 features remain intact. **No real backend credentials were used, and no real backend/device tests passed in this checkpoint.** The shared live Supabase project, Kinfolksworld and production remain untouched.
