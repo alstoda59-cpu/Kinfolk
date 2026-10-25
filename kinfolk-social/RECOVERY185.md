@@ -22,7 +22,7 @@ Date: 2026-10-25. Scope: full main Kinfolk Social only. No Kinfolksworld, produc
 ## Verification
 - Fetched exact GitHub Phase95 script (blob c773c058ffabf97ff67b4cff8a98e8b2ece41268), Recovery182 runtime test (blob 25915d1408bd97ad0fabdcb047bdb493c2073ebb) and Recovery183 static test (blob a6f5bcaa42ea756da013c57e0e9250e9a31894a5).
 - Executed the actual committed test logic in an isolated JavaScript V8 harness with mocked node:test, node:assert/strict, node:fs and node:vm adapters. 13/13 offline runtime scenarios passed. Recovery183 source-order checks passed.
-- This is not Node 22 GitHub Actions, Playwright, real browser, real Supabase, or device QA. The existing Recovery182 workflow is scoped to its own branch and does not prove this branch's CI status.
+- This is not Node 22 GitHub Actions, Playwright, real browser, real Supabase, or device QA. Updated existing .github/workflows/kinfolk-recovery182-auth.yml to run on Recovery185 pushes, check both login test files and execute the Recovery179–183 offline suite. Workflow update commit e8da1005a22ddf879cfed3cd2dfb3bbc75cd74d5. GitHub Actions run outcome is not yet verified.
 - Vercel preview dpl_E1oAMPRxBG3X2erM7siHnAMEbajC is READY, target null, for commit b7a5dd51016263d45009ae05e743fe08321fe171. URL https://kinfolk-social-demo-ootw7lkyn-alstoda59-9779.vercel.app/ . READY does not prove login functionality.
 
 ## Blockers
@@ -33,3 +33,6 @@ Date: 2026-10-25. Scope: full main Kinfolk Social only. No Kinfolksworld, produc
 5. No production release without explicit approval.
 
 No new production aliases, schema changes, real-user actions, secrets, or payments.
+
+## Deployment after CI update
+Vercel combined commit status on e8da1005a22ddf879cfed3cd2dfb3bbc75cd74d5 reports build-rate-limit failure. This is a hosting limit, not a passing or failing app runtime test. Earlier Recovery185 preview dpl_E1oAMPRxBG3X2erM7siHnAMEbajC is READY and contains the same application source; newer documentation/workflow commits are not confirmed deployed.
