@@ -62,6 +62,8 @@ jobs:
         run: node kinfolk-social/test_recovery161_reels_controls.js
       - name: Reels visibility regression
         run: node kinfolk-social/test_recovery162_reels_visibility.js
+      - name: Reels foreground playback regression
+        run: node kinfolk-social/test_recovery163_foreground.js
       - name: JavaScript syntax
         run: |
           for f in kinfolk-social/kinfolk-*.js kinfolk-social/service-worker.js; do node --check "$f"; done
