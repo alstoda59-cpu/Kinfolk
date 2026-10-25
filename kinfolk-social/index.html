@@ -379,13 +379,15 @@ window.addEventListener('error',e=>{console.error(e.error||e.message)});window.a
     };
   };
 
+  // Keep the enhanced media-comment renderer while retaining every video action.
   window.renderVideoGrid=async function(root,arr){
     if(!arr.length){root.innerHTML='<div class="card"><div class="empty">No videos yet.</div></div>';return}
+    await loadVideoReactions();
     let h='';
     for(const v of arr){
       const p=state.profiles.get(v.creator_id);
       const u=v.source_type==='upload'&&v.storage_path?await signed('kinfolk-video',v.storage_path):v.video_url;
-      h+=`<div class="videoCard"><div class="videoThumb">${u?videoEmbed(u,v.source_type):'<span class="muted">No preview</span>'}</div><div class="videoMeta"><b>${esc(v.title)}</b><div class="muted" style="font-size:12px">${esc(p?.display_name||p?.username||'Creator')} · ${fmt(v.created_at)}</div></div><div class="videoCommentBar"><button class="btn small" onclick="openMediaComments('video','${v.id}')">◯ Comments & replies</button></div></div>`;
+      h+=`<div class="videoCard"><div class="videoThumb">${u?videoEmbed(u,v.source_type):'<span class="muted">No preview</span>'}</div><div class="videoMeta"><b>${esc(v.title)}</b><div class="muted" style="font-size:12px">${esc(p?.display_name||p?.username||'Creator')} · ${fmt(v.created_at)}</div>${videoReactionControls(v)}${videoExtraControls(v)}</div><div class="videoCommentBar"><button class="btn small" onclick="openMediaComments('video','${esc(v.id)}')">◯ Comments & replies</button></div></div>`;
     }
     root.innerHTML=h;
   };
