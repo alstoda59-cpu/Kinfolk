@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery187 (2026-10-25)
+
+Latest isolated checkpoint: [RECOVERY187.md](RECOVERY187.md). Phase95 login now checks form mode before intercepting submit, allowing the existing Phase79 signup handler to own reused signup forms; login stops competing same-element handlers. **3/3 new offline V8-adapter scenarios passed; Node CI, real backend/browser and devices remain unverified.** READY preview `dpl_CLB1pjPqFSphChK3SVR91yKpm8jL` includes the application fix. No production, Kinfolksworld or shared Supabase changes.
+
 # Kinfolk Social | Recovery186 (2026-10-25)
 
 Latest isolated checkpoint: [RECOVERY186.md](RECOVERY186.md). Password login now requires the identity in the password-token response to match the adopted Supabase session before account activation. **4/4 targeted offline V8 scenarios passed; new Node tests committed but CI execution, real backend and device tests remain unverified.** Preview `dpl_Cgj4an9DY756poAMiGggQjcDAxWR` READY, target null. No production, Kinfolksworld, or shared live Supabase changes.
