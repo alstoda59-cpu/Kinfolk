@@ -56,6 +56,31 @@ with sync_playwright() as p:
     page.locator('.kf73Forgot').click()
     page.wait_for_timeout(100)
     assert 'redirectTo' not in page.evaluate('window.__resetCalls.at(-1).options')
+    # Two rapid taps must not send two password-reset emails.
+    page.evaluate("""() => {
+        window.__resetCalls=[];
+        window.__kfMock.client.auth.resetPasswordForEmail=async (email,options)=>{
+            window.__resetCalls.push({email,options});
+            await new Promise(resolve=>setTimeout(resolve,180));
+            return {error:null};
+        };
+        document.querySelector('.kf73Forgot').click();
+        document.querySelector('.kf73Forgot').click();
+    }""")
+    page.wait_for_timeout(50)
+    assert page.locator('.kf73Forgot').is_disabled(),'reset button must be disabled while sending'
+    page.wait_for_timeout(220)
+    assert page.evaluate('window.__resetCalls.length')==1,'duplicate recovery requests'
+    assert page.locator('.kf73Forgot').is_enabled(),'reset button must unlock after response'
+
+    # An error must also restore the button for a retry.
+    page.evaluate("""() => {
+        window.__kfMock.client.auth.resetPasswordForEmail=async ()=>({error:{message:'Temporary recovery failure'}});
+    }""")
+    page.locator('.kf73Forgot').click()
+    page.wait_for_timeout(100)
+    assert page.locator('.kf73Forgot').is_enabled(),'reset button must unlock after failure'
+    assert 'Temporary recovery failure' in page.locator('.kf73Msg').inner_text()
     assert not errors,errors[:5]
     print('PASS password recovery missing-email gate, HTTPS callback, native localhost exclusion; no backend or email sent')
     browser.close()
