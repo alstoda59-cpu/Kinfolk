@@ -117,6 +117,9 @@
       if(error)throw error;
       if(data?.session)show(form,'Account created. Opening Kinfolk…',true);
       else show(form,'Account created. Check your email to confirm it, then log in.',true);
+      // Email-confirmation signups do not have a session yet. Keep the form
+      // usable so the member can correct an address or retry if necessary.
+      if(btn){btn.disabled=false;btn.textContent='Create account'};
     }catch(err){
       const raw=err?.message||String(err),low=raw.toLowerCase();
       let message=raw;
