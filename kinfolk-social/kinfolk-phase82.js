@@ -130,7 +130,18 @@
   };
 
   function ratingOptions(select,s){if(!select)return;const adult=s?.known&&s.userId===syncSafetyUser()&&s.adult&&!native;select.innerHTML=`<option value="general">General audience</option>${adult?'<option value="xxx">XXX · 18+ explicit</option>':''}`}
-  function refreshModalRatings(kind){refreshSafety(false).then(s=>{const x=document.getElementById(kind==='post'?'postRating':'videoRating');ratingOptions(x,s)})}
+  function refreshModalRatings(kind){
+    const userId=syncSafetyUser();
+    const elementId=kind==='post'?'postRating':'videoRating';
+    const original=document.getElementById(elementId);
+    refreshSafety(false).then(s=>{
+      // Ignore stale responses when accounts or modal instances change.
+      if(!userId||syncSafetyUser()!==userId)return;
+      const current=document.getElementById(elementId);
+      if(!current||current!==original)return;
+      ratingOptions(current,s);
+    }).catch(e=>console.warn('Kinfolk rating options refresh',e));
+  }
   if(typeof basePost==='function')window.openPostModal=(photo=false)=>{const r=basePost(photo);setTimeout(()=>{ratingOptions(document.getElementById('postRating'),safetyCache);refreshModalRatings('post')},0);return r};
   if(typeof baseVideo==='function')window.openVideoModal=()=>{const r=baseVideo();setTimeout(()=>{ratingOptions(document.getElementById('videoRating'),safetyCache);refreshModalRatings('video')},0);return r};
 
