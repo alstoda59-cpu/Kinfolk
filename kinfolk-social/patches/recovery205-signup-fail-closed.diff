@@ -1,5 +1,11 @@
 --- a/kinfolk-social/kinfolk-phase79.js
 +++ b/kinfolk-social/kinfolk-phase79.js
-@@
+@@ -60,7 +60,7 @@
+ 
+   // Ignore signup results after a different account has become active.
+   async function signupSessionIsCurrent(session){
 -    if(typeof sb?.auth?.getSession!=='function')return true;
 +    if(typeof sb==='undefined'||typeof sb?.auth?.getSession!=='function')throw new Error('Kinfolk could not verify the signup session. Sign in again to set Stay Logged In.');
+     const expected=session?.user?.id;
+     if(!expected)return false;
+     const {data,error}=await sb.auth.getSession();
