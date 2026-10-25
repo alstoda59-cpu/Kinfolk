@@ -11,6 +11,7 @@ for(const name of await readdir(source)) {
     await cp(path.join(source,name),path.join(destination,name));
 }
 const html=await readFile(path.join(destination,'index.html'),'utf8');
+if(/<script[^>]+src=["']https?:\/\//i.test(html))console.warn('External scripts found; verify offline/native startup behavior');
 const localScripts=[...html.matchAll(/<script\s+src="(\/kinfolk-[^"]+\.js)"/g)].map(match=>match[1]);
 for(const script of localScripts){
   const target=path.join(destination,script.slice(1));
