@@ -22,6 +22,8 @@
  const active={observer:null,root:null,pausedByUser:new Set()};
  window.kf161ToggleSound=function(id){const v=document.getElementById('kf159-video-'+id);if(!v)return;v.muted=!v.muted;const slide=v.closest('.kf159-slide');const b=[...slide.querySelectorAll('.kf159-actions button')].find(x=>x.textContent.includes('Sound')||x.textContent.includes('Mute'));if(b)b.innerHTML=v.muted?'<span>🔇</span>Sound':'<span>🔊</span>Mute'};
  function teardown(){active.observer?.disconnect();active.root?.querySelectorAll('video').forEach(v=>v.pause());active.observer=null;active.root=null}
+ window.kf159StopReels=teardown;
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)active.root?.querySelectorAll('video').forEach(v=>v.pause())});
  function pauseOthers(current){document.querySelectorAll('.kf159-slide video').forEach(v=>{if(v!==current)v.pause()})}
  function tap(id){const v=document.getElementById('kf159-video-'+id);if(!v)return;const icon=v.parentElement.querySelector('.kf159-playicon');if(v.paused){active.pausedByUser.delete(id);pauseOthers(v);v.play().then(()=>{if(icon)icon.textContent='' }).catch(()=>{if(icon)icon.textContent='▶'})}else{active.pausedByUser.add(id);v.pause();if(icon)icon.textContent='▶'}}
  window.kf159TogglePlayback=tap;
@@ -58,7 +60,7 @@
   const feed=main.querySelector('#kf159-feed');active.root=feed;
   // Sync button labels after reaction writes and Save toggles without resetting playback.
   feed.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const slide=b.closest('.kf159-slide');if(!slide)return;if(b.textContent.includes('Save'))queueMicrotask(()=>{const saved=savedKinfolkVideoIds().includes(slide.dataset.id);b.innerHTML=saved?'<span>✓</span>Saved':'<span>▢</span>Save'})});
-  const obs=new IntersectionObserver(entries=>{for(const entry of entries){const v=entry.target.querySelector('video');if(!v)continue;if(entry.isIntersecting&&entry.intersectionRatio>=.65){pauseOthers(v);if(active.pausedByUser.has(entry.target.dataset.id))continue;v.play().then(()=>{const icon=v.parentElement.querySelector('.kf159-playicon');if(icon)icon.textContent=''}).catch(()=>{})}else v.pause()}},{root:feed,threshold:[0,.65,1]});
+  const obs=new IntersectionObserver(entries=>{for(const entry of entries){const v=entry.target.querySelector('video');if(!v)continue;if(entry.isIntersecting&&entry.intersectionRatio>=.65){pauseOthers(v);if(document.hidden||active.pausedByUser.has(entry.target.dataset.id))continue;v.play().then(()=>{const icon=v.parentElement.querySelector('.kf159-playicon');if(icon)icon.textContent=''}).catch(()=>{})}else v.pause()}},{root:feed,threshold:[0,.65,1]});
   active.observer=obs;feed.querySelectorAll('.kf159-slide').forEach(el=>obs.observe(el));
   feed.addEventListener('keydown',e=>{if(e.key!=='ArrowDown'&&e.key!=='ArrowUp')return;e.preventDefault();feed.scrollBy({top:(e.key==='ArrowDown'?1:-1)*feed.clientHeight,behavior:'smooth'})});
   feed.tabIndex=0;
