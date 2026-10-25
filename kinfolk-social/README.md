@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery182 (2026-10-25)
+
+Latest isolated checkpoint: [RECOVERY182.md](RECOVERY182.md). Phase95 login now refuses to activate a session belonging to another account or an unverified session, with pre/post password-request account checks and preference rollback on mismatch. **7/7 new synthetic V8 regression scenarios passed; GitHub Actions Node, real browser/backend and physical devices remain unverified.** Isolated preview `dpl_HrpVZgiFix1RFJZWVSpAiNU5nycP` is READY, target null, and served the updated Phase95 script over HTTP 200. No production, Kinfolksworld or shared live Supabase changes.
+
 # Kinfolk Social | Recovery181 (2026-10-25)
 
 Current isolated checkpoint: [RECOVERY181.md](RECOVERY181.md). Signup now rejects delayed responses from another active account before saving Stay Logged In preferences, rechecks account ownership before local sign-out after storage failure, and warns when sign-out itself fails. **14/14 synthetic V8-harness scenarios passed across Recovery179–181; GitHub Actions Node results, real Supabase, rendered browser and devices remain unverified.** Isolated preview `dpl_6xWXjoYwfY7mPSF56EJzSeq2mXwD` is READY (target null) and served the updated Phase79 script over HTTP 200. Production, Kinfolksworld and shared live Supabase remain untouched.
