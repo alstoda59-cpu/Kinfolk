@@ -81,17 +81,17 @@
   }
 
   if(typeof baseHome==='function')window.renderHome=async main=>{
-    syncSafetyUser();
+    const userId=syncSafetyUser();
     const all=Array.isArray(state.feed)?state.feed:[];
     const permitted=lane==='xxx'?(safetyCache.adult&&safetyCache.allow&&!native?all.filter(chosen):all.filter(generalOnly)):all.filter(generalOnly);
     state.feed=permitted;
-    try{await baseHome(main)}catch(e){renderHomeFallback(main,permitted,e)}finally{state.feed=all}
+    try{await baseHome(main)}catch(e){if(state?.user?.id===userId&&state.view==='home')renderHomeFallback(main,permitted,e)}finally{if(state.feed===permitted)state.feed=state?.user?.id===userId?all:[]}
     addBar(main,'home');
     refreshSafety(false);
   };
 
   if(typeof baseReels==='function')window.renderReels=async main=>{
-    syncSafetyUser();
+    const userId=syncSafetyUser();
     const all=Array.isArray(state.videos)?state.videos:[];
     if(lane==='xxx'&&safetyCache.known&&safetyCache.adult&&!safetyCache.allow&&!native){
       main.innerHTML=`<div class="card"><div class="kf82gate"><b>XXX content is off</b><p>Enable the adult filter to open this separate video lane.</p><button class="btn primary" type="button" onclick="kf82Enable(this)">Enable XXX content</button></div></div>`;
@@ -99,7 +99,7 @@
     }
     const permitted=lane==='xxx'?(safetyCache.adult&&safetyCache.allow&&!native?all.filter(chosen):[]):all.filter(generalOnly);
     state.videos=permitted;
-    try{await baseReels(main)}catch(e){renderReelsFallback(main,permitted,e)}finally{state.videos=all}
+    try{await baseReels(main)}catch(e){if(state?.user?.id===userId&&state.view==='reels')renderReelsFallback(main,permitted,e)}finally{if(state.videos===permitted)state.videos=state?.user?.id===userId?all:[]}
     addBar(main,'reels');
     refreshSafety(false);
   };
@@ -110,8 +110,9 @@
       try{await renderApp()}catch(e){console.warn('Kinfolk General render',e)}
       return;
     }
+    const userId=syncSafetyUser();
     const s=await refreshSafety(true);
-    if(native||!s.adult)return toast?.('XXX content is for adult web accounts only.','danger');
+    if(!userId||syncSafetyUser()!==userId||native||!s.adult)return toast?.('XXX content is for adult web accounts only.','danger');
     lane='xxx';try{localStorage.setItem(KEY,lane)}catch{}
     try{await renderApp()}catch(e){console.warn('Kinfolk adult lane render',e)}
   };
