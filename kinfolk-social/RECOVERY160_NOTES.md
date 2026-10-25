@@ -1,0 +1,5 @@
+# Recovery160 immersive Reels playback follow-up
+
+Based on Recovery159. Reviewed GitHub source and prior Recovery159 notes. Fixed three issues in kinfolk-reels159.js: (1) right action rail z-index above transparent tap layer so controls remain clickable; (2) manual pause recorded per video ID, so IntersectionObserver does not immediately restart manually paused video; (3) teardown pauses video elements before removing observer, preventing playback leaking across re-render. Commit 36df6b1b5046c67e188250a5464e160f6dc4f2ef. JavaScript syntax passed isolated V8 new Function. Regression file test_recovery160_reels_lifecycle.js commit 57fb6e30 and CI wiring 720f3a6d. Full CI/browser/device testing not verified.
+
+Attempted isolated Vercel preview on Recovery160 commit 720f3a6d. API returned 402 payment_required api-deployments-free-per-day, retry after 86400 seconds. No new deployment ID or URL; do not claim older Recovery158 preview contains Recovery159/160 features. No CLI fallback available. No production, Kinfolksworld or shared Supabase changes.
