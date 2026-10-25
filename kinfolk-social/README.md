@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery178 (2026-10-25)
+
+Latest isolated checkpoint: [RECOVERY178.md](RECOVERY178.md). Added a guarded **nonproduction Supabase authentication smoke harness** and offline tests for login, session refresh, logout, optional synthetic adult signup and live-project refusal. The app source and prior Recovery174–177 changes remain intact. **No real backend credentials were used, and no real backend/device tests passed in this checkpoint.** The shared live Supabase project, Kinfolksworld and production remain untouched.
+
 # Kinfolk Social | Recovery177 (2026-10-25)
 
 Latest isolated development checkpoint: [`RECOVERY177.md`](RECOVERY177.md). The existing login form cleanup now uses event-driven observation plus a 2-second foreground-only fallback instead of an 80ms background poll. Five synthetic checks passed against committed source; real backend, GitHub Actions Node results and device QA remain pending. Recovery176 appearance, Recovery175 music and Recovery174 safety protections are preserved. Production and Kinfolksworld are excluded.
@@ -22,7 +26,7 @@ Incremental repair based on Recovery132. Preserves full main app, dark mobile UI
 - No production or shared backend changes. No Recovery133 preview deployment as of this source checkpoint.
 
 ## GitHub coordination
-The full main Kinfolk Social source was imported to `alstoda59-cpu/Kinfolk` on `kinfolk-social/recovery132-integration` at commit `27a1c2253222029aaa578da1637da59194a56347`. The current isolated work is on `kinfolk-social/recovery176-appearance-account-guards`. Do not merge to main or promote a preview without approval. See `INTEGRATION.md` for the original Recovery133 import and `RECOVERY176.md` for current evidence.
+The full main Kinfolk Social source was imported to `alstoda59-cpu/Kinfolk` on `kinfolk-social/recovery132-integration` at commit `27a1c2253222029aaa578da1637da59194a56347`. The current isolated work is on `kinfolk-social/recovery178-isolated-auth-smoke`. Do not merge to main or promote a preview without approval. See `INTEGRATION.md` for the original Recovery133 import and `RECOVERY178.md` for current evidence.
 
 ## Next
-Verify the Recovery176 GitHub Actions run, then test real nonproduction auth/session, teen authorization, media, messaging and Android/iOS native builds. The latest branch preview is not evidence of end-to-end functionality.
+Verify the Recovery178 GitHub Actions run, then test real nonproduction auth/session, teen authorization, media, messaging and Android/iOS native builds. The latest branch preview is not evidence of end-to-end functionality.
