@@ -40,6 +40,10 @@ jobs:
         run: |
           node kinfolk-social/test_recovery150_auth_event.js
           node kinfolk-social/test_recovery151_auth_preference.js
+      - name: Login preference storage regressions (synthetic only)
+        run: |
+          node kinfolk-social/test_recovery152_storage.js
+          node kinfolk-social/test_recovery153_rollback.js
       - name: JavaScript syntax
         run: |
           for f in kinfolk-social/kinfolk-*.js kinfolk-social/service-worker.js; do node --check "$f"; done
