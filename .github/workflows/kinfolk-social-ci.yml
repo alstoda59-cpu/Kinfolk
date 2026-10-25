@@ -34,6 +34,8 @@ jobs:
           python test_recovery143.py
       - name: Offline reaction regression (no live Supabase)
         run: node kinfolk-social/test_recovery148_reactions.js
+      - name: Offline session restoration regression (no live Supabase)
+        run: node kinfolk-social/test_recovery149_session_retry.js
       - name: JavaScript syntax
         run: |
           for f in kinfolk-social/kinfolk-*.js kinfolk-social/service-worker.js; do node --check "$f"; done
