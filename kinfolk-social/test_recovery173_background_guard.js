@@ -1,0 +1,1 @@
+const fs=require('node:fs'),assert=require('node:assert/strict');const s=fs.readFileSync(__dirname+'/kinfolk-reels159.js','utf8');new Function(s);assert.ok(s.includes("if(document.hidden||active.root!==feed||state.view!=='reels'){e.target.pause();return}"));assert.ok(s.includes("feed.addEventListener('play'"));console.log('Recovery173 background playback guard checks passed');
