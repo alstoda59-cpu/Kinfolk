@@ -14,12 +14,13 @@
   document.head.appendChild(style);
 
   async function loadOwnAppearance(){
-    if(typeof sb==='undefined'||!state?.user?.id)return{profile:{},extra:{}};
+    if(typeof sb==='undefined'||!state?.user?.id)return null;
     const uid=state.user.id;
     const profile=state.profile||state.profiles?.get?.(uid)||{};
     let extra={};
     try{extra=(await sb.from('kinfolk_profile_extras').select('music_url').eq('user_id',uid).maybeSingle()).data||{}}catch{}
-    return{profile,extra};
+    if(state?.user?.id!==uid)return null;
+    return{profile,extra,userId:uid};
   }
 
   function setMsg(card,text,good=false){
@@ -31,11 +32,13 @@
     const picker=$q('.kf81Color',card),text=$q('.kf81ColorText',card),btn=$q('[data-kf81-save-color]',card);
     const color=(text?.value||picker?.value||'').trim();
     if(!hexOk(color))return setMsg(card,'Choose a valid 6-digit color, for example #e85a9b.');
-    if(!state?.user?.id)return setMsg(card,'Log in before saving your color.');
+    const uid=state?.user?.id;
+    if(!uid)return setMsg(card,'Log in before saving your color.');
     btn.disabled=true;btn.textContent='Saving color…';
     try{
-      const {data,error}=await sb.from('profiles').update({accent_color:color}).eq('id',state.user.id).select().single();
+      const {data,error}=await sb.from('profiles').update({accent_color:color}).eq('id',uid).select().single();
       if(error)throw error;
+      if(state?.user?.id!==uid)return;
       state.profile=data;state.profiles?.set?.(data.id,data);
       window.applyKinfolkTheme?.(color);
       document.documentElement.style.setProperty('--accent',color);
@@ -43,28 +46,30 @@
       setMsg(card,'Color saved to your profile.',true);
       btn.textContent='Saved ✓';
       setTimeout(()=>{btn.disabled=false;btn.textContent='Save color'},900);
-    }catch(e){btn.disabled=false;btn.textContent='Save color';setMsg(card,e.message||'Color could not be saved.');}
+    }catch(e){if(state?.user?.id===uid)setMsg(card,e.message||'Color could not be saved.');}finally{btn.disabled=false;btn.textContent='Save color';}
   }
 
   async function saveMusic(card){
     const input=$q('.kf81MusicUrl',card),btn=$q('[data-kf81-save-music]',card),url=(input?.value||'').trim();
     if(url&&!/^https:\/\//i.test(url))return setMsg(card,'Use a full https:// music or YouTube link.');
-    if(!state?.user?.id)return setMsg(card,'Log in before saving profile music.');
+    const uid=state?.user?.id;
+    if(!uid)return setMsg(card,'Log in before saving profile music.');
     btn.disabled=true;btn.textContent='Saving music…';
     try{
       const now=new Date().toISOString();
       const [a,b]=await Promise.all([
-        sb.from('kinfolk_profile_extras').upsert({user_id:state.user.id,music_url:url||null,updated_at:now},{onConflict:'user_id'}),
-        sb.from('profiles').update({profile_music_url:url||null}).eq('id',state.user.id).select().single()
+        sb.from('kinfolk_profile_extras').upsert({user_id:uid,music_url:url||null,updated_at:now},{onConflict:'user_id'}),
+        sb.from('profiles').update({profile_music_url:url||null}).eq('id',uid).select().single()
       ]);
       const er=a.error||b.error;if(er)throw er;
+      if(state?.user?.id!==uid)return;
       state.profile=b.data;state.profiles?.set?.(b.data.id,b.data);
       setMsg(card,url?'Profile music saved. Opening your profile will try to play it automatically.':'Profile music removed.',true);
       btn.textContent='Saved ✓';
       stopMusic();
-      if(state.view==='profile')setTimeout(()=>ensureMusic(true),80);
+      if(state.view==='profile')setTimeout(()=>{if(state?.user?.id===uid&&state.view==='profile')ensureMusic(true)},80);
       setTimeout(()=>{btn.disabled=false;btn.textContent='Save music'},900);
-    }catch(e){btn.disabled=false;btn.textContent='Save music';setMsg(card,e.message||'Music could not be saved.');}
+    }catch(e){if(state?.user?.id===uid)setMsg(card,e.message||'Music could not be saved.');}finally{btn.disabled=false;btn.textContent='Save music';}
   }
 
   async function mountAppearance(){
@@ -72,8 +77,9 @@
     if(!sheet||sheet.querySelector('.kf81Card'))return;
     const safetyBox=document.getElementById('kf78-safety');
     if(!safetyBox)return;
-    const {profile,extra}=await loadOwnAppearance();
-    if(!document.getElementById('kf78-sheet')||sheet.querySelector('.kf81Card'))return;
+    const loaded=await loadOwnAppearance();
+    if(!loaded||state?.user?.id!==loaded.userId||document.getElementById('kf78-sheet')!==sheet||sheet.querySelector('.kf81Card'))return;
+    const {profile,extra}=loaded;
     const card=document.createElement('section');card.className='kf81Card';
     const color=hexOk(profile.accent_color)?profile.accent_color:'#e85a9b';
     const music=extra.music_url||profile.profile_music_url||'';
@@ -91,8 +97,9 @@
     const text=document.getElementById('kfsAccentText'),picker=document.getElementById('kfsAccent');
     const color=(text?.value||picker?.value||'').trim();
     if(!hexOk(color))return;
-    sb.from('profiles').update({accent_color:color}).eq('id',state.user.id).select().single().then(({data,error})=>{
-      if(error||!data)return;
+    const uid=state.user.id;
+    sb.from('profiles').update({accent_color:color}).eq('id',uid).select().single().then(({data,error})=>{
+      if(error||!data||state?.user?.id!==uid)return;
       state.profile=data;state.profiles?.set?.(data.id,data);window.applyKinfolkTheme?.(color);
     }).catch(()=>{});
   },true);
@@ -129,7 +136,7 @@
         if(data?.music_url)url=data.music_url;
         if(url&&p?.profile_music_url!==url){
           const {data:updated}=await sb.from('profiles').update({profile_music_url:url}).eq('id',uid).select().single();
-          if(updated){state.profile=updated;state.profiles?.set?.(uid,updated)}
+          if(updated&&state?.user?.id===uid&&state.view==='profile'&&(state.profileViewId||uid)===uid){state.profile=updated;state.profiles?.set?.(uid,updated)}
         }
       }catch{}
     }
