@@ -10,7 +10,7 @@ fixture=(P/'test_recovery129.py').read_text().split('with sync_playwright() as p
 ns={'__file__':str(P/'test_recovery129.py')}
 exec(compile(fixture,str(P/'test_recovery129.py'),'exec'),ns)
 with sync_playwright() as p:
-    browser=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox','--disable-dev-shm-usage'])
+    browser=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium' if Path('/usr/bin/chromium').exists() else None,args=['--no-sandbox','--disable-dev-shm-usage'])
     page=browser.new_page(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
     errors=[]
     page.on('pageerror',lambda err:errors.append(str(err)))
