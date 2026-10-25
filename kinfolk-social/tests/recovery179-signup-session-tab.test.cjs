@@ -39,7 +39,7 @@ function fixture({ stay = false, session = true, error = null } = {}) {
   const context = {
     window: {}, document, sb, URL, Date,
     location: { origin: 'https://isolated-qa.supabase.co' },
-    localStorage: { setItem(key, value) { localWrites.push([key, value]); } },
+    localStorage: { getItem() { return null; }, removeItem() {}, setItem(key, value) { localWrites.push([key, value]); } },
     sessionStorage: {
       setItem(key, value) { tabWrites.push(['set', key, value]); },
       removeItem(key) { tabWrites.push(['remove', key]); },
