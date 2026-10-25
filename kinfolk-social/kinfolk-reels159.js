@@ -72,7 +72,9 @@
   const cards=[];
   for(const v of reels){
    const p=state.profiles.get(v.creator_id);
-   const url=v.source_type==='upload'&&v.storage_path?await signed('kinfolk-video',v.storage_path):v.video_url;
+   const rawUrl=v.source_type==='upload'&&v.storage_path?await signed('kinfolk-video',v.storage_path):v.video_url;
+   // External media and storage URLs must be navigable web URLs, never executable schemes.
+   const url=typeof rawUrl==='string'&&/^https?:\/\//i.test(rawUrl)?rawUrl:'';
    if(!isCurrent())return;
    const isNative=!!url&&(v.source_type==='upload'||(!url.includes('youtube.com')&&!url.includes('youtu.be')&&['.mp4','.webm','.ogg'].some(ext=>url.split('?')[0].toLowerCase().endsWith(ext))));
    const rows=videoReactionState.rows.filter(r=>r.video_id===v.id);
@@ -80,18 +82,20 @@
    const mine=rows.find(r=>r.user_id===state.user?.id)?.reaction;
    const disabled=videoReactionState.available?'':' disabled title="Reactions require backend activation"';
    const id=esc(v.id);
+   // Encode arguments as JavaScript strings, then HTML-escape the entire handler attribute.
+   const jsCall=(fn,...args)=>esc(fn+'('+args.map(x=>JSON.stringify(String(x))).join(',')+')');
    const button=(symbol,label,fn,attr='')=>`<button type="button" ${attr} onclick="${fn}"><span>${symbol}</span>${label}</button>`;
    const actions=[
-    button('♡','Like '+likes,`toggleVideoReaction('${id}','like')`,`aria-pressed="${mine==='like'}"${disabled}`),
-    button('👎','Dislike '+dislikes,`toggleVideoReaction('${id}','dislike')`,`aria-pressed="${mine==='dislike'}"${disabled}`),
-    button('☰','Comments',`openMediaComments('video','${id}')`),
-    button('↗','Share',`shareKinfolkVideo('${id}')`),
-    button('⟳','Remix',`remixKinfolkVideo('${id}')`),
-    button('▢','Save',`saveKinfolkVideo('${id}')`,`aria-pressed="${savedKinfolkVideoIds().includes(v.id)}"`),
-    button('↓','Download',`downloadKinfolkVideo('${id}')`),
-    button('🔇','Sound',`kf161ToggleSound('${id}')`)
+    button('♡','Like '+likes,jsCall('toggleVideoReaction',v.id,'like'),`aria-pressed="${mine==='like'}"${disabled}`),
+    button('👎','Dislike '+dislikes,jsCall('toggleVideoReaction',v.id,'dislike'),`aria-pressed="${mine==='dislike'}"${disabled}`),
+    button('☰','Comments',jsCall('openMediaComments','video',v.id)),
+    button('↗','Share',jsCall('shareKinfolkVideo',v.id)),
+    button('⟳','Remix',jsCall('remixKinfolkVideo',v.id)),
+    button('▢','Save',jsCall('saveKinfolkVideo',v.id),`aria-pressed="${savedKinfolkVideoIds().includes(v.id)}"`),
+    button('↓','Download',jsCall('downloadKinfolkVideo',v.id)),
+    button('🔇','Sound',jsCall('kf161ToggleSound',v.id))
    ].join('');
-   const media=isNative?`<video id="kf159-video-${id}" src="${esc(url)}" playsinline muted loop preload="metadata"></video><button class="kf159-tap" type="button" aria-label="Play or pause reel" onclick="kf159TogglePlayback('${id}')"></button><div class="kf159-playicon">▶</div>`:`<div style="padding:25px;text-align:center">${url?`<a href="${esc(url)}" target="_blank" rel="noopener" class="btn">Open external video</a>`:'Video unavailable'}<p class="muted">External videos open in their original player.</p></div>`;
+   const media=isNative?`<video id="kf159-video-${id}" src="${esc(url)}" playsinline muted loop preload="metadata"></video><button class="kf159-tap" type="button" aria-label="Play or pause reel" onclick="${jsCall('kf159TogglePlayback',v.id)}"></button><div class="kf159-playicon">▶</div>`:`<div style="padding:25px;text-align:center">${url?`<a href="${esc(url)}" target="_blank" rel="noopener" class="btn">Open external video</a>`:'Video unavailable'}<p class="muted">External videos open in their original player.</p></div>`;
    cards.push(`<section class="kf159-slide" data-id="${id}" aria-label="Reel: ${esc(v.title||'Untitled')}">${media}<div class="kf159-overlay"><div class="kf159-info"><b>${esc(p?.display_name||p?.username||'Creator')}</b><p>${esc(v.title||'')}</p></div><div class="kf159-actions">${actions}</div></div></section>`);
   }
   if(!isCurrent())return;
