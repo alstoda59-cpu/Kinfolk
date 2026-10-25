@@ -124,3 +124,27 @@ test('iOS visual viewport never extends below the browser window',async()=>{
   f.emit('visualViewport','resize');
   assert.equal(f.writes.at(-1),'660px','viewport must be capped at window.innerHeight');
 });
+
+test('rapid Reels rerender does not accumulate active viewport resize handlers',async()=>{
+  const f=fixture(true);
+  await f.render();
+  await f.render();
+  const before=f.writes.length;
+  f.window.visualViewport.height=500;
+  f.emit('visualViewport','resize');
+  assert.equal(f.writes.length,before+1,'only the latest Reels viewport handler should run');
+  assert.equal(f.writes.at(-1),'380px');
+});
+
+test('Shorts viewport respects a bottom navigation that moves during rotation',async()=>{
+  const f=fixture(false);
+  await f.render();
+  f.window.innerHeight=500;
+  f.setNavTop(430);
+  f.emit('window','resize');
+  assert.equal(f.writes.at(-1),'310px');
+  f.window.innerHeight=780;
+  f.setNavTop(710);
+  f.emit('window','resize');
+  assert.equal(f.writes.at(-1),'590px');
+});
