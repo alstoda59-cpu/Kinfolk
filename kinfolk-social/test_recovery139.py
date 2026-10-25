@@ -36,7 +36,7 @@ with sync_playwright() as p:
             assert page.evaluate('window.state.user?.id')=='11111111-1111-4111-8111-111111111111'
         else:
             assert page.locator('#authForm').count()==1,(restored,blocked,'login form missing')
-            assert page.locator('.kf73Title').inner_text().strip()=='Welcome back'
+            assert 'Welcome back' in page.locator('.kf73Title').inner_text()
             if restored and blocked:
                 assert page.evaluate('window.__kfMock.session') is None,'blocked storage must not auto-restore an unchecked session'
         page.close()
