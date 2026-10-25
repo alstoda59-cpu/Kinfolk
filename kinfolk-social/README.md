@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery204 (2026-10-25)
+
+Latest isolated checkpoint: [RECOVERY204.md](RECOVERY204.md). Hardened Reels/Shorts video action IDs against JavaScript injection and rejected executable media URL schemes while retaining HTTPS/YouTube playback. **16/16 targeted synthetic cases passed in a V8 adapter, not GitHub Actions, real browser, backend, or devices.** Recovery204 preview deployment blocked by Vercel's daily deployment quota (HTTP 402); no new preview exists. Production, Kinfolksworld, and shared live Supabase remain untouched.
+
 # Kinfolk Social | Recovery187 (2026-10-25)
 
 Latest isolated checkpoint: [RECOVERY187.md](RECOVERY187.md). Phase95 login now checks form mode before intercepting submit, allowing the existing Phase79 signup handler to own reused signup forms; login stops competing same-element handlers. **3/3 new offline V8-adapter scenarios passed; Node CI, real backend/browser and devices remain unverified.** READY preview `dpl_CLB1pjPqFSphChK3SVR91yKpm8jL` includes the application fix. No production, Kinfolksworld or shared Supabase changes.
