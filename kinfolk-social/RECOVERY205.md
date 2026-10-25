@@ -28,3 +28,10 @@ Replace the fail-open `return true` in the missing-getSession branch with a fail
 
 ## Safe next action
 Apply the minimal patch only after an authorized code-write path is available. Run `node --test kinfolk-social/tests/recovery205-signup-session-guard.test.cjs` and the existing Recovery179–181 regression suites; add the test to CI only when green.
+
+## Targeted synthetic test execution
+Executed the exact committed four-case Node test source in an in-memory V8 adapter against both the unmodified GitHub Phase79 source and an in-memory application of the one-line patch:
+- **Current unmodified GitHub source: 3 PASS / 1 FAIL.** The failing case proves that missing `getSession` incorrectly allows Stay Logged In persistence.
+- **In-memory patch candidate: 4 PASS / 0 FAIL.**
+- These are synthetic V8 adapter results, **not** a native Node run, GitHub Actions, real browser, Supabase, or mobile-device result.
+- GitHub application source is still **unpatched**; the corrected unified diff is committed as a review artifact only.
