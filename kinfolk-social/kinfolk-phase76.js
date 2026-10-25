@@ -915,8 +915,8 @@ setTimeout(harden,0);setTimeout(harden,700);setInterval(unlockStuck,1200);
   }
 
   let mode='login';
-  const savedStay=()=>localStorage.getItem('kinfolk_stay_logged_in_v1')!=='0';
-  const saveStay=v=>{localStorage.setItem('kinfolk_stay_logged_in_v1',v?'1':'0');localStorage.setItem('kinfolk_stay_logged_in',v?'1':'0')};
+  const savedStay=()=>{try{return localStorage.getItem('kinfolk_stay_logged_in_v1')!=='0'}catch{return true}};
+  const saveStay=v=>{try{localStorage.setItem('kinfolk_stay_logged_in_v1',v?'1':'0');localStorage.setItem('kinfolk_stay_logged_in',v?'1':'0')}catch{}};
   const msg=(form,text,good=false)=>{const box=form.querySelector('.kf73Msg');box.style.display='block';box.style.color=good?'#c9ffd9':'#ffd9e7';box.textContent=text};
 
   function shell(){
@@ -933,7 +933,7 @@ setTimeout(harden,0);setTimeout(harden,700);setInterval(unlockStuck,1200);
 
   function commonStay(form){
     const cb=form.querySelector('#kf73Stay');
-    if(cb){cb.checked=savedStay();cb.onchange=()=>saveStay(cb.checked)}
+    if(cb){cb.checked=savedStay();/* Commit Stay Logged In only after accepted auth, not on checkbox toggle. */}
   }
 
   function wirePassword(form){
