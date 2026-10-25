@@ -114,3 +114,13 @@ test('Android viewport resize events do not write after Shorts navigation cleanu
   f.emit('window','resize');
   assert.equal(f.writes.length,count,'stale resize must not modify inactive Reels');
 });
+
+test('iOS visual viewport never extends below the browser window',async()=>{
+  const f=fixture(true);
+  await f.render();
+  f.window.visualViewport.height=900;
+  f.window.visualViewport.offsetTop=40;
+  f.setNavTop(1000);
+  f.emit('visualViewport','resize');
+  assert.equal(f.writes.at(-1),'660px','viewport must be capped at window.innerHeight');
+});
