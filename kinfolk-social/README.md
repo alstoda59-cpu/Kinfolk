@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery180 (2026-10-25)
+
+Current isolated checkpoint: [RECOVERY180.md](RECOVERY180.md). Signup now rolls back partial Stay Logged In storage writes and attempts local sign-out when browser storage is blocked, rather than claiming an authenticated session was opened. Recovery179 regression fixtures were updated for realistic Web Storage reads. **9/9 synthetic V8-harness cases passed; Node CI, real Supabase, rendered browser and physical devices remain unverified.** Preview `dpl_3cedAWQGgoHito1LadgrzRh7M4of` is READY, target null. Production, Kinfolksworld and shared live Supabase remain untouched.
+
 # Kinfolk Social | Recovery179 (2026-10-25)
 
 Latest isolated checkpoint: [RECOVERY179.md](RECOVERY179.md). Fixed the one-tab session marker after **immediate-session signup with Stay Logged In unchecked**. The Recovery178 fix for unconfirmed signups remains intact. Five new synthetic checks passed against updated Phase79 source; a Node CI workflow and regression file were committed, but GitHub Actions execution is not yet confirmed. Isolated Vercel preview `dpl_4Y4W7VRxTEGpk6Tuzuj7g9NtV6zg` is READY; updated Phase79 was fetched over HTTP 200. No real backend or device tests. Production, Kinfolksworld and shared Supabase remain untouched.
