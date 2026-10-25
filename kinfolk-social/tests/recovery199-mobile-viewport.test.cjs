@@ -91,3 +91,26 @@ test('Android Chrome-sized window fallback accounts for fixed bottom navigation'
   assert.match(f.main.innerHTML,/kf159-actions/);
   assert.match(f.main.innerHTML,/playsinline muted loop/);
 });
+
+test('iPhone keyboard viewport never collapses Shorts below usable minimum',async()=>{
+  const f=fixture(true);
+  await f.render();
+  f.window.visualViewport.height=180;
+  f.window.visualViewport.offsetTop=0;
+  f.emit('visualViewport','resize');
+  assert.equal(f.writes.at(-1),'120px');
+  f.window.visualViewport.height=740;
+  f.emit('visualViewport','resize');
+  assert.equal(f.writes.at(-1),'590px','height should recover after keyboard closes');
+});
+
+test('Android viewport resize events do not write after Shorts navigation cleanup',async()=>{
+  const f=fixture(false);
+  await f.render();
+  const count=f.writes.length;
+  f.window.kf159StopReels();
+  f.window.innerHeight=500;
+  f.setNavTop(420);
+  f.emit('window','resize');
+  assert.equal(f.writes.length,count,'stale resize must not modify inactive Reels');
+});
