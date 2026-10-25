@@ -11,6 +11,9 @@ Reviewed Recovery198 committed `kinfolk-reels159.js`, README, validation.json, I
 - Wired both mobile Shorts tests into `.github/workflows/kinfolk-social-ci.yml` on branch pushes. Commit `6b98703de752c4a45d2f8535824815b497abbc07`.
 - Re-fetched all committed source/test/workflow files and performed nine source-level assertions in the connector V8 runtime: **9/9 PASS**. These are source assertions, **not** Node CLI, GitHub Actions completion, Android Chrome, iPhone Safari, native build, or real backend tests.
 
+## Additional synthetic execution evidence
+Re-fetched the exact committed `kinfolk-reels159.js` and executed it in a connector V8 adapter with a synthetic DOM, navigation bar, and mocked viewport events. **2/2 mobile viewport scenarios passed:** iOS-style visual viewport resized from 590px to 380px then 400px, with listener cleanup after leaving Reels; Android-style fallback resized from 590px to 460px and retained the rendered action rail and inline video. This is neither Node CLI/CI nor an actual Android/iOS browser/device test.
+
 ## Preview
 Vercel isolated preview for CI commit `6b98703de752c4a45d2f8535824815b497abbc07`: deployment `dpl_ENY1i8HMNPGAoQaWaiH6wDi4YAuf`, **READY**, `target: null`, URL https://kinfolk-social-demo-c6whf1vfa-alstoda59-9779.vercel.app/ . This preview includes inherited Recovery198 source; Recovery199 changed tests/workflow only. READY does not demonstrate functional Android/iPhone behavior.
 
@@ -21,3 +24,5 @@ Vercel isolated preview for CI commit `6b98703de752c4a45d2f8535824815b497abbc07`
 - Store safety, privacy, content moderation and policy compliance remain unverified.
 
 No production deploy/promotion, shared Supabase mutation, Kinfolksworld edits, real-user messaging, or app-store submission.
+
+The documentation-only commit `c033146a5c5d1bef3edeb6ec165be610fecd764c` received a Vercel build-rate-limit status; the earlier CI-configuration commit preview remains READY. The rate limit is not evidence of a source build failure.
