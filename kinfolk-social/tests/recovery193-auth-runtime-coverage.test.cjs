@@ -47,6 +47,7 @@ function fixture(kind){
   const fetch=async()=>{
     if(kind==='token-pending')await new Promise(resolve=>{finishFetch=resolve});
     if(kind==='invalid-password')return {ok:false,status:401,json:async()=>({error:'Invalid login credentials'})};
+    if(kind==='timeout')throw new Error('Kinfolk login timed out. Check your connection and try again.');
     return {ok:true,json:async()=>({
       access_token:'synthetic',refresh_token:'synthetic',user:{id:'account-1'}
     })};
@@ -113,5 +114,13 @@ test('invalid password leaves form available for retry',async()=>{
   await f.submit();
   assert.equal(f.activated,0);
   assert.match(f.message,/Email or password is incorrect/);
+  assert.equal(f.button,'Log in');
+});
+
+test('login timeout preserves useful message and permits retry',async()=>{
+  const f=fixture('timeout');
+  await f.submit();
+  assert.equal(f.activated,0);
+  assert.match(f.message,/login timed out/i);
   assert.equal(f.button,'Log in');
 });
