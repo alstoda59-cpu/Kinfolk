@@ -1,0 +1,38 @@
+name: Kinfolk Recovery179 signup session persistence
+on:
+  push:
+    branches:
+      - kinfolk-social/recovery179-signup-session-tab
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-auth-and-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax checks
+        run: |
+          node --check kinfolk-social/tests/nonproduction-auth-smoke.cjs
+          node --check kinfolk-social/tests/nonproduction-auth-smoke.test.cjs
+          node --check kinfolk-social/kinfolk-phase79.js
+          node --check kinfolk-social/tests/recovery178-signup-stay.test.cjs
+          node --check kinfolk-social/tests/recovery179-signup-session-tab.test.cjs
+          node --check kinfolk-social/kinfolk-phase95.js
+          node --check kinfolk-social/kinfolk-phase98.js
+      - name: Offline isolated-backend guard and auth lifecycle tests
+        run: |
+          node --test kinfolk-social/tests/nonproduction-auth-smoke.test.cjs
+          node --test kinfolk-social/tests/recovery178-signup-stay.test.cjs
+          node --test kinfolk-social/tests/recovery179-signup-session-tab.test.cjs
+      - name: Preserve existing login and safety regressions
+        run: |
+          node --test kinfolk-social/tests/recovery177-login-form-mobile.test.cjs
+          node --test kinfolk-social/tests/recovery174-rating-modal-guard.test.cjs
+          node --test kinfolk-social/tests/recovery175-music-pause.test.cjs
+          node --test kinfolk-social/tests/recovery176-appearance-account-guards.test.cjs
+# Deliberately no live credentials, no real Supabase calls, no deployment.
