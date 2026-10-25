@@ -1,0 +1,27 @@
+name: Kinfolk Recovery175 music and safety checks
+on:
+  push:
+    branches:
+      - kinfolk-social/recovery175-music-pause-persistence
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-and-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax checks
+        run: |
+          node --check kinfolk-social/kinfolk-phase81.js
+          node --check kinfolk-social/kinfolk-phase82.js
+          node --check kinfolk-social/tests/recovery174-rating-modal-guard.test.cjs
+          node --check kinfolk-social/tests/recovery175-music-pause.test.cjs
+      - name: Safety regression
+        run: node --test kinfolk-social/tests/recovery174-rating-modal-guard.test.cjs
+      - name: Music regression
+        run: node --test kinfolk-social/tests/recovery175-music-pause.test.cjs
