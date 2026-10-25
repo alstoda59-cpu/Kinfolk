@@ -161,7 +161,7 @@
         await play();
       }else if(ytId(url)){
         const id=ytId(url);const iframe=document.createElement('iframe');iframe.id='kf81YT';iframe.allow='autoplay; encrypted-media';iframe.referrerPolicy='strict-origin-when-cross-origin';iframe.style.cssText='position:fixed;width:2px;height:2px;opacity:.001;pointer-events:none;left:-20px;top:-20px;border:0';document.body.appendChild(iframe);
-        const src=()=>`https://www.youtube.com/embed/${encodeURIComponent(id)}?autoplay=1&playsinline=1&controls=0&loop=1&playlist=${encodeURIComponent(id)}`;
+        const src=()=>`https://www.youtube.com/embed/${encodeURIComponent(id)}?enablejsapi=1&autoplay=1&playsinline=1&controls=0&loop=1&playlist=${encodeURIComponent(id)}`;
         iframe.src=src();player={type:'youtube',iframe,url,ctl};status.textContent='Autoplay requested. Tap Play if silent.';
         btn.textContent='⏸ Pause';player.paused=false;
         btn.onclick=()=>{if(player?.iframe!==iframe)return;player.paused=!player.paused;iframe.contentWindow?.postMessage(JSON.stringify({event:'command',func:player.paused?'pauseVideo':'playVideo',args:[]}), 'https://www.youtube.com');status.textContent=player.paused?'Paused':'Playing requested';btn.textContent=player.paused?'▶ Resume':'⏸ Pause'};
