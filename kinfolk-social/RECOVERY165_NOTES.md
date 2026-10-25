@@ -1,0 +1,5 @@
+# Recovery165: Reels saved and reaction state synchronization
+
+Continued from Recovery164 on isolated branch kinfolk-social/recovery165-reels-state-sync. Previous Reels Save button updated via queueMicrotask even when localStorage write failed. index.html now dispatches kinfolk:video-saved only after localStorage.setItem succeeds, and kinfolk:video-reaction only after successful Supabase reaction write and refresh. Reels module listens for these events to update Save button label/aria-pressed and Like/Dislike counts/aria-pressed without rebuilding video playback. Code commits b4bd371 and 9211b26. JavaScript syntax passed isolated V8 new Function. Static regression test commit 43fffee and CI wiring ecad0d5; full CI and real device/backend tests unverified.
+
+Vercel preview deployment attempt on ecad0d5 rejected 402 api-deployments-free-per-day, retry in 24 hours. No Recovery165 live preview. Production, Kinfolksworld and shared Supabase unchanged. Reactions database migration still not applied, Remix editing incomplete, Save local-device only.
