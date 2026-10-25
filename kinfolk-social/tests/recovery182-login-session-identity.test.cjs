@@ -6,8 +6,8 @@ const vm=require('node:vm');
 const source=fs.readFileSync('kinfolk-social/kinfolk-phase95.js','utf8');
 
 // Entirely offline: no real credentials, network, users or Supabase mutations.
-function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionError=null,stay=false,activationError=null,missingActivation=false,disconnectOnActivation=false}={}){
-  let read=0,activated=0,adoptions=0,message;
+function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionError=null,stay=false,activationError=null,missingActivation=false,disconnectOnActivation=false,holdActivation=false}={}){
+  let read=0,activated=0,adoptions=0,message,releaseActivation;
   const local=new Map([['kinfolk_stay_logged_in_v1','1'],['kinfolk_stay_logged_in','1']]);
   const tab=new Map();
   const storage=map=>({getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,v),removeItem:k=>map.delete(k)});
@@ -41,7 +41,7 @@ function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionEr
     }
   }};
   const window={};
-  if(!missingActivation)window.kf129ActivateSession=async()=>{activated++;if(disconnectOnActivation)form.isConnected=false;if(activationError)throw activationError};
+  if(!missingActivation)window.kf129ActivateSession=async()=>{activated++;if(holdActivation)await new Promise(resolve=>{releaseActivation=resolve});if(disconnectOnActivation)form.isConnected=false;if(activationError)throw activationError};
   const timers=[];
   vm.runInNewContext(source,{
     window,document,sb,console,AbortController,
@@ -58,6 +58,9 @@ function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionEr
     local,tab,
     get activated(){return activated},
     get adoptions(){return adoptions},
+    get message(){return message?.textContent||''},
+    releaseActivation(){if(!releaseActivation)throw Error('Activation has not started');releaseActivation()},
+    submitStart(){return form.onsubmit({preventDefault(){},stopPropagation(){}})},
     async submit(){
       await form.onsubmit({preventDefault(){},stopPropagation(){}});
       return message?.textContent||'';
@@ -141,4 +144,15 @@ test('detached form does not receive stale success message',async()=>{
   const f=fixture({disconnectOnActivation:true});
   assert.doesNotMatch(await f.submit(),/Logged in/);
   assert.equal(f.activated,1);
+});
+
+test('pending activation cannot announce login success early',async()=>{
+  const f=fixture({holdActivation:true});
+  const pending=f.submitStart();
+  for(let i=0;i<40&&f.activated===0;i++)await Promise.resolve();
+  assert.equal(f.activated,1,'Expected activation to begin');
+  assert.doesNotMatch(f.message,/Logged in/);
+  f.releaseActivation();
+  await pending;
+  assert.match(f.message,/Logged in/);
 });
