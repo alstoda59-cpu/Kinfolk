@@ -20,6 +20,7 @@
  `;
  document.head.appendChild(style);
  const active={observer:null,root:null,pausedByUser:new Set()};
+ window.kf161ToggleSound=function(id){const v=document.getElementById('kf159-video-'+id);if(!v)return;v.muted=!v.muted;const slide=v.closest('.kf159-slide');const b=[...slide.querySelectorAll('.kf159-actions button')].find(x=>x.textContent.includes('Sound')||x.textContent.includes('Mute'));if(b)b.innerHTML=v.muted?'<span>🔇</span>Sound':'<span>🔊</span>Mute'};
  function teardown(){active.observer?.disconnect();active.root?.querySelectorAll('video').forEach(v=>v.pause());active.observer=null;active.root=null}
  function pauseOthers(current){document.querySelectorAll('.kf159-slide video').forEach(v=>{if(v!==current)v.pause()})}
  function tap(id){const v=document.getElementById('kf159-video-'+id);if(!v)return;const icon=v.parentElement.querySelector('.kf159-playicon');if(v.paused){active.pausedByUser.delete(id);pauseOthers(v);v.play().then(()=>{if(icon)icon.textContent='' }).catch(()=>{if(icon)icon.textContent='▶'})}else{active.pausedByUser.add(id);v.pause();if(icon)icon.textContent='▶'}}
@@ -33,7 +34,7 @@
   for(const v of reels){
    const p=state.profiles.get(v.creator_id);
    const url=v.source_type==='upload'&&v.storage_path?await signed('kinfolk-video',v.storage_path):v.video_url;
-   const isNative=!!url&&v.source_type!=='external';
+   const isNative=!!url&&(v.source_type==='upload'||(!/youtu(?:\\.be|be\\.com)/i.test(url)&&/\\.(mp4|webm|ogg)(?:[?#]|$)/i.test(url)));
    const rows=videoReactionState.rows.filter(r=>r.video_id===v.id);
    const likes=rows.filter(r=>r.reaction==='like').length,dislikes=rows.filter(r=>r.reaction==='dislike').length;
    const mine=rows.find(r=>r.user_id===state.user?.id)?.reaction;
@@ -47,13 +48,16 @@
     button('↗','Share',`shareKinfolkVideo('${id}')`),
     button('⟳','Remix',`remixKinfolkVideo('${id}')`),
     button('▢','Save',`saveKinfolkVideo('${id}')`),
-    button('↓','Download',`downloadKinfolkVideo('${id}')`)
+    button('↓','Download',`downloadKinfolkVideo('${id}')`),
+    button('🔇','Sound',`kf161ToggleSound('${id}')`)
    ].join('');
    const media=isNative?`<video id="kf159-video-${id}" src="${esc(url)}" playsinline muted loop preload="metadata"></video><button class="kf159-tap" type="button" aria-label="Play or pause reel" onclick="kf159TogglePlayback('${id}')"></button><div class="kf159-playicon">▶</div>`:`<div style="padding:25px;text-align:center">${url?`<a href="${esc(url)}" target="_blank" rel="noopener" class="btn">Open external video</a>`:'Video unavailable'}<p class="muted">External videos open in their original player.</p></div>`;
    cards.push(`<section class="kf159-slide" data-id="${id}" aria-label="Reel: ${esc(v.title||'Untitled')}">${media}<div class="kf159-overlay"><div class="kf159-info"><b>${esc(p?.display_name||p?.username||'Creator')}</b><p>${esc(v.title||'')}</p></div><div class="kf159-actions">${actions}</div></div></section>`);
   }
   main.innerHTML=`<div class="kf159-top"><b>Reels & Shorts</b><button class="btn small" onclick="openVideoModal()">＋ Upload</button></div><div class="kf159-feed" id="kf159-feed" aria-label="Swipe up or down for reels">${cards.join('')}</div>`;
   const feed=main.querySelector('#kf159-feed');active.root=feed;
+  // Sync button labels after reaction writes and Save toggles without resetting playback.
+  feed.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const slide=b.closest('.kf159-slide');if(!slide)return;if(b.textContent.includes('Save'))queueMicrotask(()=>{const saved=savedKinfolkVideoIds().includes(slide.dataset.id);b.innerHTML=saved?'<span>✓</span>Saved':'<span>▢</span>Save'})});
   const obs=new IntersectionObserver(entries=>{for(const entry of entries){const v=entry.target.querySelector('video');if(!v)continue;if(entry.isIntersecting&&entry.intersectionRatio>=.65){pauseOthers(v);if(active.pausedByUser.has(entry.target.dataset.id))continue;v.play().then(()=>{const icon=v.parentElement.querySelector('.kf159-playicon');if(icon)icon.textContent=''}).catch(()=>{})}else v.pause()}},{root:feed,threshold:[0,.65,1]});
   active.observer=obs;feed.querySelectorAll('.kf159-slide').forEach(el=>obs.observe(el));
   feed.addEventListener('keydown',e=>{if(e.key!=='ArrowDown'&&e.key!=='ArrowUp')return;e.preventDefault();feed.scrollBy({top:(e.key==='ArrowDown'?1:-1)*feed.clientHeight,behavior:'smooth'})});
