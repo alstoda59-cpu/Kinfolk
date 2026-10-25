@@ -34,6 +34,10 @@
     try{
       localStorage.setItem('kinfolk_stay_logged_in_v1',v?'1':'0');
       localStorage.setItem('kinfolk_stay_logged_in',v?'1':'0');
+      // A one-tab session needs its marker before auth-state restoration checks.
+      // Without this, signup with Stay Logged In unchecked is signed out immediately.
+      if(v)sessionStorage.removeItem('kinfolk_session_tab');
+      else sessionStorage.setItem('kinfolk_session_tab','1');
     }catch{}
   }
 
