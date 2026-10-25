@@ -36,7 +36,7 @@ def test_html():
  return s
 
 with sync_playwright() as p:
- b=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox','--disable-dev-shm-usage'])
+ b=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium' if Path('/usr/bin/chromium').exists() else None,args=['--no-sandbox','--disable-dev-shm-usage'])
  context=b.new_context(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
  page=context.new_page()
  errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
