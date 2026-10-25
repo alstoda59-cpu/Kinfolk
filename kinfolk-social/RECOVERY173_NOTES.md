@@ -10,10 +10,10 @@
 
 ## Validation
 - JavaScript source syntax: PASS (isolated V8 check).
-- Seven synthetic execution checks: PASS (adult explicit opt-in; adult-to-teen switch; teen lane rejection; late adult response ignored; Web Storage denied; stale Reels render cannot restore old videos; fresh account videos not overwritten).
+- Seven synthetic execution checks: PASS in an isolated JavaScript harness (adult explicit opt-in; adult-to-teen switch; teen lane rejection; late adult response ignored; Web Storage denied; stale Reels render cannot restore old videos; fresh account videos not overwritten). The committed Node regression also covers stale Home feed restoration. Node CI execution is not yet verified.
 - `test_recovery173_content_isolation.js` added to GitHub CI. CI execution status must be checked independently; no claim of full CI pass.
 - No real Supabase test accounts, physical Android/iPhone testing, signed native binaries, or store submission.
-- Preview deployment: pending / not verified at note creation.
+- Preview deployment: attempted on 2026-10-25; Vercel returned HTTP 402 `api-deployments-free-per-day` with retry-after 86400 seconds. No Recovery173 preview ID/URL was created. Latest inspected READY preview remains Recovery171 `dpl_768ZffEDn1n7a22qSmBsfkLVZTJZ` (`https://kinfolk-social-demo-fcvq7z9cz-alstoda59-9779.vercel.app/`), which does **not** contain Recovery173. Production `dpl_Fp3nErjCoMqXs8Pqsh7LQAipWFUT` remains READY, target production, untouched.
 - Production untouched; shared Supabase schema, auth, RLS and data unchanged.
 
 ## Next work
