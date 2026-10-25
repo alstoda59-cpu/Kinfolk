@@ -46,7 +46,7 @@ function harness({storageBlocked=false,lookup,baseReels,baseHome}={}){
   delayed.state.user={id:'teen-B'};
   finishOld();
   await inFlight;
-  assert.deepEqual(delayed.state.videos,[],'old account video data must not be restored after account switch');
+  assert.equal(delayed.state.videos.length,0,'old account video data must not be restored after account switch');
   let finishSecond;
   const updated=harness({lookup:async()=>adult,baseReels:()=>new Promise(resolve=>{finishSecond=resolve})});
   const secondRender=updated.window.renderReels(main);
