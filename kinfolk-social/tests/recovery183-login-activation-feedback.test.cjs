@@ -10,4 +10,7 @@ assert.equal(source.split(success).length-1,1,'Success feedback must occur exact
 assert.ok(source.includes(guard),'Missing activation handler must be rejected');
 assert.ok(source.indexOf(guard)<source.indexOf(activation),'Guard must precede activation');
 assert.ok(source.indexOf(activation)<source.indexOf(success),'Success feedback must follow activation');
+assert.ok(source.includes('catch(activationError){try{restoreStay()}'),'Activation failure must roll back login preference');
+assert.ok(source.includes('The active account changed while opening Kinfolk.'),'Activation must verify active account again');
+assert.ok(source.includes('if(form.isConnected)'+success),'Only display success on connected login form');
 console.log('PASS Recovery183 activation feedback source ordering');
