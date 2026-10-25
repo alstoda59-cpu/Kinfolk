@@ -50,6 +50,24 @@ with sync_playwright() as p:
  page.locator('#kf73Email').fill('qa@example.test')
  page.locator('#kf73Password').fill('valid-long-password-123')
  page.locator('#kf73Stay').uncheck()
+ # Failed credentials must not rewrite the persistent session preference.
+ page.evaluate("""() => {
+   localStorage.setItem('kinfolk_stay_logged_in_v1','1');
+   localStorage.setItem('kinfolk_stay_logged_in','1');
+   window.__authFetchBeforeFailure=window.fetch;
+   window.fetch=async (url,opts)=>{
+     if(String(url).includes('/auth/v1/token'))
+       return new Response(JSON.stringify({error:'invalid_grant',error_description:'Invalid login credentials'}),{status:400,headers:{'Content-Type':'application/json'}});
+     return window.__authFetchBeforeFailure(url,opts);
+   };
+ }""")
+ page.locator('.kf73Primary').click()
+ page.wait_for_timeout(300)
+ assert page.evaluate("localStorage.getItem('kinfolk_stay_logged_in_v1')")=='1'
+ assert page.evaluate("localStorage.getItem('kinfolk_stay_logged_in')")=='1'
+ assert page.locator('.kf73Primary').is_enabled()
+ assert 'incorrect' in page.locator('.kf73Msg').inner_text().lower()
+ page.evaluate("window.fetch=window.__authFetchBeforeFailure")
  # Delay the synthetic token endpoint and submit twice to catch overlapping
  # requests on slow mobile connections. No real backend traffic is sent.
  page.evaluate("""() => {
