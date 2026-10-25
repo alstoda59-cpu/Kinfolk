@@ -1,0 +1,5 @@
+# Recovery161 Reels control improvements
+
+Branch kinfolk-social/recovery161-reels-controls-sync from Recovery160. Added Sound/Mute action for native uploaded videos, Save button label refresh, and conservative native video URL detection (YouTube links open externally). Code commits 5be08a5, 8e7542f. Syntax of reels module passed isolated V8 new Function; source checks passed. Regression test committed 9f39eec, wired into CI commit 4456278; full CI and actual device/browser playback unverified.
+
+Attempted preview deployment on Vercel team_VAHMLsX1cEPblfFT29OUF4k5 project prj_ua4HgXAphEgWrUx80AWc596AWJiv at commit 4456278. Failed 402 payment_required api-deployments-free-per-day, retryAfter 86400. No Recovery161 preview URL. Last READY preview Recovery158 does not include Recovery159/160/161 vertical viewer. Reactions remain disabled pending approved backend schema/RLS; remix publishing not implemented; saved bookmarks device-only. No production, Kinfolksworld or shared Supabase changes.
