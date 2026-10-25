@@ -21,7 +21,8 @@ function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionEr
   };
   const form={
     querySelector:key=>key==='.kf73Msg'?message:(fields[key]||null),
-    onsubmit:null
+    onsubmit:null,
+    appendChild:element=>{message=element}
   };
   const document={
     documentElement:{},visibilityState:'visible',
