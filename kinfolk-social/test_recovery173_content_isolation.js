@@ -2,12 +2,12 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync(__dirname+'/kinfolk-phase82.js','utf8');
 new Function(source);
-function harness({storageBlocked=false,lookup}={}){
+function harness({storageBlocked=false,lookup,baseReels,baseHome}={}){
   const viewed=[];
   const state={user:{id:'adult-A'},view:'reels',videos:[{id:'general',content_rating:'general'},{id:'adult',content_rating:'xxx'}],feed:[]};
   const storage={getItem(){if(storageBlocked)throw Error('storage blocked');return 'xxx'},setItem(){if(storageBlocked)throw Error('storage blocked')}};
   const document={head:{appendChild(){}},documentElement:{},createElement(){return{style:{},innerHTML:'',firstElementChild:{}}},querySelectorAll(){return[]},getElementById(){return null}};
-  const window={renderReels:async()=>{viewed.push(state.videos.map(x=>x.id))},renderHome:async()=>{}};
+  const window={renderReels:baseReels||(async()=>{viewed.push(state.videos.map(x=>x.id))}),renderHome:baseHome||(async()=>{})};
   const sb={from:()=>({select:()=>({eq:(_key,id)=>({maybeSingle:()=>lookup(id)})})})};
   const context={window,document,state,localStorage:storage,sb,MutationObserver:class{observe(){}},setTimeout(){},console:{warn(){}},renderApp:async()=>{},toast(){}};
   vm.runInNewContext(source,context);
@@ -39,5 +39,21 @@ function harness({storageBlocked=false,lookup}={}){
   blocked.state.user={id:'teen-B'};
   await blocked.window.renderReels({isConnected:true,querySelector(){return null},insertAdjacentHTML(){}});
   assert.deepEqual(blocked.viewed.at(-1),['general'],'blocked Web Storage fails closed');
+  const main={isConnected:true,querySelector(){return null},insertAdjacentHTML(){}};
+  let finishOld;
+  const delayed=harness({lookup:async()=>adult,baseReels:()=>new Promise(resolve=>{finishOld=resolve})});
+  const inFlight=delayed.window.renderReels(main);
+  delayed.state.user={id:'teen-B'};
+  finishOld();
+  await inFlight;
+  assert.deepEqual(delayed.state.videos,[],'old account video data must not be restored after account switch');
+  let finishSecond;
+  const updated=harness({lookup:async()=>adult,baseReels:()=>new Promise(resolve=>{finishSecond=resolve})});
+  const secondRender=updated.window.renderReels(main);
+  updated.state.user={id:'teen-B'};
+  updated.state.videos=[{id:'new-teen-video',content_rating:'general'}];
+  finishSecond();
+  await secondRender;
+  assert.equal(updated.state.videos[0].id,'new-teen-video','new account video data must not be overwritten');
   console.log('Recovery173 account-isolated content lane checks passed (synthetic)');
 })().catch(e=>{console.error(e);process.exitCode=1});
