@@ -61,6 +61,6 @@ for(const scenario of ['switch-to-signup','remove-login-form']){
     await f.finishFetch();
     await pending;
     assert.equal(f.setSessionCalls,0,'Stale password response must not be adopted');
-    assert.match(f.message,/login screen changed/i);
+    assert.equal(f.message,'');
   });
 }
