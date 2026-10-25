@@ -34,7 +34,7 @@
   for(const v of reels){
    const p=state.profiles.get(v.creator_id);
    const url=v.source_type==='upload'&&v.storage_path?await signed('kinfolk-video',v.storage_path):v.video_url;
-   const isNative=!!url&&(v.source_type==='upload'||(!/youtu(?:\\.be|be\\.com)/i.test(url)&&/\\.(mp4|webm|ogg)(?:[?#]|$)/i.test(url)));
+   const isNative=!!url&&(v.source_type==='upload'||(!url.includes('youtube.com')&&!url.includes('youtu.be')&&['.mp4','.webm','.ogg'].some(ext=>url.split('?')[0].toLowerCase().endsWith(ext))));
    const rows=videoReactionState.rows.filter(r=>r.video_id===v.id);
    const likes=rows.filter(r=>r.reaction==='like').length,dislikes=rows.filter(r=>r.reaction==='dislike').length;
    const mine=rows.find(r=>r.user_id===state.user?.id)?.reaction;
