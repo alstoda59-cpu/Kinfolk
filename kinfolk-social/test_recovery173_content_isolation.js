@@ -8,7 +8,7 @@ function harness({storageBlocked=false,lookup}={}){
   const storage={getItem(){if(storageBlocked)throw Error('storage blocked');return 'xxx'},setItem(){if(storageBlocked)throw Error('storage blocked')}};
   const document={head:{appendChild(){}},documentElement:{},createElement(){return{style:{},innerHTML:'',firstElementChild:{}}},querySelectorAll(){return[]},getElementById(){return null}};
   const window={renderReels:async()=>{viewed.push(state.videos.map(x=>x.id))},renderHome:async()=>{}};
-  const sb={from(){return{select(){return{eq(_key,id){return{maybeSingle:()=>lookup(id)}}}}}}}};
+  const sb={from:()=>({select:()=>({eq:(_key,id)=>({maybeSingle:()=>lookup(id)})})})};
   const context={window,document,state,localStorage:storage,sb,MutationObserver:class{observe(){}},setTimeout(){},console:{warn(){}},renderApp:async()=>{},toast(){}};
   vm.runInNewContext(source,context);
   return{window,state,viewed};
