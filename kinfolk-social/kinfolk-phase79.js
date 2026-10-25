@@ -58,6 +58,16 @@
     }
   }
 
+  // Ignore signup results after a different account has become active.
+  async function signupSessionIsCurrent(session){
+    if(typeof sb?.auth?.getSession!=='function')return true;
+    const expected=session?.user?.id;
+    if(!expected)return false;
+    const {data,error}=await sb.auth.getSession();
+    if(error)throw error;
+    return data?.session?.user?.id===expected;
+  }
+
   function mountSignupGate(){
     const form=document.querySelector('#authForm[data-kf73="1"]');
     if(!form) return;
@@ -138,15 +148,27 @@
       // An email-confirmation signup has no authenticated session yet.
       // Do not persist Stay Logged In until signup actually returns a session.
       if(data?.session){
+        if(!(await signupSessionIsCurrent(data.session))){
+          show(form,'Account created, but the active login changed. Sign in again to set Stay Logged In.');
+          if(btn){btn.disabled=false;btn.textContent='Create account'}
+          return;
+        }
         try{saveStay(stay)}
         catch(storageError){
-          // A created account must not remain silently authenticated when the
-          // requested session lifetime cannot be recorded on this device.
-          try{
-            const out=await sb.auth.signOut({scope:'local'});
-            if(out?.error)throw out.error;
-          }catch(signOutError){console.warn('Kinfolk signup local sign-out failed',signOutError)}
-          show(form,storageError.message+' Enable browser storage, then log in again.');
+          // Never sign out another account that became active during cleanup.
+          let sameAccount=false,signOutFailed=false;
+          try{sameAccount=await signupSessionIsCurrent(data.session)}
+          catch(checkError){console.warn('Kinfolk signup session recheck failed',checkError)}
+          if(sameAccount){
+            try{
+              const out=await sb.auth.signOut({scope:'local'});
+              if(out?.error)throw out.error;
+            }catch(signOutError){
+              signOutFailed=true;
+              console.warn('Kinfolk signup local sign-out failed',signOutError);
+            }
+          }
+          show(form,storageError.message+' Enable browser storage, then log in again.'+(signOutFailed?' Your session may still be active; sign out manually.':''));
           if(btn){btn.disabled=false;btn.textContent='Create account'}
           return;
         }
