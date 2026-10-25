@@ -18,8 +18,8 @@
  .kf159-top{padding:10px;display:flex;gap:10px;align-items:center;justify-content:space-between}
  @media(max-width:600px){
  .kf159-top{padding:8px 12px;background:#08080b;color:#fff}
- .kf159-feed{height:var(--kf159-viewport-height,calc(100dvh - 152px - env(safe-area-inset-bottom,0px)));min-height:240px;border-radius:0;background:#000;scroll-snap-type:y mandatory}
- .kf159-slide{height:100%;min-height:380px;background:#000}
+ .kf159-feed{height:var(--kf159-viewport-height,calc(100dvh - 152px - env(safe-area-inset-bottom,0px)));min-height:120px;border-radius:0;background:#000;scroll-snap-type:y mandatory}
+ .kf159-slide{height:100%;min-height:0;background:#000}
  .kf159-slide video{width:100%;height:100%;object-fit:cover;background:#000}
  .kf159-actions{right:8px;bottom:74px;gap:9px;max-height:calc(100% - 110px)}
  .kf159-actions button{min-width:54px;min-height:48px;padding:3px;background:rgba(0,0,0,.28);border:0;border-radius:12px;font-size:11px;text-shadow:0 1px 3px #000}
@@ -106,7 +106,7 @@
      .filter(el=>el.isConnected&&el!==feed&&getComputedStyle(el).position==='fixed')
      .map(el=>el.getBoundingClientRect()).filter(r=>r.height>0&&r.top>top&&r.top<window.innerHeight);
    const bottom=nav.length?Math.min(...nav.map(r=>r.top)):window.innerHeight;
-   const height=Math.max(240,Math.floor(bottom-top));
+   const height=Math.max(120,Math.floor(bottom-top));
    feed.style.setProperty('--kf159-viewport-height',height+'px');
   };
   fitViewport();
