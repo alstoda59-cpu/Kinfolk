@@ -1,0 +1,3 @@
+# Recovery171: Reels playback safety
+
+Continued from Recovery170 on isolated branch kinfolk-social/recovery171-reels-playback-safety. Playback selection now stops all Reels and returns when no video meets visibility requirements; otherwise the active video is played only when eligible. The UI relies on actual video play/pause events for its indicator. JavaScript syntax checked. A source regression test test_recovery171_playback_safety.js is present and CI includes it; full CI and device/browser execution remain unverified. No changes to production, Kinfolksworld, or shared Supabase. The video reactions migration remains unapplied.
