@@ -53,4 +53,5 @@ jobs:
       - name: Check packaged login and signup module
         run: |
           cmp kinfolk-social/kinfolk-phase79.js kinfolk-social/native/www/kinfolk-phase79.js
+          cmp kinfolk-social/kinfolk-phase95.js kinfolk-social/native/www/kinfolk-phase95.js
           test -s kinfolk-social/native/www/index.html
