@@ -55,5 +55,14 @@ function harness({storageBlocked=false,lookup,baseReels,baseHome}={}){
   finishSecond();
   await secondRender;
   assert.equal(updated.state.videos[0].id,'new-teen-video','new account video data must not be overwritten');
+  let finishHome;
+  const home=harness({lookup:async()=>adult,baseHome:()=>new Promise(resolve=>{finishHome=resolve})});
+  home.state.view='home';
+  home.state.feed=[{id:'old-post',content_rating:'general'}];
+  const homeRender=home.window.renderHome(main);
+  home.state.user={id:'teen-B'};
+  finishHome();
+  await homeRender;
+  assert.equal(home.state.feed.length,0,'old account home posts must not be restored after account switch');
   console.log('Recovery173 account-isolated content lane checks passed (synthetic)');
 })().catch(e=>{console.error(e);process.exitCode=1});
