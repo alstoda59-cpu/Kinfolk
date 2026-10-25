@@ -1,4 +1,8 @@
-# Kinfolk Social Recovery133 | 2026-10-24
+# Kinfolk Social | Recovery176 (2026-10-25)
+
+Latest isolated development checkpoint: [`RECOVERY176.md`](RECOVERY176.md). Main app source is in this folder; Kinfolksworld and production are excluded. Recovery176 protects delayed color/music saves and appearance reads across account switches. Five new synthetic regression cases were added, alongside prior music and safety suites. **Real backend and physical-device QA remain pending.**
+
+## Recovery133 baseline | 2026-10-24
 
 Incremental repair based on Recovery132. Preserves full main app, dark mobile UI, features, and native Capacitor scaffold. Kinfolksworld excluded.
 
@@ -14,7 +18,7 @@ Incremental repair based on Recovery132. Preserves full main app, dark mobile UI
 - No production or shared backend changes. No Recovery133 preview deployment as of this source checkpoint.
 
 ## GitHub coordination
-The GitHub branch `kinfolk-social/recovery132-integration` currently contains only an integration note, not this full source. The GitHub-linked Vercel project automatically generated a READY **branch preview** `dpl_8KEdPtM1bK9n3nu7MxSAQvVKPpSx` from that docs-only commit; that preview is NOT a validated Kinfolk Social app preview. Latest verified actual main-app login-screen preview remains Recovery129 `dpl_9p5ymsbuxSbMMChtRobYYznRsxFD` at https://kinfolk-social-demo-i0cjbv3r0-alstoda59-9779.vercel.app/ .
+The full main Kinfolk Social source was imported to `alstoda59-cpu/Kinfolk` on `kinfolk-social/recovery132-integration` at commit `27a1c2253222029aaa578da1637da59194a56347`. The current isolated work is on `kinfolk-social/recovery176-appearance-account-guards`. Do not merge to main or promote a preview without approval. See `INTEGRATION.md` for the original Recovery133 import and `RECOVERY176.md` for current evidence.
 
 ## Next
-Import the complete reviewed main app source to GitHub under `kinfolk-social/` with branch protection and CI, then configure isolated Vercel preview root; verify real backend auth/session, teen authorization, media, messaging and mobile native builds.
+Verify the Recovery176 GitHub Actions run, then test real nonproduction auth/session, teen authorization, media, messaging and Android/iOS native builds. The latest branch preview is not evidence of end-to-end functionality.
