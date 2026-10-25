@@ -1,0 +1,13 @@
+// Recovery183 source-order regression, run from repository root with Node 22.
+const fs=require('node:fs');
+const assert=require('node:assert/strict');
+const source=fs.readFileSync('kinfolk-social/kinfolk-phase95.js','utf8');
+const activation="await window.kf129ActivateSession(session)";
+const success="show(form,'Logged in. Opening Kinfolk…',true)";
+const guard="typeof window.kf129ActivateSession!=='function'";
+assert.equal(source.split(activation).length-1,1,'Account activation must occur exactly once');
+assert.equal(source.split(success).length-1,1,'Success feedback must occur exactly once');
+assert.ok(source.includes(guard),'Missing activation handler must be rejected');
+assert.ok(source.indexOf(guard)<source.indexOf(activation),'Guard must precede activation');
+assert.ok(source.indexOf(activation)<source.indexOf(success),'Success feedback must follow activation');
+console.log('PASS Recovery183 activation feedback source ordering');
