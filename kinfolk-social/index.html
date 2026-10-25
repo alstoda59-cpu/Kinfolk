@@ -81,25 +81,26 @@ async function kf129ActivateSession(session){
   kf129InFlight={uid,epoch,promise:task};return task;
 }
 window.kf129ActivateSession=kf129ActivateSession;
-window.kf129Retry=async()=>{try{const{data,error}=await sb.auth.getSession();if(error)throw error;await kf129ActivateSession(data?.session||null)}catch(error){kf129Error(error?.message||String(error))}};
+// Recovery149: the Retry button must honor the same device/session policy as boot.
+async function kf129RestorableSession(){
+  const {data,error}=await sb.auth.getSession();if(error)throw error;
+  let session=data?.session||null;
+  if(!session)return null;
+  // A nonpersistent login may survive a refresh in its original tab only.
+  // Storage failures fail closed instead of restoring an unverified session.
+  let keep=false,allowedTab=false;
+  try{keep=localStorage.getItem('kinfolk_stay_logged_in_v1')!=='0'&&localStorage.getItem('kinfolk_stay_logged_in')!=='0'}catch{}
+  if(!keep){try{allowedTab=sessionStorage.getItem('kinfolk_session_tab')==='1'}catch{}}
+  if(!keep&&!allowedTab){
+    const out=await sb.auth.signOut({scope:'local'});if(out?.error)throw out.error;
+    session=null;
+  }
+  return session;
+}
+window.kf129Retry=async()=>{try{await kf129ActivateSession(await kf129RestorableSession())}catch(error){kf129Error(error?.message||String(error))}};
 async function boot(){
-  // With Stay Logged In unchecked, a refresh in this tab is allowed, a new tab is not.
   try{
-    const{data,error}=await sb.auth.getSession();if(error)throw error;
-    let session=data?.session||null;
-    // Recovery139: browsers can block Web Storage entirely (private mode or
-    // restrictive WebViews). Never strand unauthenticated members at boot.
-    // When an existing session cannot be checked against the Stay Logged In
-    // preference, fail closed by ending that restored local session.
-    let keep=true,allowedTab=true;
-    if(session){
-      try{keep=localStorage.getItem('kinfolk_stay_logged_in_v1')!=='0'&&localStorage.getItem('kinfolk_stay_logged_in')!=='0'}catch{keep=false}
-      if(!keep){try{allowedTab=sessionStorage.getItem('kinfolk_session_tab')==='1'}catch{allowedTab=false}}
-    }
-    if(session&&!keep&&!allowedTab){
-      const out=await sb.auth.signOut({scope:'local'});if(out?.error)throw out.error;session=null;
-    }
-    await kf129ActivateSession(session);
+    await kf129ActivateSession(await kf129RestorableSession());
   }catch(error){console.error('Kinfolk initial session',error);kf129Error(error?.message||String(error))}
   sb.auth.onAuthStateChange((event,session)=>{
     if(event==='SIGNED_OUT'){void kf129ActivateSession(null);return}
