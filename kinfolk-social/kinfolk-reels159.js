@@ -94,6 +94,7 @@
   }
   feed.addEventListener('play',e=>{
    if(e.target.tagName!=='VIDEO')return;
+   if(document.hidden||active.root!==feed||state.view!=='reels'){e.target.pause();return}
    pauseOthers(e.target);
    const icon=e.target.parentElement?.querySelector('.kf159-playicon');
    if(icon)icon.textContent='';
