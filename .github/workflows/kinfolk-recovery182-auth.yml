@@ -4,6 +4,7 @@ on:
     branches:
       - kinfolk-social/recovery182-login-session-identity
       - kinfolk-social/recovery185-login-runtime-regressions
+      - kinfolk-social/recovery186-login-token-identity
   workflow_dispatch:
 permissions:
   contents: read
