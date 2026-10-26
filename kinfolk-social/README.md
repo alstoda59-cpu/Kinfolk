@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery213 (2026-10-25)
+
+Latest isolated checkpoint: [RECOVERY213.md](RECOVERY213.md). Repaired four legacy signup test fixtures for the active DOM guard, prevented a delayed signup storage-error message from overwriting the Login screen, and added three deferred-auth regression tests to CI. **21/21 targeted synthetic V8-adapter tests passed**, not native Node/real Supabase/device tests. Isolated preview `dpl_A2qQBmYaCx24Tzu2YiHtNPNtpAin` is READY and served the updated Phase79 script over HTTP 200, but predates new test/CI commits. Production, Kinfolksworld and shared Supabase remain untouched.
+
 # Kinfolk Social | Recovery212 (2026-10-25)
 
 Latest isolated checkpoint: [RECOVERY212.md](RECOVERY212.md). Fixed reused login-to-signup forms retaining the login-only button click handler and password-length overrides; restored Phase79 signup submission and 5–12 character UI rules. The fetched Phase98 source passed a synthetic V8 login → signup → login runtime check. GitHub Actions, real backend and physical Android/iPhone testing remain unverified. Latest READY preview is older Recovery210 (`dpl_FeMSf5dN8rrEfUe6eKPSXc2bKN7f`), not Recovery212; current Vercel build-rate limit blocks fresh preview confirmation. Production, Kinfolksworld and shared Supabase remain unchanged.
