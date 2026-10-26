@@ -28,6 +28,7 @@ with sync_playwright() as p:
                 window.fetch=async (...args)=>{
                     if(String(args[0]).includes('/auth/v1/token')){
                         window.__login224Calls++;
+                        (window.__login224Payloads ||= []).push(JSON.parse(args[1]?.body || '{}'));
                         if(window.__login224Calls===1){
                             await new Promise(resolve=>window.__release224=resolve);
                             if(window.__reject224)
@@ -66,6 +67,11 @@ with sync_playwright() as p:
             page.wait_for_function("!document.querySelector('.kf73Primary').disabled")
             assert page.locator('.kf73Primary').is_enabled(),'login button remained disabled after stale request'
             assert page.locator('.kf73Primary').inner_text()=='Log in','stale loading label remained after form remount'
+            # The rejected in-flight submit may clear the password for safety. Re-enter it
+            # explicitly before retrying; do not assume a sensitive field is retained.
+            page.locator('#kf73Password').fill('password9')
+            assert page.locator('#kf73Password').input_value()=='password9'
+            assert page.evaluate("document.querySelector('#authForm').checkValidity()"), 'retry form must be valid'
             page.locator('.kf73Primary').click()
             page.wait_for_timeout(400)
             if page.evaluate('window.__login224Calls')!=2:
@@ -80,6 +86,8 @@ with sync_playwright() as p:
                         session:!!window.__kfMock.session};
                 }"""),flush=True)
             page.wait_for_function('window.__login224Calls===2')
+            assert page.evaluate("window.__login224Payloads[1].email")=='new@example.test', 'retry must use current login email'
+            assert page.evaluate("window.__login224Payloads[1].password")=='password9', 'retry must use newly entered password'
             page.locator('#main').wait_for(state='visible',timeout=10000)
             assert page.evaluate('window.state.user?.id')=='11111111-1111-4111-8111-111111111111'
             assert not errors,errors
