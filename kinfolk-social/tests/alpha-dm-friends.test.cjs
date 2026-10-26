@@ -34,3 +34,8 @@ test('friend-only DM gate handles both directions and denies pending, strangers 
  assert.equal(canDm({user:{id:self},friendRequests:[]},self),false);
  assert.equal(canDm({user:null,friendRequests:[]},peer),false);
 });
+
+test('disappearing-message UI does not claim server deletion',()=>{
+ assert.ok(html.includes('Hidden 30 seconds after read (alpha)'));
+ assert.ok(!html.includes('Disappears 30 seconds after read'));
+});
