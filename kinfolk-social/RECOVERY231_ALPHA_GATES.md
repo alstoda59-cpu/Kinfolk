@@ -27,3 +27,9 @@ Recovery230 source checks passed (run 40300340369). Its READY isolated preview d
 
 ## Safety and limitations
 This checkpoint records the acceptance gates; it does not claim implementation or successful execution of them. No shared database changes, production deployment, alias changes, or store submission are authorized.
+
+## Recovery231 implementation update (2026-10-26)
+- Actual application fix commit `e32d554f1bc79cda29bfdb7b6654b50177380abd`: Phase100 profile update now requests `count: 'exact'` and refuses to report success if the update affects zero (or more than one) profile rows. This protects against a zero-row update silently filtered by RLS. Existing account/editor isolation remains intact.
+- Regression test commit `64f25a8b6c3bea461c2f34baaaa635e2ff664b8d`: existing synthetic Phase100 harness now models update counts, with a new zero-row failure/media-cleanup test. The update's JavaScript syntax was compiled successfully using V8 `new Function`; GitHub Actions run `40307130991` was pending at documentation time. Do not call the full suite passed until the run completes successfully.
+- Isolated preview `dpl_2pduhXCYBC3qvBmdiMV4NdrcsiZy` from the test commit is READY, target null: `https://kinfolk-social-demo-mr044axsv-alstoda59-9779.vercel.app/`. Deployment state does not establish real backend behavior or device readiness.
+- Supabase isolated backend and physical Android/iPhone end-to-end tests remain unavailable/unverified. No shared live database, production, aliases, Kinfolksworld or app-store actions performed.
