@@ -38,6 +38,9 @@ with sync_playwright() as p:
     assert page.evaluate('window.__kfMock.signupCalls')==1
     data=page.evaluate('window.__recovery218Args.options.data')
     assert data['username']=='mobile_qa' and data['bio']=='Music and game nights'
+    # These two names are consumed by the existing Supabase signup triggers.
+    assert data['profile_display_name']=='Mobile QA'
+    assert data['profile_bio']=='Music and game nights'
     assert data['preferred_language']=='es' and data['interests']==['gaming','music']
     assert not errors,errors
     browser.close()
