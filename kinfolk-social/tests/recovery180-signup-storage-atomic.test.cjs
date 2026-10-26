@@ -11,7 +11,7 @@ function run({stay=false,confirmed=true,deny='' }={}){
  const fields={'.kf73Title':{textContent:'Create your Kinfolk'},'#kf73Name':{value:'QA'},'#kf73Email':{value:'qa@example.test'},'#kf73Password':{value:'testpass'},'#kf79Birthdate':{value:'1990-01-01'},'#kf73Stay':{checked:stay},'.kf73Primary':{disabled:false,textContent:'Create account'}};
  const form={id:'authForm',dataset:{kf73:'1'},querySelector:k=>k==='.kf73Msg'?msg:fields[k]||null,appendChild:x=>{msg=x}};
  const document={head:{appendChild(){}},documentElement:{},createElement:()=>({style:{}}),addEventListener:(type,fn)=>{if(type==='submit')submit=fn}};
- const sb={auth:{signUp:async()=>({data:{session:confirmed?{user:{id:'qa'}}:null},error:null}),signOut:async()=>{signouts++;return {error:null}}}};
+ const sb={auth:{getSession:async()=>({data:{session:confirmed?{user:{id:'qa'}}:null},error:null}),signUp:async()=>({data:{session:confirmed?{user:{id:'qa'}}:null},error:null}),signOut:async()=>{signouts++;return {error:null}}}};
  vm.runInNewContext(source,{window:{},document,sb,URL,Date,console,location:{origin:'https://qa.example.test'},localStorage:store,sessionStorage:store,MutationObserver:class{observe(){}},setTimeout(){},clearTimeout(){}});
  return {values,get signouts(){return signouts},async submit(){await submit({target:form,preventDefault(){},stopImmediatePropagation(){}});return msg?.textContent||''}};
 }
