@@ -19,7 +19,7 @@ async function until(predicate){
   assert.ok(predicate(),'expected async checkpoint to be reached');
 }
 function harness(hooks={}){
-  const calls={uploads:[],removed:[],extras:[],profiles:[],notices:[],closed:0,rendered:0};
+  const calls={uploads:[],removed:[],extras:[],extrasOptions:[],profiles:[],notices:[],closed:0,rendered:0};
   const button={textContent:'Save profile',disabled:false};
   const values={
     editDisplay:'Original Name',editUsername:'original_user',editBio:'A bio',
@@ -44,8 +44,8 @@ function harness(hooks={}){
       remove:async(paths)=>{calls.removed.push(...paths);return {error:null}}
     })},
     from:table=>{
-      if(table==='kinfolk_profile_extras')return {upsert:async row=>{calls.extras.push({...row});if(hooks.extras)await hooks.extras();return {error:null}}};
-      if(table==='profiles')return {update:row=>({eq:async(key,id)=>{calls.profiles.push({key,id,row:{...row}});return {error:null,count:hooks.profileCount??1}}})};
+      if(table==='kinfolk_profile_extras')return {upsert:async (row,options)=>{calls.extras.push({...row});calls.extrasOptions.push(options);if(hooks.extras)await hooks.extras();return {error:null,count:Object.hasOwn(hooks,'extrasCount')?hooks.extrasCount:1}}};
+      if(table==='profiles')return {update:row=>({eq:async(key,id)=>{calls.profiles.push({key,id,row:{...row}});return {error:null,count:Object.hasOwn(hooks,'profileCount')?hooks.profileCount:1}}})};
       throw new Error('Unexpected table '+table);
     }
   };
@@ -77,6 +77,7 @@ test('successful save pins media path and both database writes to one account',a
   assert.equal(h.calls.uploads.length,1);
   assert.match(h.calls.uploads[0],/^account-A\/avatars\//);
   assert.equal(h.calls.extras[0].user_id,'account-A');
+  assert.equal(h.calls.extrasOptions[0].count,'exact');
   assert.equal(h.calls.profiles[0].id,'account-A');
   assert.equal(h.calls.profiles[0].row.display_name,'Original Name');
   assert.equal(h.calls.rendered,1);
@@ -142,6 +143,44 @@ test('RLS-filtered zero-row profile update cannot announce success and attempts 
   assert.equal(h.calls.rendered,0);
   assert.equal(h.calls.closed,0);
   assert.deepEqual(h.calls.removed,h.calls.uploads);
-  assert.match(h.calls.notices.at(-1).message,/Profile could not be updated/);
+  assert.match(h.calls.notices.at(-1).message,/Profile could not be verified as updated/);
   assert.notEqual(h.calls.notices.at(-1).type,'good');
+});
+
+
+test('RLS-filtered zero-row extras upsert stops profile update and cleans uploaded media',async()=>{
+  const h=harness({extrasCount:0});
+  await h.save();
+  assert.equal(h.calls.extras.length,1);
+  assert.equal(h.calls.profiles.length,0);
+  assert.equal(h.calls.closed,0);
+  assert.equal(h.calls.rendered,0);
+  assert.deepEqual(h.calls.removed,h.calls.uploads);
+  assert.match(h.calls.notices.at(-1).message,/Profile preferences could not be saved/);
+});
+
+test('missing extras count is not treated as successful persistence',async()=>{
+  const h=harness({extrasCount:null});
+  await h.save();
+  assert.equal(h.calls.profiles.length,0);
+  assert.deepEqual(h.calls.removed,h.calls.uploads);
+  assert.notEqual(h.calls.notices.at(-1).type,'good');
+});
+
+test('multiple extras rows never count as a verified single-account save',async()=>{
+  const h=harness({extrasCount:2});
+  await h.save();
+  assert.equal(h.calls.profiles.length,0);
+  assert.equal(h.calls.rendered,0);
+  assert.notEqual(h.calls.notices.at(-1).type,'good');
+});
+
+test('missing profile update count cannot produce a false save confirmation',async()=>{
+  const h=harness({profileCount:null});
+  await h.save();
+  assert.equal(h.calls.profiles.length,1);
+  assert.equal(h.calls.rendered,0);
+  assert.equal(h.calls.closed,0);
+  assert.deepEqual(h.calls.removed,h.calls.uploads);
+  assert.match(h.calls.notices.at(-1).message,/Profile could not be verified as updated/);
 });
