@@ -44,8 +44,11 @@ async function upload(file,folder,paths,accountId,editor){
     const x=await sb.from('kinfolk_profile_extras').upsert(ex,{onConflict:'user_id'});
     if(x.error)throw x.error;
     requireEditor(accountId,f);
-    const p=await sb.from('profiles').update(po).eq('id',accountId);
+    const p=await sb.from('profiles').update(po,{count:'exact'}).eq('id',accountId);
     if(p.error)throw p.error;
+    // Supabase may report no error when RLS filters out every matching row.
+    // Never announce a successful save unless the original profile was updated.
+    if(p.count!=null&&p.count!==1)throw new Error('Profile could not be updated. Please sign in again and retry.');
     // The database update may finish after logout or account switching.
     // Never hydrate, render or show success for a different account.
     profileSaved=true;
