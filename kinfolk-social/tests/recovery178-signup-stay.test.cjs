@@ -19,7 +19,7 @@ function fixture(signupResult) {
     '.kf73Primary': button,
   };
   const form = {
-    id: 'authForm', dataset: { kf73: '1' },
+    querySelectorAll() { return []; }, id: 'authForm', isConnected: true, dataset: { kf73: '1' },
     querySelector(selector) {
       return selector === '.kf73Msg' ? message || null : fields[selector] || null;
     },
@@ -32,11 +32,12 @@ function fixture(signupResult) {
       if (type === 'submit') { assert.equal(capture, true); submit = fn; }
     },
   };
-  const sb = { auth: { async signUp(args) { calls.push(args); return signupResult; } } };
+  const sb = { auth: { async getSession() { return {data:{session:signupResult.data?.session},error:null}; }, async signUp(args) { calls.push(args); return signupResult; } } };
   const context = {
     window: {}, document, sb, URL, Date,
     location: { origin: 'https://isolated-qa.supabase.co' },
-    localStorage: { setItem(key, value) { writes.push([key, value]); } },
+    sessionStorage: {getItem(){return null},removeItem(){},setItem(){}},
+    localStorage: { getItem(){return null},removeItem(){},setItem(key, value) { writes.push([key, value]); } },
     MutationObserver: class { observe() {} },
     setTimeout() { return 1; }, clearTimeout() {},
   };
@@ -67,7 +68,7 @@ test('unconfirmed signup does not enable persistent login', async () => {
 });
 
 test('signup with a real session honors Stay Logged In', async () => {
-  const f = fixture({ data: { user: { id: 'new-user' }, session: { access_token: 'synthetic' } }, error: null });
+  const f = fixture({ data: { user: { id: 'new-user' }, session: { user: {id:'new-user'}, access_token: 'synthetic' } }, error: null });
   const msg = await f.submit();
   assert.equal(f.calls.length, 1);
   assert.equal(f.writes.length, 2);

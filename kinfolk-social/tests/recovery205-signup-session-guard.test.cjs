@@ -28,7 +28,7 @@ function fixture({sessionCheck='missing'}={}){
     '.kf73Primary':{disabled:false,textContent:'Create account'}
   };
   const form={
-    id:'authForm',isConnected:true,dataset:{kf73:'1'},
+    querySelectorAll(){return []},id:'authForm',isConnected:true,dataset:{kf73:'1'},
     querySelector:key=>key==='.kf73Msg'?message:fields[key]||null,
     appendChild:node=>{message=node}
   };

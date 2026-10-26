@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery221 (2026-10-25)
+
+Latest checkpoint: [RECOVERY221.md](RECOVERY221.md). Continued from Recovery220 on `kinfolk-social/recovery207-signup-navigation-guard`. Added guarded email-verification resend to the existing signup and repaired missing Reels native assets. Actual local Node: 124/124 tests plus 27/27 legacy scripts pass; native web packaging checks 23 referenced modules. Browser/device/backend verification remains blocked and is explicitly separated in the checkpoint. Production, Kinfolksworld and shared Supabase unchanged.
+
 # Kinfolk Social | Recovery220 (2026-10-25)
 
 Latest isolated checkpoint: [RECOVERY220.md](RECOVERY220.md). Expanded the existing mobile signup with optional gender and age-aware private-profile defaults, aligning metadata with current backend profile triggers. Added mocked Android-size Chromium privacy regression to CI and verified the exact Phase79 source via V8 synthetic signup checks. Read-only schema inspection confirmed a preexisting case-insensitive username unique index, so a redundant index was removed from the **unapplied** Recovery219 SQL draft. Nonproduction preview `dpl_CqPHv58zJqJcVoSrP1DbsLwU6nqB` is READY and delivered the updated JS with HTTP 200, but native CI, real backend and physical Android/iPhone tests are unverified. No production, Kinfolksworld or shared Supabase changes.

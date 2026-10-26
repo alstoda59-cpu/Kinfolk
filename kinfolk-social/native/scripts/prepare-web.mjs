@@ -7,7 +7,7 @@ const destination=path.join(nativeRoot,'www');
 await rm(destination,{recursive:true,force:true});
 await mkdir(destination,{recursive:true});
 for(const name of await readdir(source)) {
-  if(/^(index\.html|offline\.html|manifest\.webmanifest|service-worker\.js|favicon\.ico|apple-touch-icon\.png|kinfolk-icon(?:-\d+)?\.(?:svg|png)|kinfolk-phase[\w-]+\.js)$/.test(name))
+  if(/^(index\.html|offline\.html|manifest\.webmanifest|service-worker\.js|favicon\.ico|apple-touch-icon\.png|kinfolk-icon(?:-\d+)?\.(?:svg|png)|kinfolk-[\w-]+\.js)$/.test(name))
     await cp(path.join(source,name),path.join(destination,name));
 }
 const html=await readFile(path.join(destination,'index.html'),'utf8');

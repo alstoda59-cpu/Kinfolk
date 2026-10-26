@@ -72,7 +72,7 @@ function fixture(deferExtra = false) {
     resolveExtra(data) { assert.ok(resolveExtra); resolveExtra({ data }); },
     async mount() {
       timers.find(timer => timer.ms === 250).fn();
-      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+      for(let i=0;i<20&&!mounted;i++) await Promise.resolve();
       assert.ok(mounted, 'appearance settings should mount');
     },
   };

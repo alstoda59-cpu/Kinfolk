@@ -17,7 +17,7 @@ test('signup sends the exact profile metadata keys read by current DB triggers',
 test('duplicate username feedback does not change signup or login ownership',()=>{
   assert.match(app,/username.*already taken/i);
   assert.match(app,/document\.addEventListener\('submit',handleSignup,true\)/);
-  assert.match(app,/if\(!title\.includes\('create your kinfolk'\)\) return/);
+  assert.match(app,/if\(!title\.includes\('create your kinfolk'\)\)\{[\s\S]*?return;/);
 });
 
 test('migration is a draft, not a deployed migration, and preserves age gate',()=>{

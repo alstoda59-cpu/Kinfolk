@@ -18,10 +18,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Complete Node regression suite (synthetic only)
+        run: node --test kinfolk-social/tests/*.test.cjs
       - name: Install browser test dependencies
         run: |
-          python -m pip install playwright
-          python -m playwright install --with-deps chromium
+          python -m pip install playwright==1.58.0
+          python -m playwright install --with-deps chromium webkit
       - name: Simulated browser regressions (no live Supabase)
         working-directory: kinfolk-social
         run: |
@@ -34,6 +36,7 @@ jobs:
           python test_recovery143.py
           python test_recovery218.py
           python test_recovery219.py
+          python test_recovery221.py
       - name: Offline reaction regression (no live Supabase)
         run: node kinfolk-social/test_recovery148_reactions.js
       - name: Offline session restoration regression (no live Supabase)

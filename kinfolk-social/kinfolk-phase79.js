@@ -110,7 +110,12 @@
     const form=document.querySelector('#authForm[data-kf73="1"]');
     if(!form) return;
     const title=(form.querySelector('.kf73Title')?.textContent||'').trim().toLowerCase();
-    if(!title.includes('create your kinfolk')) return;
+    if(!title.includes('create your kinfolk')){
+      delete form.__kf221Verification;
+      form.querySelector('#kf221Verification')?.remove();
+      return;
+    }
+    mountVerification(form);
     const introduction=form.querySelector('.kf73Text');
     if(introduction&&introduction.dataset.kf218Intro!=='1'){
       introduction.textContent='Step 1 of 3: Enter your account details. Next, personalize your profile if you like, then review and create your account.';
@@ -283,6 +288,41 @@
     }catch{return null}
   }
 
+  // Recovery221: retain only the submitted email in memory, never credentials.
+  // Resend responses cannot update a replaced form or a later signup attempt.
+  function mountVerification(form){
+    const pending=form.__kf221Verification;
+    let panel=form.querySelector('#kf221Verification');
+    if(!pending){panel?.remove();return}
+    if(panel?.__pending===pending)return;
+    panel?.remove();
+    panel=document.createElement('section');
+    panel.id='kf221Verification';panel.className='kf218Review';panel.__pending=pending;
+    const heading=document.createElement('strong');heading.textContent='Verify your email';
+    const note=document.createElement('p');
+    note.textContent='Check '+pending.email+' and your spam folder. Follow the confirmation link, then return to Log in. If this address is already registered, try logging in or resetting your password.';
+    const button=document.createElement('button');
+    button.type='button';button.className='kf218ConfirmToggle';button.textContent='Resend verification email';
+    const status=document.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+    const current=()=>form.isConnected&&panel.isConnected&&form.__kf221Verification===pending&&
+      (form.querySelector('.kf73Title')?.textContent||'').toLowerCase().includes('create your kinfolk');
+    button.onclick=async()=>{
+      if(!current()||pending.busy)return;
+      if(Date.now()<pending.retryAt){status.textContent='Please wait a minute before requesting another email.';return}
+      pending.busy=true;pending.retryAt=Date.now()+60000;button.disabled=true;status.textContent='Requesting verification email…';
+      try{
+        if(typeof sb==='undefined'||!sb?.auth?.resend)throw new Error('Email resend is unavailable. Please try again later.');
+        const redirect=emailRedirect();
+        const {error}=await sb.auth.resend({type:'signup',email:pending.email,...(redirect?{options:{emailRedirectTo:redirect}}:{})});
+        if(error)throw error;
+        if(current())status.textContent='If this account needs verification, a new email has been requested. Check your inbox and spam folder.';
+      }catch(error){
+        if(current())status.textContent=error?.status===429?'Too many email requests. Please wait before trying again.':'Could not request an email. Please wait a minute and try again.';
+      }finally{pending.busy=false;if(current())button.disabled=false}
+    };
+    panel.append(heading,note,button,status);form.appendChild(panel);
+  }
+
   // Recovery133: a single capturing signup handler owns this path. Previous
   // phase handlers repeatedly replaced form.onsubmit, sometimes causing an
   // adult signup click to be swallowed after an underage attempt.
@@ -321,6 +361,8 @@
     if(age===null){show(form,'Enter a valid birthday.');form.querySelector('#kf79Birthdate')?.focus();return}
     if(age<13){show(form,'Kinfolk accounts are available for ages 13 and older.');return}
     if(age>99){show(form,'Enter a valid birthday for ages 13–99.');return}
+    delete form.__kf221Verification;
+    form.querySelector('#kf221Verification')?.remove();
     signupBusy=true;
     if(btn){btn.disabled=true;btn.textContent='Creating account…'}
     try{
@@ -374,7 +416,10 @@
       // Never display success in a screen that is no longer the signup form.
       if(!form.isConnected||!((form.querySelector('.kf73Title')?.textContent||'').toLowerCase().includes('create your kinfolk')))return;
       if(data?.session)show(form,'Account created. Opening Kinfolk…',true);
-      else show(form,'Account created. Check your email to confirm it, then log in.',true);
+      else {
+        form.__kf221Verification={email,busy:false,retryAt:0};
+        show(form,'Check your email to confirm your account, then log in.',true);
+      }
       // Email-confirmation signups do not have a session yet. Keep the form
       // usable so the member can correct an address or retry if necessary.
       if(btn){btn.disabled=false;btn.textContent='Create account'};

@@ -29,7 +29,7 @@ function fixture(stage){
     '.kf73Primary':{disabled:false,textContent:'Create account'}
   };
   const form={
-    id:'authForm',isConnected:true,dataset:{kf73:'1'},
+    querySelectorAll(){return []},id:'authForm',isConnected:true,dataset:{kf73:'1'},
     querySelector:k=>k==='.kf73Msg'?message:fields[k]||null,
     appendChild:n=>{message=n}
   };

@@ -18,7 +18,7 @@ function fixture({ stay = false, session = true, error = null } = {}) {
     '.kf73Primary': { disabled: false, textContent: 'Create account' },
   };
   const form = {
-    id: 'authForm', isConnected: true, dataset: { kf73: '1' },
+    querySelectorAll() { return []; }, id: 'authForm', isConnected: true, dataset: { kf73: '1' },
     querySelector(selector) {
       return selector === '.kf73Msg' ? message || null : fields[selector] || null;
     },
