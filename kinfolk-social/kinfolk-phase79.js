@@ -182,6 +182,9 @@
           return;
         }
       }
+      // A storage failure cleanup can await sign-out while navigation changes.
+      // Never display success in a screen that is no longer the signup form.
+      if(!form.isConnected||!((form.querySelector('.kf73Title')?.textContent||'').toLowerCase().includes('create your kinfolk')))return;
       if(data?.session)show(form,'Account created. Opening Kinfolk…',true);
       else show(form,'Account created. Check your email to confirm it, then log in.',true);
       // Email-confirmation signups do not have a session yet. Keep the form
