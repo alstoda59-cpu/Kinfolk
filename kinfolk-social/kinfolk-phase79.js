@@ -8,6 +8,17 @@
     .kf73Form input[type=date]{width:100%;box-sizing:border-box;min-height:54px;border-radius:15px;border:1px solid rgba(255,255,255,.12);background:#121118;color:#fff;padding:0 16px;font:inherit;font-size:16px;outline:none;color-scheme:dark}
     .kf73Form input[type=date]:focus{border-color:var(--accent,#e85a9b);box-shadow:0 0 0 3px rgba(232,90,155,.12)}
     .kf79AgeNote{font-size:12px;line-height:1.45;color:#9e9aa8;margin:7px 2px 2px}
+    .kf218ProfileSetup{margin:18px 0 10px;border:1px solid rgba(255,255,255,.14);border-radius:16px;background:#24212c;padding:14px}
+    .kf218ProfileSetup summary{cursor:pointer;font-weight:850;color:#fff;min-height:36px;line-height:36px}
+    .kf218ProfileSetup p{font-size:13px;color:#bdb5c7;line-height:1.45;margin:8px 0}
+    .kf218ProfileSetup textarea,.kf218ProfileSetup select{width:100%;box-sizing:border-box;border-radius:13px;border:1px solid rgba(255,255,255,.15);background:#121118;color:#fff;padding:13px;font:inherit;font-size:16px;min-height:49px}
+    .kf218ProfileSetup textarea{min-height:88px;resize:vertical}
+    .kf218Interests{border:0;padding:0;margin:14px 0 0}
+    .kf218Interests legend{color:#d7d4df;font-weight:800;margin-bottom:7px}
+    .kf218InterestChoice{display:inline-flex!important;align-items:center;gap:7px;border:1px solid #514255;border-radius:99px;padding:9px 11px;margin:3px!important;font-size:13px;font-weight:600!important}
+    .kf218InterestChoice input{accent-color:var(--accent,#e85a9b);width:17px;height:17px}
+    .kf218Review{margin:15px 0 0;padding:13px;border-radius:14px;background:#26222d;border:1px solid rgba(255,255,255,.11);font-size:13px;line-height:1.5;color:#d6ccdc}
+    .kf218Review strong{display:block;font-size:15px;color:#fff;margin-bottom:4px}
   `;
   document.head.appendChild(style);
 
@@ -136,6 +147,67 @@
       form.insertBefore(note,passwordLabel);
     }
 
+    // Optional personalization is collected with signup metadata. It is not
+    // a substitute for backend profile/privacy policy enforcement.
+    if(!form.querySelector('#kf218ProfileSetup')){
+      const meta=form.querySelector('.kf73Meta');
+      if(meta){
+        const details=document.createElement('details');
+        details.id='kf218ProfileSetup';
+        details.className='kf218ProfileSetup';
+        const summary=document.createElement('summary');
+        summary.textContent='Step 2: Personalize your profile (optional)';
+        details.appendChild(summary);
+        const intro=document.createElement('p');
+        intro.textContent='Tell people what you enjoy. You can skip this and update your profile later.';
+        details.appendChild(intro);
+        const bioLabel=document.createElement('label');
+        bioLabel.htmlFor='kf218Bio';bioLabel.textContent='Short bio';
+        const bio=document.createElement('textarea');
+        bio.id='kf218Bio';bio.maxLength=160;bio.rows=3;bio.placeholder='A little about you (optional)';
+        details.appendChild(bioLabel);details.appendChild(bio);
+        const langLabel=document.createElement('label');
+        langLabel.htmlFor='kf218Language';langLabel.textContent='Preferred language';
+        const lang=document.createElement('select');
+        lang.id='kf218Language';
+        [['en','English'],['es','Español'],['fr','Français'],['pt','Português'],['de','Deutsch']].forEach(([value,name])=>{
+          const option=document.createElement('option');option.value=value;option.textContent=name;lang.appendChild(option);
+        });
+        details.appendChild(langLabel);details.appendChild(lang);
+        const interests=document.createElement('fieldset');
+        interests.className='kf218Interests';
+        const legend=document.createElement('legend');
+        legend.textContent='Interests (choose up to 3)';
+        interests.appendChild(legend);
+        [['gaming','Gaming'],['music','Music'],['art','Art'],['fashion','Fashion'],['sports','Sports'],['technology','Technology']].forEach(([value,name])=>{
+          const label=document.createElement('label');label.className='kf218InterestChoice';
+          const check=document.createElement('input');
+          check.type='checkbox';check.name='kf218Interest';check.value=value;
+          check.addEventListener('change',()=>{
+            const selected=form.querySelectorAll('input[name="kf218Interest"]:checked');
+            if(selected.length>3){check.checked=false;show(form,'Choose up to three interests.');}
+          });
+          label.appendChild(check);
+          const caption=document.createElement('span');caption.textContent=name;label.appendChild(caption);
+          interests.appendChild(label);
+        });
+        details.appendChild(interests);
+        form.insertBefore(details,meta);
+      }
+    }
+    if(!form.querySelector('#kf218Review')){
+      const primary=form.querySelector('.kf73Primary');
+      if(primary){
+        const review=document.createElement('div');
+        review.id='kf218Review';review.className='kf218Review';
+        const heading=document.createElement('strong');
+        heading.textContent='Step 3: Review & create account';
+        const note=document.createElement('span');
+        note.textContent='Confirm your details, then create your account. Email verification may be required. Teen accounts use mandatory protections.';
+        review.appendChild(heading);review.appendChild(note);
+        form.insertBefore(review,primary);
+      }
+    }
   }
 
   // Native Capacitor WebViews typically use https://localhost. That origin is
@@ -170,12 +242,18 @@
     const birthdate=form.querySelector('#kf79Birthdate')?.value||'';
     const username=form.querySelector('#kf217Username')?.value.trim()||'';
     const confirmPassword=form.querySelector('#kf217ConfirmPassword')?.value;
+    const bio=(form.querySelector('#kf218Bio')?.value||'').trim();
+    const preferredLanguage=form.querySelector('#kf218Language')?.value||'en';
+    const interests=Array.from(form.querySelectorAll('input[name="kf218Interest"]:checked'),el=>el.value);
     const stay=form.querySelector('#kf73Stay')?.checked!==false;
     if(!display_name){show(form,'Enter a display name.');return}
     if(form.querySelector('#kf217Username')&&!/^[a-zA-Z0-9_]{3,24}$/.test(username)){show(form,'Choose a username using 3–24 letters, numbers, or underscores.');return}
     if(!email){show(form,'Enter your email address.');return}
     if(password.length<5||password.length>12){show(form,'Password must be 5–12 characters.');return}
     if(confirmPassword!==undefined&&confirmPassword!==password){show(form,'Passwords do not match.');return}
+    if(bio.length>160){show(form,'Your bio must be 160 characters or less.');return}
+    if(!['en','es','fr','pt','de'].includes(preferredLanguage)){show(form,'Choose a supported language.');return}
+    if(interests.length>3){show(form,'Choose no more than three interests.');return}
     const age=ageFromDate(birthdate);
     if(age===null){show(form,'Enter a valid birthday.');form.querySelector('#kf79Birthdate')?.focus();return}
     if(age<13){show(form,'Kinfolk accounts are available for ages 13 and older.');return}
@@ -187,7 +265,7 @@
       const redirect=emailRedirect();
       const {data,error}=await sb.auth.signUp({
         email,password,
-        options:{...(redirect?{emailRedirectTo:redirect}:{}),data:{display_name,signup_birthdate:birthdate,...(username?{username}:{} )}}
+        options:{...(redirect?{emailRedirectTo:redirect}:{}),data:{display_name,signup_birthdate:birthdate,...(username?{username}:{}),...(bio?{bio}:{}),preferred_language:preferredLanguage,...(interests.length?{interests}:{})}}
       });
       if(error)throw error;
       // The user may have navigated to login while signup was in flight.
