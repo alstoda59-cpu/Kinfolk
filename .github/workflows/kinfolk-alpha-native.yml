@@ -37,7 +37,9 @@ jobs:
       - name: Install Android 35 build packages using hosted SDK
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | sort | head -n 1)"
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
       - name: Resolve pinned native dependencies and install
         working-directory: kinfolk-social/native
         run: |
