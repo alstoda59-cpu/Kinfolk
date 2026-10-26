@@ -44,3 +44,6 @@ Remaining blockers: authorized isolated backend with synthetic accounts, end-to-
 - CI registration: `35b7aa667a1496c630a7be3320038d0e17d87938`
 
 No production deployment, no merge, no live schema/auth/data/security changes, no Kinfolksworld modifications, no real-user messages, and no app-store submissions.
+
+## Recovery220 read-only correction
+A later read-only index-catalog inspection found that `profiles_username_lower_unique` **already** enforces unique `lower(username)`. The Recovery219 draft's proposed new expression index would duplicate that existing protection. The draft was corrected to reuse the existing index, and the static regression was updated. No SQL changes were applied. See [RECOVERY220.md](RECOVERY220.md) and [RECOVERY219_BACKEND_REVIEW.md](RECOVERY219_BACKEND_REVIEW.md).
