@@ -8,6 +8,7 @@
     .kf73Form input[type=date]{width:100%;box-sizing:border-box;min-height:54px;border-radius:15px;border:1px solid rgba(255,255,255,.12);background:#121118;color:#fff;padding:0 16px;font:inherit;font-size:16px;outline:none;color-scheme:dark}
     .kf73Form input[type=date]:focus{border-color:var(--accent,#e85a9b);box-shadow:0 0 0 3px rgba(232,90,155,.12)}
     .kf79AgeNote{font-size:12px;line-height:1.45;color:#9e9aa8;margin:7px 2px 2px}
+    .kf218ConfirmToggle{display:block;margin:4px 0 4px auto;min-height:44px;border:0;background:transparent;color:var(--accent,#e85a9b);font-weight:850;padding:8px 0}
     .kf218ProfileSetup{margin:18px 0 10px;border:1px solid rgba(255,255,255,.14);border-radius:16px;background:#24212c;padding:14px}
     .kf218ProfileSetup summary{cursor:pointer;font-weight:850;color:#fff;min-height:36px;line-height:36px}
     .kf218ProfileSetup p{font-size:13px;color:#bdb5c7;line-height:1.45;margin:8px 0}
@@ -116,7 +117,7 @@
         input.autocomplete='new-password';input.minLength=5;input.maxLength=12;
         input.placeholder='Enter password again';
         const toggle=document.createElement('button');
-        toggle.type='button';toggle.textContent='Show confirmation';
+        toggle.type='button';toggle.className='kf218ConfirmToggle';toggle.textContent='Show confirmation';
         toggle.setAttribute('aria-label','Show confirmation password');
         toggle.addEventListener('click',()=>{
           input.type=input.type==='password'?'text':'password';
