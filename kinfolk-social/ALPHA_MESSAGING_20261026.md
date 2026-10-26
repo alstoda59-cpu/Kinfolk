@@ -29,6 +29,7 @@ Scope: **only** isolated Supabase project `viantpfagtbgyyzavmtv`. Do not run the
 ## Known blockers and follow-up
 
 - The alpha is intentionally **friends-only for DMs** until teen/adult messaging permissions and age enforcement are validated.
+- **Disappearing-message caveat:** the 30-second RLS visibility rule hides messages from client reads but does **not delete database rows**. A server-side retention/cleanup mechanism and privacy QA are required before representing this as permanent deletion or launching.
 - Existing `loadNotifications` reads the recipient's notifications via RLS; generic friend/message notifications now have triggers, but live behavior is untested.
 - Other app tables (`kinfolk_stories`, `kinfolk_videos`, `kinfolk_pages`, `kinfolk_channel_subscriptions` and others) remain missing from this isolated backend.
 - Avoid using real user credentials or content in the preview. Continue synthetic-account RLS testing and isolated native packaging before launch claims.
