@@ -32,9 +32,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - uses: android-actions/setup-android@v3
-      - name: Install Android 35 build packages
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      # ubuntu-latest already includes Android command-line tools and ANDROID_HOME.
+      # android-actions/setup-android@v3 attempts to install removed 'tools' package.
+      - name: Install Android 35 build packages using hosted SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
       - name: Resolve pinned native dependencies and install
         working-directory: kinfolk-social/native
         run: |
