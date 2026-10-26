@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery219 (2026-10-25)
+
+Latest isolated checkpoint: [RECOVERY219.md](RECOVERY219.md). Signup metadata now matches existing backend profile bio/display-name trigger keys, with clearer username feedback. Read-only schema inspection found a silent username-collision fallback and unsynced signup locale; a **draft-only** migration proposes corrections, not applied to shared Supabase. Three synthetic V8 static tests and a mocked signup handler passed; GitHub Actions, real Supabase and Android/iPhone devices remain unverified. Vercel build-rate limit prevents a new READY preview. Production and Kinfolksworld remain untouched.
+
 # Kinfolk Social | Recovery218 (2026-10-25)
 
 Latest isolated checkpoint: [RECOVERY218.md](RECOVERY218.md). Fixed the Recovery217 confirmation-field DOM insertion error that could abort birthday/signup mounting; added optional mobile bio/language/interests and a three-section signup explanation without changing the existing auth handler. Updated legacy Chromium signup fixtures and added Recovery218 mocked mobile regression to CI. V8 synthetic mounting and source syntax passed. Native CI, real Supabase and Android/iPhone tests remain unverified; new previews are Vercel-rate-limited. Production, Kinfolksworld and shared Supabase were not changed.
