@@ -19,7 +19,7 @@ const makeStore = (map, failKey) => ({
   },
   removeItem: key => map.delete(key)
 });
-const runCase = async ({ initialLocal = [], initialTab = [], stay, adoptFails = false, failKey }) => {
+const runCase = async ({ initialLocal = [], initialTab = [], stay, adoptFails = false, failKey, activeId = 'synthetic-user' }) => {
   const local = new Map(initialLocal), tab = new Map(initialTab);
   const saveStay = new Function('localStorage', 'sessionStorage', 'PREF1', 'PREF2', 'TAB', 'console',
     saveStayCode + ';return saveStay;')(
@@ -33,7 +33,7 @@ const runCase = async ({ initialLocal = [], initialTab = [], stay, adoptFails = 
   const perform = new Function('saveStay', 'adopt', 'currentAccountId', 'stay', 'tokens', 'console',
     'return (async () => {' + adoptionCode + ';return session})()');
   let error = null, session = null;
-  try { session = await perform(saveStay, adopt, async () => 'synthetic-user', stay, {}, { warn() {} }); }
+  try { session = await perform(saveStay, adopt, async () => activeId, stay, {}, { warn() {} }); }
   catch (err) { error = err; }
   return { local, tab, attempts, error, session };
 };
@@ -60,5 +60,10 @@ const runCase = async ({ initialLocal = [], initialTab = [], stay, adoptFails = 
   assert.equal(r.attempts, 0, 'never adopt a session when preference storage fails');
   assert.equal(r.local.get('p1'), '1');
   assert.equal(r.local.get('p2'), '1');
-  console.log('Recovery154: adoption failure rollback and successful login preferences passed (synthetic)');
+  r = await runCase({ initialLocal: [['p1','1'],['p2','1']], stay: false, activeId: 'different-account' });
+  assert.match(r.error?.message || '', /active account changed/i);
+  assert.equal(r.local.get('p1'), '1', 'account switch restores original stay preference');
+  assert.equal(r.local.get('p2'), '1');
+  assert.equal(r.tab.has('tab'), false);
+  console.log('Recovery154: adoption rollback, account-switch rollback and successful login preferences passed (synthetic)');
 })().catch(error => { console.error(error); process.exitCode = 1; });
