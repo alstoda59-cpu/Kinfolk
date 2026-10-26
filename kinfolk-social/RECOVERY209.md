@@ -22,3 +22,10 @@ Branch: `kinfolk-social/recovery207-signup-navigation-guard`.
 4. Native Capacitor builds and store compliance before any launch.
 
 No production, Kinfolksworld, shared Supabase, or store submission changes.
+
+## Recovery210 verification addendum (2026-10-25)
+- Re-fetched the branch's current Phase79 source and four-case Recovery207 test source.
+- Evaluated the four test assertions as equivalent read-only V8 source-order checks. **4/4 passed.** This does not constitute execution of the Node test runner or behavior-level tests.
+- Attempted native Node verification in the local sandbox, but the GitHub raw host could not resolve there, so exact repository source could not be materialized for a native Node run. Do not claim Node CI passed.
+- Vercel deployment listing checked; the last verified READY preview remained Recovery206, and GitHub's later commit status reported a build-rate-limit failure.
+- Next: run native Node CI, verify isolated preview, then test real signup and session restoration against a dedicated nonproduction backend.
