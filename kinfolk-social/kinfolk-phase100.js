@@ -41,14 +41,17 @@ async function upload(file,folder,paths,accountId,editor){
     if(avatar)po.avatar_url=await upload(avatar,'avatars',uploaded,accountId,f);
     if(wallpaper)po.wallpaper_url=await upload(wallpaper,'wallpapers',uploaded,accountId,f);
     requireEditor(accountId,f);
-    const x=await sb.from('kinfolk_profile_extras').upsert(ex,{onConflict:'user_id'});
+    const x=await sb.from('kinfolk_profile_extras').upsert(ex,{onConflict:'user_id',count:'exact'});
     if(x.error)throw x.error;
+    // RLS can silently filter an upsert without raising an API error.
+    // Treat a missing count as unverified rather than reporting a partial save.
+    if(x.count!==1)throw new Error('Profile preferences could not be saved. Please sign in again and retry.');
     requireEditor(accountId,f);
     const p=await sb.from('profiles').update(po,{count:'exact'}).eq('id',accountId);
     if(p.error)throw p.error;
     // Supabase may report no error when RLS filters out every matching row.
     // Never announce a successful save unless the original profile was updated.
-    if(p.count!=null&&p.count!==1)throw new Error('Profile could not be updated. Please sign in again and retry.');
+    if(p.count!==1)throw new Error('Profile could not be verified as updated. Please sign in again and retry.');
     // The database update may finish after logout or account switching.
     // Never hydrate, render or show success for a different account.
     profileSaved=true;
