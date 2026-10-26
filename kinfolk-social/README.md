@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery214 (2026-10-25)
+
+Latest isolated checkpoint: [RECOVERY214.md](RECOVERY214.md). Phase95 now performs guarded local sign-out of a newly adopted account when login adoption/activation fails, preventing a failed login from leaving an unintended session. Recovery151/154 synthetic fixtures were repaired, and five new cleanup regressions were added to CI. V8-adapter tests passed; native Node CI, real backend and physical mobile tests remain unverified. Vercel build-rate-limit blocked confirmation of a READY preview containing the application fix. Production, Kinfolksworld and shared Supabase remain untouched.
+
 # Kinfolk Social | Recovery213 (2026-10-25)
 
 Latest isolated checkpoint: [RECOVERY213.md](RECOVERY213.md). Repaired four legacy signup test fixtures for the active DOM guard, prevented a delayed signup storage-error message from overwriting the Login screen, and added three deferred-auth regression tests to CI. **21/21 targeted synthetic V8-adapter tests passed**, not native Node/real Supabase/device tests. Isolated preview `dpl_A2qQBmYaCx24Tzu2YiHtNPNtpAin` is READY and served the updated Phase79 script over HTTP 200, but predates new test/CI commits. Production, Kinfolksworld and shared Supabase remain untouched.
