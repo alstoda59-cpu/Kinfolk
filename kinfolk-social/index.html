@@ -105,7 +105,7 @@ async function kf129ActivateSession(session){
     await kf129Timeout(loadCore(),20000,'Feed loading');if(epoch!==kf129Epoch)return false;
     await kf129Timeout(renderApp(),20000,'Screen loading');if(epoch!==kf129Epoch)return false;
     kf129ReadyUid=uid;return true;
-  }catch(error){if(epoch===kf129Epoch){console.error('Kinfolk account startup',error);kf129Error(error?.message||String(error))}return false}
+  }catch(error){if(epoch===kf129Epoch){kf129ReadyUid=null;state.profile=null;state.extras=null;state.profiles.clear();state.signed.clear();console.error('Kinfolk account startup',error);kf129Error(error?.message||String(error))}return false}
   finally{if(kf129InFlight?.epoch===epoch)kf129InFlight=null}})();
   kf129InFlight={uid,epoch,promise:task};return task;
 }
