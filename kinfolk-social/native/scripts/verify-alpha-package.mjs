@@ -32,11 +32,11 @@ for(const name of modules){
   }
 }
 assert.ok((await stat(path.join(output,'kinfolk-supabase-sdk.js'))).size>10000,'local auth SDK bundle missing');
+const filenames=await readdir(output);
 for(const name of filenames){
   if(!/\.(?:html|js)$/.test(name))continue;
   const contents=await readFile(path.join(output,name),'utf8');
   assert.ok(!contents.includes(LIVE_REF)&&!contents.includes(LIVE_KEY),'shared live backend must not appear in '+name);
 }
-const filenames=await readdir(output);
 assert.ok(filenames.includes('manifest.webmanifest'),'manifest missing');
 console.log('PASS installable alpha package: '+modules.length+' local scripts; no remote auth SDK; main features preserved');
