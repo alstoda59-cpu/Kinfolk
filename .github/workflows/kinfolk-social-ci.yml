@@ -87,6 +87,8 @@ jobs:
           node --test kinfolk-social/tests/recovery195-shorts-mobile-layout.test.cjs kinfolk-social/tests/recovery199-mobile-viewport.test.cjs kinfolk-social/tests/recovery201-mobile-release-guards.test.cjs kinfolk-social/tests/recovery204-reels-input-safety.test.cjs
       - name: Signup session verification and storage rollback regressions (synthetic only)
         run: node --test kinfolk-social/tests/recovery179-signup-session-tab.test.cjs kinfolk-social/tests/recovery180-signup-storage-atomic.test.cjs kinfolk-social/tests/recovery181-signup-account-switch.test.cjs kinfolk-social/tests/recovery205-signup-session-guard.test.cjs
+      - name: Signup navigation race regression (static only)
+        run: node --test kinfolk-social/tests/recovery207-signup-navigation-guard.test.cjs
       - name: Account-isolated content lane regression (synthetic only)
         run: node kinfolk-social/test_recovery173_content_isolation.js
       - name: JavaScript syntax
