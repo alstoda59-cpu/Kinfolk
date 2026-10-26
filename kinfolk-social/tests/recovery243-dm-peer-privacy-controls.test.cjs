@@ -28,7 +28,7 @@ test('report control retries if peer is assigned after form appears',()=>{
  const start=report.indexOf('function patchDmHeader('),end=report.indexOf('function enforce108(',start);
  assert.ok(start>=0&&end>start);
  const form={dataset:{},children:[],appendChild(child){this.children.push(child)}};
- const document={getElementById:id=>id==='dmForm'?form:null,createElement:tag=>({tag,appendChild(child){this.child=child}})};
+ const document={getElementById:id=>id==='dmForm'?form:null,createElement:tag=>({tag,style:{},appendChild(child){this.child=child}})};
  const ctx={document,window:{kf108Report(){}},console};
  const patch=vm.runInNewContext(report.slice(start,end)+'\npatchDmHeader',ctx);
  patch();
@@ -46,7 +46,7 @@ test('report button forwards the current synthetic peer',()=>{
  const start=report.indexOf('function patchDmHeader('),end=report.indexOf('function enforce108(',start);
  const events=[];
  const form={dataset:{peer:'synthetic-peer-42'},appendChild(child){this.row=child}};
- const doc={getElementById:()=>form,createElement:()=>({appendChild(button){this.button=button}})};
+ const doc={getElementById:()=>form,createElement:()=>({style:{},appendChild(button){this.button=button}})};
  const patch=vm.runInNewContext(report.slice(start,end)+'\npatchDmHeader',{document:doc,window:{kf108Report:(...args)=>events.push(args)}});
  patch();
  form.row.button.onclick({preventDefault(){}});
