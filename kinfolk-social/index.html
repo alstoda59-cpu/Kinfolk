@@ -12,15 +12,15 @@
 <meta name="application-name" content="Kinfolk Social">
 <title>Kinfolk Social | Recovery131 Preview</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- Recovery224: show an actionable mobile startup screen if the external auth SDK fails. -->
+<!-- Recovery225: show an actionable mobile startup screen if the external auth SDK fails. -->
 <script id="kinfolk-auth-sdk-recovery">
 (()=>{
   if(window.supabase&&typeof window.supabase.createClient==='function')return;
   const showRecovery=()=>{
     if(window.supabase&&typeof window.supabase.createClient==='function')return;
-    if(!document.body||document.getElementById('kf224AuthRecovery'))return;
+    if(!document.body||document.getElementById('kf225AuthRecovery'))return;
     const pane=document.createElement('section');
-    pane.id='kf224AuthRecovery';
+    pane.id='kf225AuthRecovery';
     pane.setAttribute('role','alert');
     pane.setAttribute('aria-label','Kinfolk sign-in temporarily unavailable');
     pane.style.cssText='position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:calc(20px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px));background:#17151c;color:#f8f5fa;font:16px/1.5 system-ui,-apple-system,sans-serif;text-align:center;overflow:auto';
