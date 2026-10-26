@@ -133,3 +133,22 @@ test('reused auth form cannot receive old signup error after login-to-signup rou
   assert.equal(f.local.size,0);
   assert.equal(f.signupCalls,1);
 });
+
+test('delayed session verification cannot persist prior signup on remounted title node',async()=>{
+  const f=fixture('session'),oldTask=f.submit();
+  await tickUntil(()=>f.sessionChecks>0);
+  f.fields['.kf73Title']={textContent:'Create your Kinfolk'};
+  f.wait.resolve();await oldTask;
+  assert.equal(f.local.size,0);
+  assert.equal(f.tab.size,0);
+  assert.equal(f.message,'');
+});
+
+test('delayed signup storage cleanup cannot paint error on remounted signup screen',async()=>{
+  const f=fixture('signout'),oldTask=f.submit();
+  await tickUntil(()=>f.signouts>0);
+  f.fields['.kf73Title']={textContent:'Create your Kinfolk'};
+  f.wait.resolve();await oldTask;
+  assert.equal(f.message,'');
+  assert.equal(f.local.size,0);
+});
