@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery220 (2026-10-25)
+
+Latest isolated checkpoint: [RECOVERY220.md](RECOVERY220.md). Expanded the existing mobile signup with optional gender and age-aware private-profile defaults, aligning metadata with current backend profile triggers. Added mocked Android-size Chromium privacy regression to CI and verified the exact Phase79 source via V8 synthetic signup checks. Read-only schema inspection confirmed a preexisting case-insensitive username unique index, so a redundant index was removed from the **unapplied** Recovery219 SQL draft. Nonproduction preview `dpl_CqPHv58zJqJcVoSrP1DbsLwU6nqB` is READY and delivered the updated JS with HTTP 200, but native CI, real backend and physical Android/iPhone tests are unverified. No production, Kinfolksworld or shared Supabase changes.
+
 # Kinfolk Social | Recovery219 (2026-10-25)
 
 Latest isolated checkpoint: [RECOVERY219.md](RECOVERY219.md). Signup metadata now matches existing backend profile bio/display-name trigger keys, with clearer username feedback. Read-only schema inspection found a silent username-collision fallback and unsynced signup locale; a **draft-only** migration proposes corrections, not applied to shared Supabase. Three synthetic V8 static tests and a mocked signup handler passed; GitHub Actions, real Supabase and Android/iPhone devices remain unverified. Vercel build-rate limit prevents a new READY preview. Production and Kinfolksworld remain untouched.
