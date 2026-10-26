@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 
 const source=fs.readFileSync('kinfolk-social/kinfolk-phase107.js','utf8');
-const blockStart=source.indexOf('async function blockPeer(');
+const blockStart=source.indexOf('const pendingBlocks=');
 const blockEnd=source.indexOf('window.blockKinfolk=blockPeer;',blockStart);
 const dmStart=source.indexOf('function addDmBlock(');
 const dmEnd=source.indexOf('function enforce()',dmStart);
@@ -92,14 +92,49 @@ test('reused DM form blocks the currently selected peer, not a stale peer',()=>{
   addDmBlock(form);
   form.dataset.peer='peer-2';
   addDmBlock(form);
-  button.onpointerup({preventDefault(){},stopImmediatePropagation(){}});
+  button.onclick({preventDefault(){},stopImmediatePropagation(){}});
   assert.deepEqual(selected,['peer-2']);
   form.dataset.peer='';
-  button.ontouchend({preventDefault(){},stopImmediatePropagation(){}});
+  button.onclick({preventDefault(){},stopImmediatePropagation(){}});
   assert.deepEqual(selected,['peer-2'],'missing peer must not block old account');
 });
 
 test('messaging fallback polling pauses in background and runs every two seconds',()=>{
   assert.match(source,/setInterval\(\(\)=>\{if\(document\.visibilityState!=='hidden'\)enforce\(\)\},2000\)/);
   assert.match(source,/new MutationObserver\(/,'immediate DOM rebinding is preserved');
+});
+
+test('a mobile block button has one click path for touch, pointer and keyboard',()=>{
+  const button={},note={querySelector:()=>button};
+  const addDmBlock=vm.runInNewContext(dmCode+'\naddDmBlock',{
+    document:{createElement:()=>note},blockPeer:()=>{}
+  });
+  addDmBlock({dataset:{peer:'peer-B'},insertAdjacentElement(){}});
+  assert.equal(typeof button.onclick,'function');
+  assert.equal(button.onpointerup,undefined);
+  assert.equal(button.ontouchend,undefined);
+  assert.equal(button.onkeydown,undefined);
+});
+
+test('pending block for a previous DM cannot close a newly selected conversation',async()=>{
+  const h=blockHarness(),form={isConnected:true,dataset:{peer:'peer-B'}};
+  const pending=h.blockPeer('peer-B',form);
+  form.dataset.peer='peer-C';
+  h.finish();
+  await pending;
+  assert.equal(h.events.filter(e=>e[0]==='toast'||e[0]==='close').length,0);
+  assert.deepEqual(h.events[0],['insert','account-A','peer-B']);
+});
+
+test('repeated block actions while a request is pending send only one insert',async()=>{
+  const h=blockHarness();
+  const pending=h.blockPeer('peer-B');
+  await h.blockPeer('peer-B');
+  assert.equal(h.events.filter(e=>e[0]==='insert').length,1);
+  h.finish();
+  await pending;
+  const retry=h.blockPeer('peer-B');
+  assert.equal(h.events.filter(e=>e[0]==='insert').length,2,'lock must release after completion');
+  h.finish();
+  await retry;
 });
