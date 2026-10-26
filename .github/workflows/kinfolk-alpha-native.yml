@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - kinfolk-social/alpha-installable-build
+      # Isolated Recovery226 verification; never targets production or store release.
+      - kinfolk-social/recovery226-login-remount-cleanup
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'

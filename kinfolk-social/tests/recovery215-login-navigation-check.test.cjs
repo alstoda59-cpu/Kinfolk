@@ -23,5 +23,10 @@ test('login screen guard requires original title node identity, not only same ti
 test('reused login form cannot submit another account while old request is pending',()=>{
  assert.ok(source.includes("activeLoginTitle=loginTitle"));
  assert.ok(source.includes("if(loginBusy){if(loginTitle!==activeLoginTitle)show(form,"));
- assert.ok(source.includes("if(activeLoginTitle===loginTitle){loginBusy=false;activeLoginTitle=null}"));
+ assert.ok(source.includes("form.addEventListener('submit',form.__kf95Handler,true)"),
+  'capture submit listener must survive Phase76 onsubmit replacement');
+ const cleanup=source.indexOf("if(activeLoginTitle===loginTitle){loginBusy=false;activeLoginTitle=null");
+ assert.ok(cleanup>=0,'stale login must release its request lock');
+ assert.ok(source.indexOf("currentButton===btn&&mode(form)==='login'",cleanup)>cleanup,
+  'stale request cleanup must restore the reused Login submit button');
 });

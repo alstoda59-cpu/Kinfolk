@@ -1,4 +1,9 @@
 name: Kinfolk Social source checks
+
+# Keep one active CI run per development branch; successive fixes supersede old runs.
+concurrency:
+  group: kinfolk-social-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 on:
   push:
     branches:

@@ -54,13 +54,35 @@ with sync_playwright() as p:
             page.locator('.kf73Primary').click()
             assert page.evaluate('window.__login224Calls')==1,'second login must wait'
             assert 'previous login attempt' in page.locator('.kf73Msg').inner_text().lower()
+            assert page.evaluate("document.querySelector('#authForm').dataset.kf95LoginPending")=='1','first login must still hold its request lock'
             page.evaluate('(reject)=>{window.__reject224=reject;window.__release224()}',reject_old)
-            page.wait_for_timeout(250)
+            # Synchronize with the actual async finally cleanup instead of an unreliable fixed delay.
+            page.wait_for_function("document.querySelector('#authForm').dataset.kf95LoginPending!=='1'")
             assert page.locator('#main').count()==0,'stale login must not open main app'
             assert page.evaluate('window.__login224Calls')==1
             assert page.evaluate("localStorage.getItem('kinfolk_stay_logged_in_v1')") is None
             assert 'incorrect' not in page.locator('.kf73Msg').inner_text().lower(),'old error leaked to new login'
+            # A reused Login button must not stay disabled after the stale request settles.
+            page.wait_for_function("!document.querySelector('.kf73Primary').disabled")
+            assert page.locator('.kf73Primary').is_enabled(),'login button remained disabled after stale request'
+            assert page.locator('.kf73Primary').inner_text()=='Log in','stale loading label remained after form remount'
+            # Reused mobile auth form can clear password fields on rerender; re-enter after the old request finishes.
+            page.locator('#kf73Email').fill('new@example.test')
+            page.locator('#kf73Password').fill('password9')
+            assert page.locator('#kf73Password').input_value()=='password9'
             page.locator('.kf73Primary').click()
+            page.wait_for_timeout(400)
+            if page.evaluate('window.__login224Calls')!=2:
+                print('RECOVERY226 RETRY DIAGNOSTIC',engine,reject_old,page.evaluate("""() => {
+                    const f=document.querySelector('#authForm'), b=f.querySelector('.kf73Primary');
+                    return {calls:window.__login224Calls,mode:f.querySelector('.kf73Title')?.textContent,
+                        formSame:f===window.__oldLoginForm,capture:f.__kf95CaptureInstalled,
+                        ownSubmit:f.onsubmit===f.__kf95Handler,
+                        pending:f.dataset.kf95LoginPending,buttonDisabled:b.disabled,buttonType:b.type,
+                        formValid:f.checkValidity(),message:f.querySelector('.kf73Msg')?.textContent,
+                        email:f.querySelector('#kf73Email')?.value,
+                        session:!!window.__kfMock.session};
+                }"""),flush=True)
             page.wait_for_function('window.__login224Calls===2')
             page.locator('#main').wait_for(state='visible',timeout=10000)
             assert page.evaluate('window.state.user?.id')=='11111111-1111-4111-8111-111111111111'
