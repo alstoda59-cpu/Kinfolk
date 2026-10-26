@@ -102,7 +102,7 @@
         input.minLength=3;input.maxLength=24;input.autocomplete='username';
         input.placeholder='Choose a username';
         const hint=document.createElement('div');
-        hint.className='kf79AgeNote';hint.textContent='3–24 letters, numbers, or underscores. You can change your display name later.';
+        hint.className='kf79AgeNote';hint.textContent='3–24 letters, numbers, or underscores. Your username is confirmed after signup; your display name can change later.';
         form.insertBefore(label,emailLabel);form.insertBefore(input,emailLabel);form.insertBefore(hint,emailLabel);
       }
     }
@@ -329,6 +329,7 @@
       let message=raw;
       if(low.includes('birthday is required'))message='Enter your birthday to create a Kinfolk account.';
       else if(low.includes('requires ages 13 through 99')||low.includes('minimum age is 13'))message='Kinfolk accounts are available for ages 13–99.';
+      else if(low.includes('username')&&(low.includes('already taken')||low.includes('duplicate')||low.includes('unique')))message='That username is already taken. Choose a different username.';
       show(form,message);
       if(btn){btn.disabled=false;btn.textContent='Create account'}
     }finally{signupBusy=false}
