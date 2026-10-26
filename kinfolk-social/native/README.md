@@ -1,19 +1,29 @@
-# Kinfolk Social native packaging scaffold (Recovery131)
+# Kinfolk Social: full-app Android/iOS installable alpha
 
-This packages the **existing main app** and does not introduce a guest demo or point to a production website. Source HTML/JS is copied locally into `www/`; there is no `server.url` setting. The current app still requires network access for the Supabase CDN, authentication and data. Offline fallback is not offline social functionality.
+This is the **existing full main Kinfolk Social app**, not Kinfolksworld or a guest demo. Capacitor copies the full local web app into `native/www`; it does not load a production site via `server.url`. The dark UI, Home, Reels/Channels, profile customization, messaging and other existing modules remain included.
 
-## Android / iOS development
+## Verified build evidence (2026-10-26 UTC)
 
-1. Install Node.js and prerequisites (Android Studio + Android SDK; for iOS, macOS + Xcode and Apple developer signing).
-2. From this `native` directory run `npm install`, `npm run prepare:web`, then `npm run android:init` and/or `npm run ios:init` (run the init commands only once).
-3. Run `npm run sync`, then `npm run android:open` or `npm run ios:open`. Build debug/dev variants first.
-4. **Before signing or any release** configure an owned final app ID, universal/app links as needed, privacy manifests/disclosures, native icons/splash and store metadata; inspect and approve any permission requests.
+GitHub Actions run [40278490955](https://github.com/alstoda59-cpu/Kinfolk/actions/runs/40278490955), source commit `624c0945de75cede1beb66b15465d36f52019000`, **completed successfully**:
+- Android: `assembleDebug` built an **unsigned-for-release debug APK** and uploaded artifact `kinfolk-social-android-alpha-debug` (artifact ID `12630863109`). Debug APK is installable for authorized development testing; it is **not** an AAB or a Play Store release.
+- iOS: `xcodebuild` produced an **unsigned iOS Simulator `App.app`** and uploaded artifact `kinfolk-social-ios-simulator-unsigned` (artifact ID `12630729913`). It cannot be installed on a physical iPhone and is not an IPA.
+- The artifact retention is 7 days (currently expires 2026-11-02 UTC). The CI build used temporary ID `social.kinfolk.alpha`; the checked-in `social.kinfolk.app` identifier remains an **unconfirmed placeholder**.
 
-## Known blockers
+This successful compilation **does not** prove real login, backend RLS, physical device behavior, signed distribution or store readiness. The artifacts above **predate Recovery226** login-button cleanup.
 
-- Recovery225 adds an accessible **Try again** startup screen when the external Supabase JavaScript CDN is unavailable. It does **not** bundle Supabase locally, enable offline authentication, or make the app store-ready. Before native release, pin and locally bundle the reviewed SDK with a dependency lockfile, then verify cold launches without CDN access and offline/reconnection behavior on real Android/iPhone devices.
-- App ID `social.kinfolk.app` is a proposed placeholder **not proof of ownership**; confirm identifier before store submission.
-- Capacitor packages and actual native Android/iOS projects are not installed/generated here. No APK/AAB/IPA was built, signed, uploaded or run on real devices.
-- Recovery133 avoids sending the nonpublic `https://localhost` Capacitor origin as a signup email callback. A verified HTTPS universal/app link or configured Supabase site URL must still be tested in an isolated environment; password recovery, email confirmation and callback handling are NOT validated. No auth configuration was modified.
-- Review age protection, adult-content policy, moderation/report/block workflows, media permissions, account deletion, privacy policy and backend RLS before app-store review. Store policies may constrain adult content in ways web filters alone cannot solve.
-- No changes to production, shared backend or existing deployment.
+## Local development
+
+1. Install Node.js 22+, Android Studio/Android SDK, and (for iOS) macOS + Xcode.
+2. In `kinfolk-social/native`, run `npm ci` (the lockfile pins Capacitor 7.6.9, Supabase JS 2.118.0 and esbuild 0.25.12).
+3. Run `npm run prepare:web` and `npm run alpha:verify`. This copies all referenced main-app modules and builds `/kinfolk-supabase-sdk.js` **locally**, replacing the web preview's remote CDN script in the native entry HTML. Never commit generated `native/www` or `node_modules`.
+4. Run `npm run android:init` or `npm run ios:init` once, then `npm run sync` and `npm run android:open` or `npm run ios:open`. Use development/debug builds only.
+
+## Open launch gates
+
+- **Network is still required** for Supabase authentication, feeds, messages and uploads. The locally bundled SDK removes the native cold-start CDN dependency, **not** the backend requirement. Recovery225's startup retry UI remains a fallback, not offline social functionality.
+- A verified HTTPS auth email callback/universal link, password recovery, session restoration and app-link ownership still need owner-authorized isolated-backend and device testing. Never redirect email confirmation to Capacitor's nonpublic `https://localhost` origin.
+- Teen safety must be enforced server-side; review age, privacy, content filters, moderation, reporting, account deletion, media permissions, RLS and store content rules. No shared live Supabase schema/data/auth changes are authorized.
+- Test real Android devices and iPhones, including cold start, background/foreground, keyboard, safe areas, Reels playback, profile music, uploads and network loss/reconnect.
+- Confirm final app identifier and ownership, privacy declarations, accessibility, signed Android AAB, signed iOS IPA/TestFlight and explicit owner approval before any production/store submission.
+
+**Do not use real users or production credentials for alpha tests.** The build has not passed end-to-end security or device acceptance tests. Production, shared Supabase and Kinfolksworld are unchanged.
