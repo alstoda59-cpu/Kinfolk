@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery223 (2026-10-25)
+
+Latest isolated checkpoint: [RECOVERY223.md](RECOVERY223.md). Fixed a signup race caused by reusing the same form element after Login -> Signup navigation; stale asynchronous responses now verify the original title DOM element before updating messages or persisting Stay Logged In. Added new Node regression scenarios (7/7 passed in a synthetic V8 adapter) and a mocked mobile Chromium/WebKit test in CI, not yet verified run. READY nonproduction Vercel preview `dpl_GYaC6BLBwdfRacmbVkFUEYpEE2dC` contains the code and served the updated JS with HTTP 200. Full native Node/Playwright CI, real isolated Supabase sessions and Android/iPhone device tests remain outstanding. Production, Kinfolksworld and shared live Supabase untouched.
+
 # Kinfolk Social | Recovery222 (2026-10-25)
 
 Latest checkpoint: [RECOVERY222.md](RECOVERY222.md). Fixed false-success logout, duplicate requests and stale-account completion; signed-out transitions stop media and clear remaining private caches. **131/131 Node tests, 27/27 legacy scripts and 11 actual mocked mobile Chromium regression scripts pass.** Native packaging includes 23 referenced modules. WebKit, physical devices, real email/backend verification and signed native builds remain unverified. Existing development branch, production restrictions and main-app scope retained.
