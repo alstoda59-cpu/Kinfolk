@@ -177,6 +177,8 @@
               console.warn('Kinfolk signup local sign-out failed',signOutError);
             }
           }
+          // Local sign-out may take time. Do not paint its error over a new login screen.
+          if(!form.isConnected||!((form.querySelector('.kf73Title')?.textContent||'').toLowerCase().includes('create your kinfolk')))return;
           show(form,storageError.message+' Enable browser storage, then log in again.'+(signOutFailed?' Your session may still be active; sign out manually.':''));
           if(btn){btn.disabled=false;btn.textContent='Create account'}
           return;
