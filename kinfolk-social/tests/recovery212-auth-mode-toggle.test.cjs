@@ -16,7 +16,7 @@ test('reused login form restores signup submit and password rules, then login',(
   }
   const pass={
     dataset:{kf98:'1'},value:'testpass',type:'password',
-    removeAttribute(){},autocomplete:'',minLength:5,maxLength:12
+    removeAttribute(){},addEventListener(){},autocomplete:'',minLength:5,maxLength:12
   };
   const button={type:'submit',onclick:null};
   const title={textContent:'Welcome back'};
