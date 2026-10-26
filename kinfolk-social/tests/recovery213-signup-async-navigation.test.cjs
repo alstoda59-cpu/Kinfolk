@@ -12,7 +12,7 @@ function deferred(){
   return {promise,resolve};
 }
 function fixture(stage){
-  let submit,message,signouts=0,sessionChecks=0;
+  let submit,message,signouts=0,sessionChecks=0,signupCalls=0;
   const wait=deferred(),local=new Map(),tab=new Map();
   const storage=map=>({
     getItem:k=>map.get(k)??null,
@@ -40,7 +40,9 @@ function fixture(stage){
   };
   const auth={
     async signUp(){
-      if(stage==='signup')await wait.promise;
+      signupCalls++;
+      if(stage==='signup'||stage==='signup-error')await wait.promise;
+      if(stage==='signup-error')return {data:null,error:Error('Synthetic signup rejected')};
       return {data:{session:{user:{id:'qa'}}},error:null};
     },
     async getSession(){
@@ -65,6 +67,7 @@ function fixture(stage){
     form,fields,wait,local,tab,
     get message(){return message?.textContent||''},
     get signouts(){return signouts},
+    get signupCalls(){return signupCalls},
     get sessionChecks(){return sessionChecks},
     submit:()=>submit({target:form,preventDefault(){},stopImmediatePropagation(){}})
   };
@@ -100,4 +103,33 @@ test('late local sign-out after storage failure does not update replaced login f
   await task;
   assert.equal(f.message,'');
   assert.equal(f.local.size,0,'preference rollback remains intact');
+});
+
+test('reused auth form cannot receive old signup success after login-to-signup roundtrip',async()=>{
+  const f=fixture('signup'),oldTask=f.submit();
+  // Phase76 replaces the form children but keeps the same #authForm element.
+  f.fields['.kf73Title']={textContent:'Welcome back'};
+  f.fields['.kf73Title']={textContent:'Create your Kinfolk'};
+  await f.submit();
+  assert.match(f.message,/previous account creation request/i,'new signup must explain why it is temporarily busy');
+  assert.equal(f.signupCalls,1,'new screen must not create a second account concurrently');
+  f.wait.resolve();await oldTask;
+  assert.match(f.message,/previous account creation request/i,'old success must not repaint a new signup screen');
+  assert.equal(f.local.size,0,'stale signup must not persist a previous account login setting');
+  assert.equal(f.tab.size,0);
+  await f.submit();
+  assert.equal(f.signupCalls,2,'new signup can proceed after old operation finishes');
+  assert.match(f.message,/Account created/);
+});
+
+test('reused auth form cannot receive old signup error after login-to-signup roundtrip',async()=>{
+  const f=fixture('signup-error'),oldTask=f.submit();
+  f.fields['.kf73Title']={textContent:'Welcome back'};
+  f.fields['.kf73Title']={textContent:'Create your Kinfolk'};
+  await f.submit();
+  const previous=f.message;
+  f.wait.resolve();await oldTask;
+  assert.equal(f.message,previous,'old rejection must not appear on the new form');
+  assert.equal(f.local.size,0);
+  assert.equal(f.signupCalls,1);
 });
