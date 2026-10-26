@@ -20,6 +20,9 @@
     .kf218InterestChoice input{accent-color:var(--accent,#e85a9b);width:17px;height:17px}
     .kf218Review{margin:15px 0 0;padding:13px;border-radius:14px;background:#26222d;border:1px solid rgba(255,255,255,.11);font-size:13px;line-height:1.5;color:#d6ccdc}
     .kf218Review strong{display:block;font-size:15px;color:#fff;margin-bottom:4px}
+    .kf219PrivacyChoice{display:flex!important;align-items:center;gap:12px;margin:13px 0 2px!important;min-height:48px;line-height:1.35}
+    .kf219PrivacyChoice input{width:21px;height:21px;min-width:21px;accent-color:var(--accent,#e85a9b)}
+    .kf219PrivacyNote{margin:5px 0 8px!important;font-size:12px;color:#c5b6cc}
   `;
   document.head.appendChild(style);
 
@@ -78,6 +81,29 @@
     const {data,error}=await sb.auth.getSession();
     if(error)throw error;
     return data?.session?.user?.id===expected;
+  }
+
+  function updateSignupPrivacy(form){
+    const birthday=form.querySelector('#kf79Birthdate');
+    const check=form.querySelector('#kf219Private');
+    if(!birthday||!check)return;
+    const age=ageFromDate(birthday.value);
+    const note=form.querySelector('#kf219PrivacyNote');
+    const review=form.querySelector('#kf219PrivacyReview');
+    const isAdult=age!==null&&age>=18&&age<=99;
+    if(!isAdult){
+      check.checked=true;
+      check.disabled=true;
+      if(note)note.textContent=age!==null&&age>=13&&age<18
+        ?'Teen profiles start private. Teen Safety Mode is also enforced separately by the account service.'
+        :'Enter a valid birthday to choose profile visibility.';
+      if(review)review.textContent='Profile visibility: private until an eligible adult chooses otherwise.';
+    }else{
+      check.disabled=false;
+      check.checked=check.dataset.adultPreference==='true';
+      if(note)note.textContent='Optional. Private profiles require follower approval. You can change this later in Settings.';
+      if(review)review.textContent='Profile visibility: '+(check.checked?'private':'public')+'.';
+    }
   }
 
   function mountSignupGate(){
@@ -152,6 +178,12 @@
       form.insertBefore(input,passwordLabel);
       form.insertBefore(note,passwordLabel);
     }
+    const birthdayField=form.querySelector('#kf79Birthdate');
+    if(birthdayField&&!birthdayField.dataset.kf219PrivacyWired){
+      birthdayField.dataset.kf219PrivacyWired='1';
+      birthdayField.addEventListener('input',()=>updateSignupPrivacy(form));
+      birthdayField.addEventListener('change',()=>updateSignupPrivacy(form));
+    }
 
     // Optional personalization is collected with signup metadata. It is not
     // a substitute for backend profile/privacy policy enforcement.
@@ -180,6 +212,24 @@
           const option=document.createElement('option');option.value=value;option.textContent=name;lang.appendChild(option);
         });
         details.appendChild(langLabel);details.appendChild(lang);
+        const genderLabel=document.createElement('label');
+        genderLabel.htmlFor='kf219Gender';genderLabel.textContent='Gender (optional)';
+        const gender=document.createElement('select');gender.id='kf219Gender';
+        [['','Prefer not to say'],['Female','Female'],['Male','Male'],['Nonbinary','Non-binary']].forEach(([value,name])=>{
+          const option=document.createElement('option');option.value=value;option.textContent=name;gender.appendChild(option);
+        });
+        details.appendChild(genderLabel);details.appendChild(gender);
+        const privateLabel=document.createElement('label');
+        privateLabel.className='kf219PrivacyChoice';
+        const privateInput=document.createElement('input');
+        privateInput.type='checkbox';privateInput.id='kf219Private';privateInput.checked=true;
+        privateInput.dataset.adultPreference='false';
+        privateInput.addEventListener('change',()=>{if(!privateInput.disabled)privateInput.dataset.adultPreference=String(privateInput.checked)});
+        const privateText=document.createElement('span');privateText.textContent='Private profile';
+        privateLabel.appendChild(privateInput);privateLabel.appendChild(privateText);
+        const privateNote=document.createElement('p');privateNote.id='kf219PrivacyNote';privateNote.className='kf219PrivacyNote';
+        details.appendChild(privateLabel);details.appendChild(privateNote);
+
         const interests=document.createElement('fieldset');
         interests.className='kf218Interests';
         const legend=document.createElement('legend');
@@ -211,9 +261,13 @@
         const note=document.createElement('span');
         note.textContent='Confirm your details, then create your account. Email verification may be required. Teen accounts use mandatory protections.';
         review.appendChild(heading);review.appendChild(note);
+        const privacyStatus=document.createElement('div');
+        privacyStatus.id='kf219PrivacyReview';privacyStatus.className='kf219PrivacyNote';
+        review.appendChild(privacyStatus);
         form.insertBefore(review,primary);
       }
     }
+    updateSignupPrivacy(form);
   }
 
   // Native Capacitor WebViews typically use https://localhost. That origin is
@@ -251,6 +305,8 @@
     const bio=(form.querySelector('#kf218Bio')?.value||'').trim();
     const preferredLanguage=form.querySelector('#kf218Language')?.value||'en';
     const interests=Array.from(form.querySelectorAll('input[name="kf218Interest"]:checked'),el=>el.value);
+    const gender=form.querySelector('#kf219Gender')?.value||'';
+    const privateProfile=form.querySelector('#kf219Private')?.checked===true;
     const stay=form.querySelector('#kf73Stay')?.checked!==false;
     if(!display_name){show(form,'Enter a display name.');return}
     if(form.querySelector('#kf217Username')&&!/^[a-zA-Z0-9_]{3,24}$/.test(username)){show(form,'Choose a username using 3–24 letters, numbers, or underscores.');return}
@@ -259,6 +315,7 @@
     if(confirmPassword!==undefined&&confirmPassword!==password){show(form,'Passwords do not match.');return}
     if(bio.length>160){show(form,'Your bio must be 160 characters or less.');return}
     if(!['en','es','fr','pt','de'].includes(preferredLanguage)){show(form,'Choose a supported language.');return}
+    if(gender&&!['Female','Male','Nonbinary'].includes(gender)){show(form,'Select a supported gender option.');return}
     if(interests.length>3){show(form,'Choose no more than three interests.');return}
     const age=ageFromDate(birthdate);
     if(age===null){show(form,'Enter a valid birthday.');form.querySelector('#kf79Birthdate')?.focus();return}
@@ -271,7 +328,7 @@
       const redirect=emailRedirect();
       const {data,error}=await sb.auth.signUp({
         email,password,
-        options:{...(redirect?{emailRedirectTo:redirect}:{}),data:{display_name,profile_display_name:display_name,signup_birthdate:birthdate,...(username?{username}:{}),...(bio?{bio,profile_bio:bio}:{}),preferred_language:preferredLanguage,...(interests.length?{interests}:{})}}
+        options:{...(redirect?{emailRedirectTo:redirect}:{}),data:{display_name,profile_display_name:display_name,signup_birthdate:birthdate,...(username?{username}:{}),...(bio?{bio,profile_bio:bio}:{}),preferred_language:preferredLanguage,...(interests.length?{interests}:{}),...(gender?{signup_gender:gender}:{}),profile_private:(age<18||privateProfile)?'true':'false'}}
       });
       if(error)throw error;
       // The user may have navigated to login while signup was in flight.
