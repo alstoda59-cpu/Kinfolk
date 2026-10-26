@@ -111,10 +111,14 @@
     if(!form) return;
     const title=(form.querySelector('.kf73Title')?.textContent||'').trim().toLowerCase();
     if(!title.includes('create your kinfolk')){
+      const existingPassword=form.querySelector('#kf73Password');
+      if(existingPassword){existingPassword.removeAttribute('minlength');existingPassword.removeAttribute('maxlength');}
       delete form.__kf221Verification;
       form.querySelector('#kf221Verification')?.remove();
       return;
     }
+    const signupPassword=form.querySelector('#kf73Password');
+    if(signupPassword){signupPassword.minLength=12;signupPassword.maxLength=128;}
     mountVerification(form);
     const introduction=form.querySelector('.kf73Text');
     if(introduction&&introduction.dataset.kf218Intro!=='1'){
@@ -145,7 +149,7 @@
         label.htmlFor='kf217ConfirmPassword';label.textContent='Confirm password';
         const input=document.createElement('input');
         input.id='kf217ConfirmPassword';input.type='password';input.required=true;
-        input.autocomplete='new-password';input.minLength=5;input.maxLength=12;
+        input.autocomplete='new-password';input.minLength=12;input.maxLength=128;
         input.placeholder='Enter password again';
         const toggle=document.createElement('button');
         toggle.type='button';toggle.className='kf218ConfirmToggle';toggle.textContent='Show confirmation';
@@ -359,7 +363,7 @@
     if(!display_name){show(form,'Enter a display name.');return}
     if(form.querySelector('#kf217Username')&&!/^[a-zA-Z0-9_]{3,24}$/.test(username)){show(form,'Choose a username using 3–24 letters, numbers, or underscores.');return}
     if(!email){show(form,'Enter your email address.');return}
-    if(password.length<5||password.length>12){show(form,'Password must be 5–12 characters.');return}
+    if(password.length<12||password.length>128){show(form,'Password must be 12–128 characters.');return}
     if(confirmPassword!==undefined&&confirmPassword!==password){show(form,'Passwords do not match.');return}
     if(bio.length>160){show(form,'Your bio must be 160 characters or less.');return}
     if(!['en','es','fr','pt','de'].includes(preferredLanguage)){show(form,'Choose a supported language.');return}
