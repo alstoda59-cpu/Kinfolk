@@ -1,4 +1,4 @@
-"""Offline regression: successful authentication must survive blocked preference storage.
+"""Offline regression: blocked preference storage must not silently change session policy.
 
 No real Supabase requests or user accounts are involved.
 """
@@ -20,9 +20,12 @@ with sync_playwright() as p:
     page.evaluate("""() => { localStorage.setItem=()=>{throw new DOMException('Quota exceeded','QuotaExceededError')}; }""")
     page.locator('.kf73Primary').click()
     page.wait_for_timeout(1800)
-    assert page.locator('#main').count()==1,'successful auth incorrectly rejected by storage failure'
-    assert page.evaluate('window.state.user?.id')=='11111111-1111-4111-8111-111111111111'
+    assert page.locator('#main').count()==0,'blocked storage must not open an account'
+    assert page.evaluate('window.state.user') is None
+    assert page.evaluate('window.__kfMock.session') is None
+    assert 'login preference' in page.locator('.kf73Msg').inner_text().lower()
+    assert page.locator('.kf73Primary').is_enabled()
     # Unrelated legacy shell scripts still throw under this extreme condition.
     # Track errors separately rather than pretending the entire app is resilient.
-    print('PASS auth opens despite blocked preference storage; legacy page errors:',errors[:4])
+    print('PASS blocked preference storage prevents login; legacy page errors:',errors[:4])
     browser.close()

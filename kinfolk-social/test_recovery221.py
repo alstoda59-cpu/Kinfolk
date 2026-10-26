@@ -1,11 +1,12 @@
 """Full existing app with synthetic SDK; all network blocked. Not device/backend QA."""
 from pathlib import Path
+import os
 from playwright.sync_api import sync_playwright
 P = Path(__file__).parent
 ns = {'__file__': str(P / 'test_recovery129.py')}
 exec(compile((P/'test_recovery129.py').read_text().split('with sync_playwright() as p:')[0], str(P/'test_recovery129.py'), 'exec'), ns)
 with sync_playwright() as p:
-    for engine in ['chromium', 'webkit']:
+    for engine in os.environ.get('KINFOLK_TEST_ENGINES','chromium,webkit').split(','):
         browser = getattr(p, engine).launch(headless=True)
         page = browser.new_page(viewport={'width':390, 'height':844}, is_mobile=True, has_touch=True)
         page.route('**/*', lambda route: route.abort())

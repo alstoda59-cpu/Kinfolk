@@ -64,7 +64,12 @@ function kf129Error(message){const app=$('#app');if(!app)return;app.innerHTML=`<
 function kf129Timeout(task,ms,label){let timer;return Promise.race([Promise.resolve(task),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' took too long. Check your connection and try again.')),ms)})]).finally(()=>clearTimeout(timer))}
 async function kf129ActivateSession(session){
   const uid=session?.user?.id||null;
-  if(!uid){++kf129Epoch;kf129ReadyUid=null;kf129InFlight=null;try{window.closeKinfolkSettings?.()}catch{}document.getElementById('kf78-overlay')?.remove();document.getElementById('kf115-delete-overlay')?.remove();document.getElementById('modalRoot')?.replaceChildren();document.body.style.overflow='';state.user=null;state.profile=null;state.extras=null;state.feed=[];state.videos=[];state.stories=[];state.notifications=[];state.profiles.clear();state.signed.clear();renderAuth('login');return true}
+  if(!uid){++kf129Epoch;kf129ReadyUid=null;kf129InFlight=null;try{window.closeKinfolkSettings?.()}catch{}document.getElementById('kf78-overlay')?.remove();document.getElementById('kf115-delete-overlay')?.remove();document.getElementById('modalRoot')?.replaceChildren();document.body.style.overflow='';try{window.kf159StopReels?.()}catch{}try{window.kf81StopProfileMusic?.()}catch{}
+    state.user=null;state.profile=null;state.extras=null;state.feed=[];state.videos=[];state.stories=[];state.notifications=[];
+    state.channels=[];state.friendRequests=[];state.likes.clear();state.comments.clear();state.subscriptions.clear();
+    state.profiles.clear();state.signed.clear();state.view='home';state.profileViewId=null;state.profileTab='posts';state.channelViewId=null;state.channelTab='videos';
+    try{sessionStorage.removeItem('kinfolk_session_tab')}catch{}
+    renderAuth('login');return true}
   if(kf129ReadyUid===uid&&state.user?.id===uid&&state.profile&&document.querySelector('#main'))return true;
   if(kf129InFlight?.uid===uid)return kf129InFlight.promise;
   const epoch=++kf129Epoch;
@@ -204,7 +209,36 @@ async function openGroupCreate(){const friendIds=state.friendRequests.filter(r=>
 async function openGroup(id){const [{data:g,error:e1},{data:msgs,error:e2}]=await Promise.all([sb.from('group_conversations').select('*').eq('id',id).single(),sb.from('group_messages').select('*').eq('conversation_id',id).order('created_at',{ascending:true}).limit(150)]);if(e1||e2)return toast((e1||e2).message,'danger');await loadProfiles((msgs||[]).map(m=>m.sender_id));modal(g.title,`<div id="groupMsgList" style="max-height:55vh;overflow:auto">${(msgs||[]).map(m=>{const p=state.profiles.get(m.sender_id);return `<div style="margin:9px 0"><div class="muted" style="font-size:11px">${esc(p?.display_name||p?.username||'User')}</div><div class="bubble">${esc(m.body)}</div></div>`}).join('')}</div><form id="groupMsgForm" class="commentForm"><input class="field" name="body" placeholder="Message group…" required><button class="btn primary">Send</button></form>`);$('#groupMsgForm').onsubmit=async e=>{e.preventDefault();const body=e.target.body.value.trim();if(!body)return;const {error}=await sb.from('group_messages').insert({conversation_id:id,sender_id:state.user.id,body});if(error)return toast(error.message,'danger');await openGroup(id)}}
 function modal(title,body){$('#modalRoot').innerHTML=`<div class="modalBack" onclick="if(event.target===this)closeModal()"><div class="modal"><div class="modalHead"><h3>${esc(title)}</h3><div class="spacer"></div><button class="iconbtn" onclick="closeModal()">×</button></div><div class="modalBody">${body}</div></div></div>`}
 function closeModal(){$('#modalRoot').innerHTML=''}
-async function logout(){await sb.auth.signOut();state.user=null;renderAuth('login')}
+// Recovery222: never claim logout succeeded while the SDK still has a session.
+let kf222LogoutBusy=false;
+async function logout(){
+  if(kf222LogoutBusy)return false;
+  kf222LogoutBusy=true;
+  const expectedUid=state.user?.id||null;
+  try{
+    const before=await sb.auth.getSession();
+    if(before.error)throw before.error;
+    if((state.user?.id||null)!==expectedUid||
+       (expectedUid&&before.data?.session?.user?.id&&before.data.session.user.id!==expectedUid))return false;
+    if(before.data?.session){
+      const out=await sb.auth.signOut({scope:'local'});
+      if(out?.error)throw out.error;
+    }
+    const after=await sb.auth.getSession();
+    if(after.error)throw after.error;
+    // A later login must not be erased by completion of an earlier logout.
+    if(after.data?.session){
+      if(after.data.session.user?.id!==expectedUid)return false;
+      throw new Error('Session is still active');
+    }
+    if(state.user?.id&&state.user.id!==expectedUid)return false;
+    await kf129ActivateSession(null);
+    return true;
+  }catch(error){
+    if((state.user?.id||null)===expectedUid)toast('Could not finish logging out. Check your connection and try again.','danger');
+    return false;
+  }finally{kf222LogoutBusy=false}
+}
 window.addEventListener('error',e=>{console.error(e.error||e.message)});window.addEventListener('unhandledrejection',e=>{console.error(e.reason)});if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));boot();
 </script>
 <script>(()=>{const K='kinfolk_stay_logged_in_v1';const style=document.createElement('style');style.textContent='.stayRow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}.stayRow input{width:auto;accent-color:var(--pink)}';document.head.append(style);function addStay(){const f=document.querySelector('#authForm');if(!f||document.querySelector('#stayLogged')||document.querySelector('#username'))return;const msg=document.querySelector('#authMsg');if(!msg)return;const l=document.createElement('label');l.className='stayRow';l.innerHTML='<span>Stay logged in</span><input id="stayLogged" type="checkbox">';msg.before(l);const c=l.querySelector('input');try{c.checked=localStorage.getItem(K)!=='0'}catch{c.checked=true}c.onchange=()=>{try{localStorage.setItem(K,c.checked?'1':'0')}catch{}}}new MutationObserver(addStay).observe(document.documentElement,{childList:true,subtree:true});addStay();/* Recovery129: boot() owns the stay-logged-in session check. */sb.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_IN'&&session?.user?.id){const box=document.querySelector('#stayLogged');let stay=box?box.checked:true;try{if(!box)stay=localStorage.getItem(K)!=='0';localStorage.setItem(K,stay?'1':'0')}catch{}sb.from('kinfolk_user_preferences').upsert({user_id:session.user.id,stay_signed_in:stay},{onConflict:'user_id'}).then(({error})=>{if(error)console.warn('Preference sync failed',error.message)})}});window.openDm=async function(peer){const p=state.profiles.get(peer);let q=await sb.from('messages').select('*').or(`and(sender_id.eq.${state.user.id},receiver_id.eq.${peer}),and(sender_id.eq.${peer},receiver_id.eq.${state.user.id})`).order('created_at',{ascending:true}).limit(100);if(q.error)return toast(q.error.message,'danger');let data=q.data||[];const unread=data.filter(m=>m.receiver_id===state.user.id&&!m.first_read_at);if(unread.length){await Promise.all(unread.map(m=>sb.rpc('kinfolk_mark_message_read',{p_message_id:m.id})));const fresh=await sb.from('messages').select('*').or(`and(sender_id.eq.${state.user.id},receiver_id.eq.${peer}),and(sender_id.eq.${peer},receiver_id.eq.${state.user.id})`).order('created_at',{ascending:true}).limit(100);if(!fresh.error)data=fresh.data||data}const pref=await sb.from('kinfolk_user_preferences').select('disappearing_messages_default').eq('user_id',state.user.id).maybeSingle();const def=!!pref.data?.disappearing_messages_default;modal(p?.display_name||'Message',`<div id="dmList" style="max-height:55vh;overflow:auto">${data.map(m=>`<div style="display:flex;justify-content:${m.sender_id===state.user.id?'flex-end':'flex-start'};margin:8px 0"><div class="bubble" style="max-width:78%;flex:0 1 auto">${esc(m.body)}${m.disappear_after_read?'<div class="muted" style="font-size:11px;margin-top:5px">⏳ Disappears 30 seconds after read</div>':''}</div></div>`).join('')}</div><form id="dmForm" class="commentForm"><input class="field" name="body" placeholder="Message…" required><label class="stayRow"><span>Disappear after read</span><input name="disappear" type="checkbox" ${def?'checked':''}></label><button class="btn primary">Send</button></form>`);$('#dmForm').onsubmit=async e=>{e.preventDefault();const body=e.target.body.value.trim();if(!body)return;const {error}=await sb.from('messages').insert({sender_id:state.user.id,receiver_id:peer,body,disappear_after_read:!!e.target.disappear.checked});if(error)return toast(error.message,'danger');await window.openDm(peer)}};})();

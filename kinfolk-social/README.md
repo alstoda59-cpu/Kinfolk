@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery222 (2026-10-25)
+
+Latest checkpoint: [RECOVERY222.md](RECOVERY222.md). Fixed false-success logout, duplicate requests and stale-account completion; signed-out transitions stop media and clear remaining private caches. **131/131 Node tests, 27/27 legacy scripts and 11 actual mocked mobile Chromium regression scripts pass.** Native packaging includes 23 referenced modules. WebKit, physical devices, real email/backend verification and signed native builds remain unverified. Existing development branch, production restrictions and main-app scope retained.
+
 # Kinfolk Social | Recovery221 (2026-10-25)
 
 Latest checkpoint: [RECOVERY221.md](RECOVERY221.md). Continued from Recovery220 on `kinfolk-social/recovery207-signup-navigation-guard`. Added guarded email-verification resend to the existing signup and repaired missing Reels native assets. Actual local Node: 124/124 tests plus 27/27 legacy scripts pass; native web packaging checks 23 referenced modules. Browser/device/backend verification remains blocked and is explicitly separated in the checkpoint. Production, Kinfolksworld and shared Supabase unchanged.
