@@ -18,6 +18,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Prepare alpha native dependencies for existing packaging regressions
+        working-directory: kinfolk-social/native
+        run: |
+          if [ ! -f package-lock.json ]; then npm install --package-lock-only --ignore-scripts --no-audit --no-fund; fi
+          npm ci --no-audit --no-fund
       - name: Complete Node regression suite (synthetic only)
         run: node --test kinfolk-social/tests/*.test.cjs
       - name: Install browser test dependencies
