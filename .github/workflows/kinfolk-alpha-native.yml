@@ -35,9 +35,11 @@ jobs:
       - uses: android-actions/setup-android@v3
       - name: Install Android 35 build packages
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
-      - name: Install exact native dependencies
+      - name: Resolve pinned native dependencies and install
         working-directory: kinfolk-social/native
-        run: npm ci --no-audit --no-fund
+        run: |
+          if [ ! -f package-lock.json ]; then npm install --package-lock-only --ignore-scripts --no-audit --no-fund; fi
+          npm ci --no-audit --no-fund
       - name: Prepare and validate full Kinfolk native bundle
         working-directory: kinfolk-social/native
         run: |
@@ -77,9 +79,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install exact native dependencies
+      - name: Resolve pinned native dependencies and install
         working-directory: kinfolk-social/native
-        run: npm ci --no-audit --no-fund
+        run: |
+          if [ ! -f package-lock.json ]; then npm install --package-lock-only --ignore-scripts --no-audit --no-fund; fi
+          npm ci --no-audit --no-fund
       - name: Prepare and validate full Kinfolk native bundle
         working-directory: kinfolk-social/native
         run: |
