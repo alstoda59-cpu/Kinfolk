@@ -40,6 +40,8 @@ jobs:
         run: |
           node kinfolk-social/test_recovery150_auth_event.js
           node kinfolk-social/test_recovery151_auth_preference.js
+      - name: Incomplete login local-session cleanup (synthetic only)
+        run: node --test kinfolk-social/tests/recovery214-failed-login-cleanup.test.cjs
       - name: Login preference storage regressions (synthetic only)
         run: |
           node kinfolk-social/test_recovery152_storage.js
