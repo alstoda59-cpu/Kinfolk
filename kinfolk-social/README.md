@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery228 (2026-10-26)
+
+Latest isolated checkpoint: [RECOVERY228.md](RECOVERY228.md). Added client-side teen private-profile locking in Settings for valid signup birthdates ages 13–17, guarded asynchronous Settings loading/saves against account switches, and aligned legacy message audience options with the live `nobody` enum. **5/5 focused synthetic V8 checks passed** and the source/test commit has a READY isolated Vercel preview `dpl_84LUcsMQjhoxHPs91hWzUEEDZJam`. Full Node/browser CI, real Supabase/RLS and physical Android/iPhone verification are **not confirmed**. Client checks do not establish backend teen safety. Production, Kinfolksworld and shared live Supabase remain untouched.
+
 # Kinfolk Social | Recovery227 (2026-10-25)
 
 Latest isolated checkpoint: [RECOVERY227.md](RECOVERY227.md). Repaired a mobile login hang when authentication response headers arrive but the JSON body stalls: the 15-second abort timeout now remains active through body parsing. Added three synthetic Node regression scenarios. Committed Phase95 and test file passed V8 syntax and in-memory synthetic timeout/success/error checks; **full Node CI, real backend and physical-device verification for Recovery227 remain unconfirmed**. Vercel reports a build-rate limit; last verified READY preview is Recovery226 `dpl_EzTtvNRfGx54GngrAwcswfGaF4um`. No production, Kinfolksworld or shared live Supabase changes.
