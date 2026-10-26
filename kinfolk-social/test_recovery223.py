@@ -13,8 +13,8 @@ def fill_signup(page,email):
     page.locator('#kf73Name').fill('Synthetic QA')
     page.locator('#kf217Username').fill('synthetic223')
     page.locator('#kf73Email').fill(email)
-    page.locator('#kf73Password').fill('password9')
-    page.locator('#kf217ConfirmPassword').fill('password9')
+    page.locator('#kf73Password').fill('password9!234')
+    page.locator('#kf217ConfirmPassword').fill('password9!234')
     page.locator('#kf79Birthdate').fill('2000-01-01')
 
 with sync_playwright() as p:

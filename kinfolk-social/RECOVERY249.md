@@ -20,3 +20,5 @@ Run the Node regression in CI; integrate the isolated backend publishable key on
 
 ## CI regression repair
 - GitHub Actions source run `40413001198` on `e1d117486422418392e8c1d9062b0c34928d4a63` **failed**: 198/227 Node tests passed, 29 failed because six existing synthetic signup fixtures still used eight-character `testpass` and were rejected by the corrected 12-character minimum. All six fixtures were updated to `testpass2026!` (13 characters), without weakening production validation. This fixture-only commit needs a fresh CI run before calling the suite green.
+
+- GitHub Actions run `40413148623` on `35aec1ab6ae6d418d732f7a8a4d8c8cb7881f46a` confirmed **227/227 Node tests passed**; browser stage then failed in `test_recovery129.py` because its old synthetic signup used a seven-character password. Updated seven mocked Python browser regression fixtures to 12+ characters, preserving short-password login fixture checks. A new full CI run is required; do not claim the entire workflow passed yet.

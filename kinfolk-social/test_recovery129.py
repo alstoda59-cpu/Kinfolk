@@ -137,9 +137,9 @@ with sync_playwright() as p:
  assert page.locator('#kf79Birthdate').count()==1
  page.locator('#kf73Name').fill('Young QA')
  page.locator('#kf217Username').fill('young_qa')
- page.locator('#kf217ConfirmPassword').fill('pass123')
+ page.locator('#kf217ConfirmPassword').fill('pass123456789')
  page.locator('#kf73Email').fill('young@example.test')
- page.locator('#kf73Password').fill('pass123')
+ page.locator('#kf73Password').fill('pass123456789')
  page.locator('#kf79Birthdate').fill('2020-01-01')
  page.locator('.kf73Primary').click()
  page.wait_for_timeout(400)
