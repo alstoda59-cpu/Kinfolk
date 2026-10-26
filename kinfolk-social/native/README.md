@@ -11,6 +11,7 @@ This packages the **existing main app** and does not introduce a guest demo or p
 
 ## Known blockers
 
+- Recovery225 adds an accessible **Try again** startup screen when the external Supabase JavaScript CDN is unavailable. It does **not** bundle Supabase locally, enable offline authentication, or make the app store-ready. Before native release, pin and locally bundle the reviewed SDK with a dependency lockfile, then verify cold launches without CDN access and offline/reconnection behavior on real Android/iPhone devices.
 - App ID `social.kinfolk.app` is a proposed placeholder **not proof of ownership**; confirm identifier before store submission.
 - Capacitor packages and actual native Android/iOS projects are not installed/generated here. No APK/AAB/IPA was built, signed, uploaded or run on real devices.
 - Recovery133 avoids sending the nonpublic `https://localhost` Capacitor origin as a signup email callback. A verified HTTPS universal/app link or configured Supabase site URL must still be tested in an isolated environment; password recovery, email confirmation and callback handling are NOT validated. No auth configuration was modified.
