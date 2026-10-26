@@ -74,6 +74,43 @@
     const title=(form.querySelector('.kf73Title')?.textContent||'').trim().toLowerCase();
     if(!title.includes('create your kinfolk')) return;
 
+    // Recovery217: additional signup identity fields, without replacing the existing form.
+    if(!form.querySelector('#kf217Username')){
+      const emailLabel=form.querySelector('label[for="kf73Email"]');
+      if(emailLabel){
+        const label=document.createElement('label');
+        label.htmlFor='kf217Username';label.textContent='Username';
+        const input=document.createElement('input');
+        input.id='kf217Username';input.type='text';input.required=true;
+        input.minLength=3;input.maxLength=24;input.autocomplete='username';
+        input.placeholder='Choose a username';
+        const hint=document.createElement('div');
+        hint.className='kf79AgeNote';hint.textContent='3–24 letters, numbers, or underscores. You can change your display name later.';
+        form.insertBefore(label,emailLabel);form.insertBefore(input,emailLabel);form.insertBefore(hint,emailLabel);
+      }
+    }
+    if(!form.querySelector('#kf217ConfirmPassword')){
+      const pass=form.querySelector('#kf73Password');
+      const passLabel=form.querySelector('label[for="kf73Password"]');
+      if(pass&&passLabel){
+        const label=document.createElement('label');
+        label.htmlFor='kf217ConfirmPassword';label.textContent='Confirm password';
+        const input=document.createElement('input');
+        input.id='kf217ConfirmPassword';input.type='password';input.required=true;
+        input.autocomplete='new-password';input.minLength=5;input.maxLength=12;
+        input.placeholder='Enter password again';
+        const toggle=document.createElement('button');
+        toggle.type='button';toggle.textContent='Show confirmation';
+        toggle.setAttribute('aria-label','Show confirmation password');
+        toggle.addEventListener('click',()=>{
+          input.type=input.type==='password'?'text':'password';
+          toggle.textContent=input.type==='password'?'Show confirmation':'Hide confirmation';
+        });
+        const following=pass.nextSibling;
+        form.insertBefore(label,following);form.insertBefore(input,following);form.insertBefore(toggle,following);
+      }
+    }
+
     if(!form.querySelector('#kf79Birthdate')){
       const passwordLabel=form.querySelector('label[for="kf73Password"]');
       if(!passwordLabel) return;
@@ -127,10 +164,14 @@
     const email=form.querySelector('#kf73Email')?.value.trim()||'';
     const password=form.querySelector('#kf73Password')?.value||'';
     const birthdate=form.querySelector('#kf79Birthdate')?.value||'';
+    const username=form.querySelector('#kf217Username')?.value.trim()||'';
+    const confirmPassword=form.querySelector('#kf217ConfirmPassword')?.value;
     const stay=form.querySelector('#kf73Stay')?.checked!==false;
     if(!display_name){show(form,'Enter a display name.');return}
+    if(form.querySelector('#kf217Username')&&!/^[a-zA-Z0-9_]{3,24}$/.test(username)){show(form,'Choose a username using 3–24 letters, numbers, or underscores.');return}
     if(!email){show(form,'Enter your email address.');return}
     if(password.length<5||password.length>12){show(form,'Password must be 5–12 characters.');return}
+    if(confirmPassword!==undefined&&confirmPassword!==password){show(form,'Passwords do not match.');return}
     const age=ageFromDate(birthdate);
     if(age===null){show(form,'Enter a valid birthday.');form.querySelector('#kf79Birthdate')?.focus();return}
     if(age<13){show(form,'Kinfolk accounts are available for ages 13 and older.');return}
@@ -142,7 +183,7 @@
       const redirect=emailRedirect();
       const {data,error}=await sb.auth.signUp({
         email,password,
-        options:{...(redirect?{emailRedirectTo:redirect}:{}),data:{display_name,signup_birthdate:birthdate}}
+        options:{...(redirect?{emailRedirectTo:redirect}:{}),data:{display_name,signup_birthdate:birthdate,...(username?{username}:{} )}}
       });
       if(error)throw error;
       // The user may have navigated to login while signup was in flight.
