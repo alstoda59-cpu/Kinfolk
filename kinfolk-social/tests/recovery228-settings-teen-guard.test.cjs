@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const source = fs.readFileSync('kinfolk-social/kinfolk-phase76.js', 'utf8');
 const helperStart = source.indexOf('function kfsIsTeen(');
 const settingsStart = source.indexOf('window.openKinfolkSettings=async function(){if(!state.user)return;const settingsAccountId=', helperStart);
-const settingsEnd = source.indexOf("let cache='';", settingsStart);
+const settingsEnd = source.indexOf("let cache=", settingsStart);
 assert.ok(helperStart >= 0 && settingsStart > helperStart && settingsEnd > settingsStart,
   'Recovery228 settings and age guard must be present');
 const helper = vm.runInNewContext(source.slice(helperStart, settingsStart) + '\nkfsIsTeen');
