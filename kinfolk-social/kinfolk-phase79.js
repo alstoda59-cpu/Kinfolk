@@ -145,6 +145,12 @@
         options:{...(redirect?{emailRedirectTo:redirect}:{}),data:{display_name,signup_birthdate:birthdate}}
       });
       if(error)throw error;
+      // The user may have navigated to login while signup was in flight.
+      // Do not persist signup preferences or update a replaced form.
+      if(!form.isConnected||!((form.querySelector('.kf73Title')?.textContent||'').toLowerCase().includes('create your kinfolk'))){
+        console.info('Kinfolk signup completed after leaving the signup screen; ignoring stale UI result.');
+        return;
+      }
       // An email-confirmation signup has no authenticated session yet.
       // Do not persist Stay Logged In until signup actually returns a session.
       if(data?.session){
