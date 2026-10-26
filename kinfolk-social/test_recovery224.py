@@ -67,6 +67,18 @@ with sync_playwright() as p:
             assert page.locator('.kf73Primary').is_enabled(),'login button remained disabled after stale request'
             assert page.locator('.kf73Primary').inner_text()=='Log in','stale loading label remained after form remount'
             page.locator('.kf73Primary').click()
+            page.wait_for_timeout(400)
+            if page.evaluate('window.__login224Calls')!=2:
+                print('RECOVERY226 RETRY DIAGNOSTIC',engine,reject_old,page.evaluate("""() => {
+                    const f=document.querySelector('#authForm'), b=f.querySelector('.kf73Primary');
+                    return {calls:window.__login224Calls,mode:f.querySelector('.kf73Title')?.textContent,
+                        formSame:f===window.__oldLoginForm,capture:f.__kf95CaptureInstalled,
+                        ownSubmit:f.onsubmit===f.__kf95Handler,
+                        pending:f.dataset.kf95LoginPending,buttonDisabled:b.disabled,buttonType:b.type,
+                        formValid:f.checkValidity(),message:f.querySelector('.kf73Msg')?.textContent,
+                        email:f.querySelector('#kf73Email')?.value,
+                        session:!!window.__kfMock.session};
+                }"""),flush=True)
             page.wait_for_function('window.__login224Calls===2')
             page.locator('#main').wait_for(state='visible',timeout=10000)
             assert page.evaluate('window.state.user?.id')=='11111111-1111-4111-8111-111111111111'
