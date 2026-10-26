@@ -1,0 +1,109 @@
+name: Kinfolk Installable Alpha (Android and iOS)
+
+on:
+  push:
+    branches:
+      - kinfolk-social/alpha-installable-build
+    paths:
+      - 'kinfolk-social/**'
+      - '.github/workflows/kinfolk-alpha-native.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kinfolk-alpha-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-debug-apk:
+    name: Android installable debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android 35 build packages
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      - name: Install exact native dependencies
+        working-directory: kinfolk-social/native
+        run: npm ci --no-audit --no-fund
+      - name: Prepare and validate full Kinfolk native bundle
+        working-directory: kinfolk-social/native
+        run: |
+          npm run prepare:web
+          npm run alpha:verify
+      - name: Identify isolated private alpha app
+        working-directory: kinfolk-social/native
+        run: |
+          node --input-type=module -e "import fs from 'node:fs';let p='capacitor.config.json',j=JSON.parse(fs.readFileSync(p));j.appId='social.kinfolk.alpha';j.appName='Kinfolk Social Alpha';fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n')"
+      - name: Generate Android project and sync local app assets
+        working-directory: kinfolk-social/native
+        run: |
+          npx cap add android
+          npx cap sync android
+      - name: Compile installable debug APK (no release signing)
+        working-directory: kinfolk-social/native/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+          test -s app/build/outputs/apk/debug/app-debug.apk
+      - name: Publish private-test Android APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kinfolk-social-android-alpha-debug
+          path: kinfolk-social/native/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  ios-simulator:
+    name: iOS unsigned simulator app (not an iPhone IPA)
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install exact native dependencies
+        working-directory: kinfolk-social/native
+        run: npm ci --no-audit --no-fund
+      - name: Prepare and validate full Kinfolk native bundle
+        working-directory: kinfolk-social/native
+        run: |
+          npm run prepare:web
+          npm run alpha:verify
+      - name: Identify isolated private alpha app
+        working-directory: kinfolk-social/native
+        run: |
+          node --input-type=module -e "import fs from 'node:fs';let p='capacitor.config.json',j=JSON.parse(fs.readFileSync(p));j.appId='social.kinfolk.alpha';j.appName='Kinfolk Social Alpha';fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n')"
+      - name: Generate iOS project and sync local app assets
+        working-directory: kinfolk-social/native
+        run: |
+          npx cap add ios
+          npx cap sync ios
+      - name: Compile unsigned iOS Simulator application
+        working-directory: kinfolk-social/native
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/KinfolkAlphaDerived" CODE_SIGNING_ALLOWED=NO build
+          test -d "$RUNNER_TEMP/KinfolkAlphaDerived/Build/Products/Debug-iphonesimulator/App.app"
+          ditto -c -k --sequesterRsrc --keepParent "$RUNNER_TEMP/KinfolkAlphaDerived/Build/Products/Debug-iphonesimulator/App.app" "$RUNNER_TEMP/kinfolk-ios-simulator.zip"
+      - name: Publish iOS Simulator zip (not installable on physical iPhone)
+        uses: actions/upload-artifact@v4
+        with:
+          name: kinfolk-social-ios-simulator-unsigned
+          path: ${{ runner.temp }}/kinfolk-ios-simulator.zip
+          if-no-files-found: error
+          retention-days: 7
