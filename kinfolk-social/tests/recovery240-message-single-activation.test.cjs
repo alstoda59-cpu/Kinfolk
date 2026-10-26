@@ -30,6 +30,18 @@ test('rebinding same form does not create another handler',()=>{
  bind(form);
  assert.equal(btn.onclick,original);
 });
+test('form without a send control remains eligible for binding when button appears',()=>{
+ const form={dataset:{},onsubmit(){this.calls=(this.calls||0)+1},querySelectorAll(sel){return sel==='button'?(this.button?[this.button]:[]):[]},querySelector(){return this.button||null}};
+ const bind=vm.runInNewContext(code+'\\nbind',{safeRun:(f,h,e)=>h.call(f,e)});
+ bind(form);
+ assert.equal(form.dataset.kf107,undefined);
+ form.button={textContent:'Send',dataset:{}};
+ bind(form);
+ assert.equal(form.dataset.kf107,'1');
+ assert.equal(typeof form.button.onclick,'function');
+ form.button.onclick({preventDefault(){},stopImmediatePropagation(){}});
+ assert.equal(form.calls,1);
+});
 test('all three message forms use the shared single-activation binding',()=>{
  assert.match(source,/const FORMS=\['dmForm','groupMsgForm','groupCreateForm'\]/);
  assert.match(source,/btn\.onclick=run/);
