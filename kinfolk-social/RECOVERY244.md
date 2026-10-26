@@ -13,6 +13,12 @@ Date: 2026-10-26. Full main Kinfolk Social in `kinfolk-social/` only; Kinfolkswo
 - Same commit: per-message Report button is not marked initialized until the message bubble and message ID exist. Delayed DOM insertion can retry correctly.
 - `6106fd73c8684c6b6a0d1bc478c00f77c2c2b3b1`: four Node regression cases committed in `tests/recovery244-report-peer-lifecycle.test.cjs`.
 
+## Additional account and modal isolation
+- `e80d5c544264bd9038057901eab75007b62a7fac`: report submission captures the initiating account ID, uses it as `reporter_id`, and suppresses stale success/error UI when the signed-in account changes or the report modal is replaced while the request is pending.
+- `aece5dcd1760eaa1efd0472e93b300c1b48ac010`: four additional synthetic Node regression cases for stale account success/error, replaced modal, and valid same-account success.
+- Executed another **4/4 focused V8 synthetic checks** against committed Phase108 for account/modal isolation. Combined focused evidence: **8/8 V8 checks**; these are not the full Node CI or real account tests.
+- Explicit second Vercel deployment request for `aece5dcd` returned **HTTP 402 `api-deployments-free-per-day`** (100+ deployments in 24 hours). No new preview is verified for the final commit; do not retry repeatedly or change billing settings without owner approval. Earlier READY deployment `dpl_7LvGEWqCqKKdgn6bTjNPQES2C5u2` covers only `6106fd73` and predates account/modal isolation.
+
 ## Verified evidence and limitations
 - Fetched the committed Phase108 source and regression test; both parsed in V8.
 - Executed **4/4 focused synthetic V8 checks** against the committed Phase108 source: active peer after switch, empty peer suppression, delayed bubble binding, delayed message ID binding. These are not browser, backend, or physical-device tests.
