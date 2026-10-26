@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery206 (2026-10-25)
+
+Latest isolated checkpoint: [RECOVERY206.md](RECOVERY206.md). Phase79 signup now refuses to save Stay Logged In preferences if the active Supabase session cannot be verified; Recovery179–181 fixtures and CI coverage were updated. **18/18 targeted signup scenarios passed in a synthetic V8 adapter**; GitHub Actions, real Supabase and Android/iPhone device tests remain unverified. Isolated READY preview `dpl_8CLMQy4do52Kz3HQGdMuoD2C2xmu` corresponds to the code/CI commit, not a verified working app. Production, Kinfolksworld and shared Supabase remain untouched.
+
 # Kinfolk Social | Recovery204 (2026-10-25)
 
 Latest isolated checkpoint: [RECOVERY204.md](RECOVERY204.md). Hardened Reels/Shorts video action IDs against JavaScript injection and rejected executable media URL schemes while retaining HTTPS/YouTube playback. **16/16 targeted synthetic cases passed in a V8 adapter, not GitHub Actions, real browser, backend, or devices.** Recovery204 preview deployment blocked by Vercel's daily deployment quota (HTTP 402); no new preview exists. Production, Kinfolksworld, and shared live Supabase remain untouched.
