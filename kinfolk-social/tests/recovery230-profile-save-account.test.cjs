@@ -45,7 +45,7 @@ function harness(hooks={}){
     })},
     from:table=>{
       if(table==='kinfolk_profile_extras')return {upsert:async row=>{calls.extras.push({...row});if(hooks.extras)await hooks.extras();return {error:null}}};
-      if(table==='profiles')return {update:row=>({eq:async(key,id)=>{calls.profiles.push({key,id,row:{...row}});return {error:null}}})};
+      if(table==='profiles')return {update:row=>({eq:async(key,id)=>{calls.profiles.push({key,id,row:{...row}});return {error:null,count:hooks.profileCount??1}}})};
       throw new Error('Unexpected table '+table);
     }
   };
@@ -132,4 +132,16 @@ test('fields are snapshotted before upload and do not drift during async save',a
   gate.resolve();
   await running;
   assert.equal(h.calls.profiles[0].row.display_name,'Original Name');
+});
+
+
+test('RLS-filtered zero-row profile update cannot announce success and attempts media cleanup',async()=>{
+  const h=harness({profileCount:0});
+  await h.save();
+  assert.equal(h.calls.profiles.length,1);
+  assert.equal(h.calls.rendered,0);
+  assert.equal(h.calls.closed,0);
+  assert.deepEqual(h.calls.removed,h.calls.uploads);
+  assert.match(h.calls.notices.at(-1).message,/Profile could not be updated/);
+  assert.notEqual(h.calls.notices.at(-1).type,'good');
 });
