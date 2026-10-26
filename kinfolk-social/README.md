@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery227 (2026-10-25)
+
+Latest isolated checkpoint: [RECOVERY227.md](RECOVERY227.md). Repaired a mobile login hang when authentication response headers arrive but the JSON body stalls: the 15-second abort timeout now remains active through body parsing. Added three synthetic Node regression scenarios. Committed Phase95 and test file passed V8 syntax and in-memory synthetic timeout/success/error checks; **full Node CI, real backend and physical-device verification for Recovery227 remain unconfirmed**. Vercel reports a build-rate limit; last verified READY preview is Recovery226 `dpl_EzTtvNRfGx54GngrAwcswfGaF4um`. No production, Kinfolksworld or shared live Supabase changes.
+
 # Kinfolk Social | Recovery225 (2026-10-25)
 
 Latest isolated checkpoint: [RECOVERY225.md](RECOVERY225.md). Main app now displays an accessible mobile retry screen when its external authentication SDK fails to load, rather than an unusable startup screen, and the app document title no longer says Recovery131 Preview. **6/6 focused synthetic V8 tests passed**, and a mocked Chromium/WebKit mobile regression is committed to CI but not verified executed. The isolated READY preview `dpl_H8sKhgoY4Vzw62D1Ei6h6VcyEjUm` delivered the recovery script (HTTP 200), but predates the final page-title and test edits. Local SDK bundling, real backend auth, native builds and physical Android/iPhone QA remain outstanding. Recovery224 concurrent login fixes preserved. Production, Kinfolksworld and shared live Supabase untouched.
