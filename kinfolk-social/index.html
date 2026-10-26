@@ -12,6 +12,30 @@
 <meta name="application-name" content="Kinfolk Social">
 <title>Kinfolk Social | Recovery131 Preview</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Recovery224: show an actionable mobile startup screen if the external auth SDK fails. -->
+<script id="kinfolk-auth-sdk-recovery">
+(()=>{
+  if(window.supabase&&typeof window.supabase.createClient==='function')return;
+  const showRecovery=()=>{
+    if(window.supabase&&typeof window.supabase.createClient==='function')return;
+    if(!document.body||document.getElementById('kf224AuthRecovery'))return;
+    const pane=document.createElement('section');
+    pane.id='kf224AuthRecovery';
+    pane.setAttribute('role','alert');
+    pane.setAttribute('aria-label','Kinfolk sign-in temporarily unavailable');
+    pane.style.cssText='position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:calc(20px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px));background:#17151c;color:#f8f5fa;font:16px/1.5 system-ui,-apple-system,sans-serif;text-align:center;overflow:auto';
+    const wrap=document.createElement('div');wrap.style.cssText='width:100%;max-width:410px;border:1px solid #524054;border-radius:22px;padding:26px 21px;background:#26202b';
+    const logo=document.createElement('div');logo.textContent='Kinfolk Social';logo.style.cssText='font-size:21px;font-weight:900;letter-spacing:.02em;color:#ff88be;margin-bottom:17px';
+    const heading=document.createElement('h1');heading.textContent="Kinfolk couldn't start";heading.style.cssText='font-size:23px;line-height:1.2;margin:0 0 12px';
+    const explanation=document.createElement('p');explanation.textContent='The sign-in service did not load. Check your connection and try again. Your account has not been changed.';explanation.style.cssText='color:#d1c5d3;margin:0 0 22px';
+    const retry=document.createElement('button');retry.type='button';retry.textContent='Try again';retry.style.cssText='width:100%;min-height:50px;border:0;border-radius:14px;background:#e85a9b;color:#150e16;font:800 16px system-ui,-apple-system,sans-serif;cursor:pointer';
+    retry.addEventListener('click',()=>window.location.reload());
+    wrap.append(logo,heading,explanation,retry);pane.appendChild(wrap);document.body.appendChild(pane);
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',showRecovery,{once:true});
+  else showRecovery();
+})();
+</script>
 <style>
 :root{--bg:#111015;--panel:#1a181f;--panel2:#221f29;--line:#302c38;--text:#f8f5fa;--muted:#a8a0ad;--pink:#e85a9b;--pink2:#ff8abd;--good:#55d69e;--bad:#ff6f7d;--shadow:0 14px 45px rgba(0,0,0,.28);--r:18px}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 20% -10%,#2a1830 0,#111015 28rem);color:var(--text);font:15px/1.45 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}body{padding-bottom:78px}button,input,textarea,select{font:inherit}button{cursor:pointer}a{color:var(--pink2)}img,video{max-width:100%}.hide{display:none!important}.muted{color:var(--muted)}.danger{color:var(--bad)}.good{color:var(--good)}
