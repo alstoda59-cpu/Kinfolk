@@ -84,6 +84,11 @@
     if(!form) return;
     const title=(form.querySelector('.kf73Title')?.textContent||'').trim().toLowerCase();
     if(!title.includes('create your kinfolk')) return;
+    const introduction=form.querySelector('.kf73Text');
+    if(introduction&&introduction.dataset.kf218Intro!=='1'){
+      introduction.textContent='Step 1 of 3: Enter your account details. Next, personalize your profile if you like, then review and create your account.';
+      introduction.dataset.kf218Intro='1';
+    }
 
     // Recovery217: additional signup identity fields, without replacing the existing form.
     if(!form.querySelector('#kf217Username')){
