@@ -24,3 +24,11 @@ test('signup rechecks navigation after asynchronous session verification',()=>{
  assert.ok(start>=0&&guard>start&&decision>guard&&save>decision,'recheck must occur between verification and preference persistence');
  assert.match(source.slice(guard,decision),/return;/);
 });
+
+test('signup error handler ignores stale form after navigation',()=>{
+ const start=source.indexOf('}catch(err){',source.indexOf('async function handleSignup'));
+ const guard=source.indexOf('if(!form.isConnected||',start);
+ const message=source.indexOf('const raw=err?.message',start);
+ assert.ok(start>=0&&guard>start&&message>guard,'catch must check stale signup form before showing errors');
+ assert.match(source.slice(guard,message),/return;/);
+});
