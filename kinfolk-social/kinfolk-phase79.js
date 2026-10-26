@@ -188,6 +188,9 @@
       // usable so the member can correct an address or retry if necessary.
       if(btn){btn.disabled=false;btn.textContent='Create account'};
     }catch(err){
+      // An in-flight signup can fail after the user navigates to login.
+      // Never write its error into a different screen or reset that screen's button.
+      if(!form.isConnected||!((form.querySelector('.kf73Title')?.textContent||'').toLowerCase().includes('create your kinfolk')))return;
       const raw=err?.message||String(err),low=raw.toLowerCase();
       let message=raw;
       if(low.includes('birthday is required'))message='Enter your birthday to create a Kinfolk account.';
