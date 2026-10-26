@@ -32,7 +32,7 @@ test('rebinding same form does not create another handler',()=>{
 });
 test('form without a send control remains eligible for binding when button appears',()=>{
  const form={dataset:{},onsubmit(){this.calls=(this.calls||0)+1},querySelectorAll(sel){return sel==='button'?(this.button?[this.button]:[]):[]},querySelector(){return this.button||null}};
- const bind=vm.runInNewContext(code+'\\nbind',{safeRun:(f,h,e)=>h.call(f,e)});
+ const bind=vm.runInNewContext(code+'\nbind',{safeRun:(f,h,e)=>h.call(f,e)});
  bind(form);
  assert.equal(form.dataset.kf107,undefined);
  form.button={textContent:'Send',dataset:{}};
