@@ -30,7 +30,7 @@ function fixture({activeIds=['signup'],denySecondPreference=false,signOutError=f
     '.kf73Primary':{disabled:false,textContent:'Create account'}
   };
   const form={
-    id:'authForm',dataset:{kf73:'1'},
+    id:'authForm',isConnected:true,dataset:{kf73:'1'},
     querySelector:k=>k==='.kf73Msg'?message:fields[k]||null,
     appendChild:x=>{message=x}
   };
