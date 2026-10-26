@@ -67,3 +67,8 @@ test('startup recovery executes before the inline app references SDK',()=>{
   const app=html.indexOf('const sb=window.supabase.createClient');
   assert.ok(recovery>=0&&app>recovery);
 });
+
+test('mobile document title names the full Kinfolk Social app rather than an old recovery preview',()=>{
+  assert.match(html,/<title>Kinfolk Social<\/title>/);
+  assert.doesNotMatch(html,/<title>[^<]*Recovery[0-9]+ Preview<\/title>/);
+});
