@@ -32,6 +32,7 @@ jobs:
           python test_recovery139.py
           python test_recovery141.py
           python test_recovery143.py
+          python test_recovery218.py
       - name: Offline reaction regression (no live Supabase)
         run: node kinfolk-social/test_recovery148_reactions.js
       - name: Offline session restoration regression (no live Supabase)
