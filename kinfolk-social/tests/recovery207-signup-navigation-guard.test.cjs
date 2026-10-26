@@ -15,3 +15,12 @@ test('signup guard verifies the form still represents signup, not login',()=>{
  assert.match(source,/form\.querySelector\('\.kf73Title'\)/);
  assert.match(source,/includes\('create your kinfolk'\)/);
 });
+
+test('signup rechecks navigation after asynchronous session verification',()=>{
+ const start=source.indexOf('const verifiedSignupSession=await signupSessionIsCurrent(data.session);');
+ const guard=source.indexOf('if(!form.isConnected||',start);
+ const decision=source.indexOf('if(!verifiedSignupSession)',start);
+ const save=source.indexOf('try{saveStay(stay)}',start);
+ assert.ok(start>=0&&guard>start&&decision>guard&&save>decision,'recheck must occur between verification and preference persistence');
+ assert.match(source.slice(guard,decision),/return;/);
+});
