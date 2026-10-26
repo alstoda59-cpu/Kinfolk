@@ -271,7 +271,7 @@
       const redirect=emailRedirect();
       const {data,error}=await sb.auth.signUp({
         email,password,
-        options:{...(redirect?{emailRedirectTo:redirect}:{}),data:{display_name,signup_birthdate:birthdate,...(username?{username}:{}),...(bio?{bio}:{}),preferred_language:preferredLanguage,...(interests.length?{interests}:{})}}
+        options:{...(redirect?{emailRedirectTo:redirect}:{}),data:{display_name,profile_display_name:display_name,signup_birthdate:birthdate,...(username?{username}:{}),...(bio?{bio,profile_bio:bio}:{}),preferred_language:preferredLanguage,...(interests.length?{interests}:{})}}
       });
       if(error)throw error;
       // The user may have navigated to login while signup was in flight.
