@@ -54,8 +54,10 @@ with sync_playwright() as p:
             page.locator('.kf73Primary').click()
             assert page.evaluate('window.__login224Calls')==1,'second login must wait'
             assert 'previous login attempt' in page.locator('.kf73Msg').inner_text().lower()
+            assert page.evaluate("document.querySelector('#authForm').dataset.kf95LoginPending")=='1','first login must still hold its request lock'
             page.evaluate('(reject)=>{window.__reject224=reject;window.__release224()}',reject_old)
-            page.wait_for_timeout(250)
+            # Synchronize with the actual async finally cleanup instead of an unreliable fixed delay.
+            page.wait_for_function("document.querySelector('#authForm').dataset.kf95LoginPending!=='1'")
             assert page.locator('#main').count()==0,'stale login must not open main app'
             assert page.evaluate('window.__login224Calls')==1
             assert page.evaluate("localStorage.getItem('kinfolk_stay_logged_in_v1')") is None
