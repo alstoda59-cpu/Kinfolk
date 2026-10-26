@@ -8,7 +8,7 @@ const stop = src.indexOf('function unlock(', start);
 assert.ok(start >= 0 && stop > start, 'saveStay source is present');
 const saveStayCode = src.slice(start, stop);
 const adoptionStart = src.indexOf('const restoreStay=saveStay(stay);');
-const adoptionStop = src.indexOf("show(form,'Logged in.", adoptionStart);
+const adoptionStop = src.indexOf('try{if(!form.isConnected', adoptionStart);
 assert.ok(adoptionStart >= 0 && adoptionStop > adoptionStart, 'real login adoption guard is present');
 const adoptionCode = src.slice(adoptionStart, adoptionStop);
 const makeStore = (map, failKey) => ({
@@ -30,10 +30,10 @@ const runCase = async ({ initialLocal = [], initialTab = [], stay, adoptFails = 
     if (adoptFails) throw Error('simulated session adoption failure');
     return { user: { id: 'synthetic-user' } };
   };
-  const perform = new Function('saveStay', 'adopt', 'stay', 'tokens', 'console',
+  const perform = new Function('saveStay', 'adopt', 'currentAccountId', 'stay', 'tokens', 'console',
     'return (async () => {' + adoptionCode + ';return session})()');
   let error = null, session = null;
-  try { session = await perform(saveStay, adopt, stay, {}, { warn() {} }); }
+  try { session = await perform(saveStay, adopt, async () => 'synthetic-user', stay, {}, { warn() {} }); }
   catch (err) { error = err; }
   return { local, tab, attempts, error, session };
 };
