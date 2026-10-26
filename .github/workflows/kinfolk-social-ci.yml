@@ -18,6 +18,11 @@ on:
 jobs:
   syntax-and-package:
     runs-on: ubuntu-latest
+    # Packaging-only placeholder. Never connects to the live Supabase project.
+    env:
+      KINFOLK_ALPHA_SUPABASE_URL: https://aaaaaaaaaaaaaaaaaaaa.supabase.co
+      KINFOLK_ALPHA_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_packaging_only_no_auth
+      KINFOLK_ALPHA_PACKAGING_ONLY: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
