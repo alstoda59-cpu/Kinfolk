@@ -14,7 +14,7 @@ const boot=extract(html,'async function boot()','async function hydrateUser()');
 const save=extract(phase,'function saveStay(stay)','function unlock(pass)');
 const adopt=extract(phase,'async function adopt(tokens)','let loginBusy=false');
 const login=phase.indexOf('const tokens=await tokenLogin(email,password);');
-const pref=phase.indexOf('saveStay(stay);const session=await adopt(tokens);');
+const pref=phase.indexOf('const restoreStay=saveStay(stay);');
 assert.ok(login>=0&&pref>login,'save preference after successful credentials but BEFORE setSession');
 async function eventCase({stay=true,tab=false,stale=false,event='SIGNED_IN'}={}){
   let current=null,listener=null,signouts=0;
@@ -57,11 +57,11 @@ async function eventCase({stay=true,tab=false,stale=false,event='SIGNED_IN'}={})
   }};
   const prefNames="const PREF1='kinfolk_stay_logged_in_v1',PREF2='kinfolk_stay_logged_in',TAB='kinfolk_session_tab';";
   const functions=new Function('sb','localStorage','sessionStorage','console','setTimeout','Date',prefNames+save+adopt+';return {saveStay,adopt};')(
-    sb,{setItem:(k,v)=>{stored[k]=v}},
-    {setItem:(k,v)=>{stored[k]=v},removeItem:k=>{delete stored[k]}},
+    sb,{getItem:k=>stored[k]??null,setItem:(k,v)=>{stored[k]=v},removeItem:k=>{delete stored[k]}}, 
+    {getItem:k=>stored[k]??null,setItem:(k,v)=>{stored[k]=v},removeItem:k=>{delete stored[k]}},
     console,setTimeout,Date
   );
-  const syntheticTokens={access_token:'synthetic',refresh_token:'synthetic'};
+  const syntheticTokens={access_token:'synthetic',refresh_token:'synthetic',user:{id:'synthetic-A'}};
   functions.saveStay(false);await functions.adopt(syntheticTokens);
   assert.equal(seen[0].kinfolk_stay_logged_in_v1,'0','nonpersistent preference exists at setSession');
   assert.equal(seen[0].kinfolk_session_tab,'1','original-tab marker exists at setSession');
