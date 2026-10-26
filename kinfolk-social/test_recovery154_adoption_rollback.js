@@ -8,7 +8,7 @@ const stop = src.indexOf('function unlock(', start);
 assert.ok(start >= 0 && stop > start, 'saveStay source is present');
 const saveStayCode = src.slice(start, stop);
 const adoptionStart = src.indexOf('const restoreStay=saveStay(stay);');
-const adoptionStop = src.indexOf('try{if(!form.isConnected', adoptionStart);
+const adoptionStop = src.indexOf('try{if(!currentLoginScreen())', adoptionStart);
 assert.ok(adoptionStart >= 0 && adoptionStop > adoptionStart, 'real login adoption guard is present');
 const adoptionCode = src.slice(adoptionStart, adoptionStop);
 const makeStore = (map, failKey) => ({
