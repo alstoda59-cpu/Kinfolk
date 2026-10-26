@@ -13,7 +13,7 @@ function fixture(signupResult) {
     '.kf73Title': { textContent: 'Create your Kinfolk' },
     '#kf73Name': { value: 'Kinfolk QA' },
     '#kf73Email': { value: 'authorized@example.test' },
-    '#kf73Password': { value: 'testpass' },
+    '#kf73Password': { value: 'testpass12345' },
     '#kf79Birthdate': { value: '1990-01-01' },
     '#kf73Stay': { checked: true },
     '.kf73Primary': button,
