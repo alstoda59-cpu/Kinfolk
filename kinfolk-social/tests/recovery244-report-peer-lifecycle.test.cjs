@@ -60,3 +60,45 @@ test('message report binding waits until message ID exists',()=>{
  h.patch();
  assert.equal(h.line.dataset.kf108Report,'1');
 });
+
+const submitStart=source.indexOf('window.kf108SubmitReport=async function(');
+const submitEnd=source.indexOf(';function patchDmReports(',submitStart);
+assert.ok(submitStart>=0&&submitEnd>submitStart);
+function submitHarness(){
+ const events=[],state={user:{id:'account-A'}},button={disabled:false,textContent:'Submit report'};
+ let activeButton=button,settle;
+ const document={getElementById(id){if(id==='kf108Reason')return {value:'Spam or scam'};if(id==='kf108Details')return {value:'synthetic details'};if(id==='kf108Submit')return activeButton;return null},contains:()=>true};
+ const sb={from(table){assert.equal(table,'kinfolk_reports');return {insert(row){events.push(['insert',row.reporter_id,row.target_type,row.target_id]);return new Promise(resolve=>{settle=resolve})}}}};
+ const window={state};
+ vm.runInNewContext('let sending=false;'+source.slice(submitStart,submitEnd),{window,document,sb,TYPES:new Set(['profile','message']),tell108:(...a)=>events.push(['toast',...a]),closeModal:()=>events.push(['close'])});
+ return {events,state,button,submit:window.kf108SubmitReport,finish:error=>settle({error:error||null}),replaceModal(){activeButton={disabled:false,textContent:'Submit report'}}};
+}
+test('report submission retains originating reporter and suppresses stale account success UI',async()=>{
+ const h=submitHarness(),pending=h.submit('profile','peer-B');
+ assert.deepEqual(h.events[0],['insert','account-A','profile','peer-B']);
+ h.state.user.id='account-C';
+ h.finish();
+ await pending;
+ assert.equal(h.events.filter(e=>e[0]==='close'||e[0]==='toast').length,0);
+});
+test('report completion cannot close a newly opened report modal',async()=>{
+ const h=submitHarness(),pending=h.submit('profile','peer-B');
+ h.replaceModal();
+ h.finish();
+ await pending;
+ assert.equal(h.events.filter(e=>e[0]==='close'||e[0]==='toast').length,0);
+});
+test('same-account report success closes original modal and confirms submission',async()=>{
+ const h=submitHarness(),pending=h.submit('profile','peer-B');
+ h.finish();
+ await pending;
+ assert.ok(h.events.some(e=>e[0]==='close'));
+ assert.ok(h.events.some(e=>e[0]==='toast'&&e[2]==='good'));
+});
+test('report error after account switch does not toast into another account',async()=>{
+ const h=submitHarness(),pending=h.submit('profile','peer-B');
+ h.state.user.id='account-C';
+ h.finish(new Error('permission denied'));
+ await pending;
+ assert.equal(h.events.filter(e=>e[0]==='toast').length,0);
+});
