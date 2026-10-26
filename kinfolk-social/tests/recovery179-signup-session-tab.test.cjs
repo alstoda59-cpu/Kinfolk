@@ -31,7 +31,7 @@ function fixture({ stay = false, session = true, error = null } = {}) {
       if (type === 'submit') { assert.equal(capture, true); submit = fn; }
     },
   };
-  const sb = { auth: { async signUp(args) {
+  const sb = { auth: { async getSession() { return { data: { session: session ? { user: { id: 'synthetic-user' } } : null }, error: null }; }, async signUp(args) {
     calls.push(args);
     return { data: { user: { id: 'synthetic-user' },
       session: session ? { user: { id: 'synthetic-user' } } : null }, error };
