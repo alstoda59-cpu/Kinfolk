@@ -136,6 +136,8 @@ with sync_playwright() as p:
  print('SIGNUP',page.locator('.kf73Title').all_inner_texts(),'birth',page.locator('#kf79Birthdate').count())
  assert page.locator('#kf79Birthdate').count()==1
  page.locator('#kf73Name').fill('Young QA')
+ page.locator('#kf217Username').fill('young_qa')
+ page.locator('#kf217ConfirmPassword').fill('pass123')
  page.locator('#kf73Email').fill('young@example.test')
  page.locator('#kf73Password').fill('pass123')
  page.locator('#kf79Birthdate').fill('2020-01-01')
