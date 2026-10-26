@@ -23,7 +23,8 @@ test('duplicate username feedback does not change signup or login ownership',()=
 test('migration is a draft, not a deployed migration, and preserves age gate',()=>{
   assert.match(draft,/DRAFT ONLY/);
   assert.match(draft,/DO NOT APPLY/);
-  assert.match(draft,/profiles_username_casefold_unique_idx/);
+  assert.match(draft,/profiles_username_lower_unique/);
+  assert.doesNotMatch(draft,/CREATE UNIQUE INDEX IF NOT EXISTS/i,'do not duplicate existing case-insensitive index');
   assert.match(draft,/RAISE EXCEPTION 'Username is already taken'/);
   assert.match(draft,/IF age_years < 13 OR age_years > 99/);
   assert.match(draft,/kinfolk_safety_settings/);
