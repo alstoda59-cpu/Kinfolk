@@ -106,7 +106,11 @@
           input.type=input.type==='password'?'text':'password';
           toggle.textContent=input.type==='password'?'Show confirmation':'Hide confirmation';
         });
-        const following=pass.nextSibling;
+        // The password input lives inside .kf73Password. Its next sibling is
+        // not a direct child of the form, so insertBefore(pass.nextSibling)
+        // throws NotFoundError and prevents birthday/signup setup on mobile.
+        const passwordBlock=pass.closest('.kf73Password');
+        const following=passwordBlock?.parentElement===form?passwordBlock.nextSibling:passLabel.nextSibling;
         form.insertBefore(label,following);form.insertBefore(input,following);form.insertBefore(toggle,following);
       }
     }
