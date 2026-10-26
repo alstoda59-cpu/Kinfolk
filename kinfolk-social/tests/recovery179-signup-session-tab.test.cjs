@@ -12,7 +12,7 @@ function fixture({ stay = false, session = true, error = null } = {}) {
     '.kf73Title': { textContent: 'Create your Kinfolk' },
     '#kf73Name': { value: 'Synthetic QA' },
     '#kf73Email': { value: 'synthetic@example.test' },
-    '#kf73Password': { value: 'testpass' },
+    '#kf73Password': { value: 'testpass12345' },
     '#kf79Birthdate': { value: '1990-01-01' },
     '#kf73Stay': { checked: stay },
     '.kf73Primary': { disabled: false, textContent: 'Create account' },
