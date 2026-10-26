@@ -8,7 +8,7 @@ function run({stay=false,confirmed=true,deny='' }={}){
  let submit,msg,signouts=0,failed=false;
  const values=new Map([['kinfolk_stay_logged_in_v1','1'],['kinfolk_stay_logged_in','1'],['kinfolk_session_tab','1']]);
  const store={getItem:k=>values.get(k)??null,setItem:(k,v)=>{if(k===deny&&!failed){failed=true;throw Error('Storage denied')}values.set(k,v)},removeItem:k=>{if(k===deny&&!failed){failed=true;throw Error('Storage denied')}values.delete(k)}};
- const fields={'.kf73Title':{textContent:'Create your Kinfolk'},'#kf73Name':{value:'QA'},'#kf73Email':{value:'qa@example.test'},'#kf73Password':{value:'testpass'},'#kf79Birthdate':{value:'1990-01-01'},'#kf73Stay':{checked:stay},'.kf73Primary':{disabled:false,textContent:'Create account'}};
+ const fields={'.kf73Title':{textContent:'Create your Kinfolk'},'#kf73Name':{value:'QA'},'#kf73Email':{value:'qa@example.test'},'#kf73Password':{value:'testpass2026!'},'#kf79Birthdate':{value:'1990-01-01'},'#kf73Stay':{checked:stay},'.kf73Primary':{disabled:false,textContent:'Create account'}};
  const form={querySelectorAll(){return []},id:'authForm',isConnected:true,dataset:{kf73:'1'},querySelector:k=>k==='.kf73Msg'?msg:fields[k]||null,appendChild:x=>{msg=x}};
  const document={head:{appendChild(){}},documentElement:{},createElement:()=>({style:{}}),addEventListener:(type,fn)=>{if(type==='submit')submit=fn}};
  const sb={auth:{getSession:async()=>({data:{session:confirmed?{user:{id:'qa'}}:null},error:null}),signUp:async()=>({data:{session:confirmed?{user:{id:'qa'}}:null},error:null}),signOut:async()=>{signouts++;return {error:null}}}};

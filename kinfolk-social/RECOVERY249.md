@@ -17,3 +17,6 @@ Date: 2026-10-26. Main Kinfolk Social only. Isolated branch `kinfolk-social/alph
 
 ## Next
 Run the Node regression in CI; integrate the isolated backend publishable key only into native alpha packaging; test synthetic verified email signup/login/logout/session restore and upload/privacy on isolated Supabase; produce an installable debug APK and iOS Simulator artifact; physical-device QA before launch. Never change live Supabase, production or Kinfolksworld.
+
+## CI regression repair
+- GitHub Actions source run `40413001198` on `e1d117486422418392e8c1d9062b0c34928d4a63` **failed**: 198/227 Node tests passed, 29 failed because six existing synthetic signup fixtures still used eight-character `testpass` and were rejected by the corrected 12-character minimum. All six fixtures were updated to `testpass2026!` (13 characters), without weakening production validation. This fixture-only commit needs a fresh CI run before calling the suite green.

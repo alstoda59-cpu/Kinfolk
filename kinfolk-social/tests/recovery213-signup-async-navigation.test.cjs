@@ -23,7 +23,7 @@ function fixture(stage){
     '.kf73Title':{textContent:'Create your Kinfolk'},
     '#kf73Name':{value:'Synthetic QA'},
     '#kf73Email':{value:'synthetic@example.invalid'},
-    '#kf73Password':{value:'testpass'},
+    '#kf73Password':{value:'testpass2026!'},
     '#kf79Birthdate':{value:'1990-01-01'},
     '#kf73Stay':{checked:false},
     '.kf73Primary':{disabled:false,textContent:'Create account'}
