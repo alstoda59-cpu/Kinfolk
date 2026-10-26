@@ -60,6 +60,10 @@ with sync_playwright() as p:
             assert page.evaluate('window.__login224Calls')==1
             assert page.evaluate("localStorage.getItem('kinfolk_stay_logged_in_v1')") is None
             assert 'incorrect' not in page.locator('.kf73Msg').inner_text().lower(),'old error leaked to new login'
+            # A reused Login button must not stay disabled after the stale request settles.
+            page.wait_for_function("!document.querySelector('.kf73Primary').disabled")
+            assert page.locator('.kf73Primary').is_enabled(),'login button remained disabled after stale request'
+            assert page.locator('.kf73Primary').inner_text()=='Log in','stale loading label remained after form remount'
             page.locator('.kf73Primary').click()
             page.wait_for_function('window.__login224Calls===2')
             page.locator('#main').wait_for(state='visible',timeout=10000)
