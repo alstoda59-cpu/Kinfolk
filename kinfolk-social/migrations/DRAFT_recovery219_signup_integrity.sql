@@ -4,7 +4,9 @@
 -- concurrent signups, before any production review.
 --
 -- Findings from read-only schema inspection on 2026-10-25:
--- public.profiles.username is UNIQUE but case-sensitive;
+-- public.profiles.username has both an exact UNIQUE constraint and
+-- an existing case-insensitive lower(username) unique index
+-- (profiles_username_lower_unique). Do not create a duplicate index;
 -- kinfolk_private.handle_new_user() silently substitutes a generated username
 -- after a unique_violation. kinfolk_user_preferences.locale is not initialized
 -- by the current signup trigger. apply_signup_profile_style() already reads
@@ -25,8 +27,9 @@ BEGIN
 END
 $preflight$;
 
-CREATE UNIQUE INDEX IF NOT EXISTS profiles_username_casefold_unique_idx
-  ON public.profiles (lower(username));
+-- Existing schema ALREADY has a case-insensitive unique index named
+-- profiles_username_lower_unique. Verify it exists in isolated staging;
+-- this draft intentionally makes NO duplicate index.
 
 CREATE OR REPLACE FUNCTION kinfolk_private.handle_new_user()
 RETURNS trigger
