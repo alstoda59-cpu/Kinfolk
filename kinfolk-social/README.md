@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery218 (2026-10-25)
+
+Latest isolated checkpoint: [RECOVERY218.md](RECOVERY218.md). Fixed the Recovery217 confirmation-field DOM insertion error that could abort birthday/signup mounting; added optional mobile bio/language/interests and a three-section signup explanation without changing the existing auth handler. Updated legacy Chromium signup fixtures and added Recovery218 mocked mobile regression to CI. V8 synthetic mounting and source syntax passed. Native CI, real Supabase and Android/iPhone tests remain unverified; new previews are Vercel-rate-limited. Production, Kinfolksworld and shared Supabase were not changed.
+
 # Kinfolk Social | Recovery214 (2026-10-25)
 
 Latest isolated checkpoint: [RECOVERY214.md](RECOVERY214.md). Phase95 now performs guarded local sign-out of a newly adopted account when login adoption/activation fails, preventing a failed login from leaving an unintended session. Recovery151/154 synthetic fixtures were repaired, and five new cleanup regressions were added to CI. V8-adapter tests passed; native Node CI, real backend and physical mobile tests remain unverified. Vercel build-rate-limit blocked confirmation of a READY preview containing the application fix. Production, Kinfolksworld and shared Supabase remain untouched.
