@@ -98,6 +98,8 @@ jobs:
         run: node --test kinfolk-social/tests/recovery215-login-navigation-check.test.cjs kinfolk-social/tests/recovery216-navigation.test.cjs
       - name: Signup identity and confirmation field checks (static only)
         run: node --test kinfolk-social/tests/recovery217-signup-fields.test.cjs
+      - name: Signup backend metadata and migration draft checks (static only)
+        run: node --test kinfolk-social/tests/recovery219-signup-backend-alignment.test.cjs
       - name: Signup async navigation regressions (synthetic only)
         run: node --test kinfolk-social/tests/recovery213-signup-async-navigation.test.cjs
       - name: Account-isolated content lane regression (synthetic only)
