@@ -154,7 +154,10 @@
       // An email-confirmation signup has no authenticated session yet.
       // Do not persist Stay Logged In until signup actually returns a session.
       if(data?.session){
-        if(!(await signupSessionIsCurrent(data.session))){
+        const verifiedSignupSession=await signupSessionIsCurrent(data.session);
+        // Session verification is asynchronous: the form may have changed again.
+        if(!form.isConnected||!((form.querySelector('.kf73Title')?.textContent||'').toLowerCase().includes('create your kinfolk')))return;
+        if(!verifiedSignupSession){
           show(form,'Account created, but the active login changed. Sign in again to set Stay Logged In.');
           if(btn){btn.disabled=false;btn.textContent='Create account'}
           return;
