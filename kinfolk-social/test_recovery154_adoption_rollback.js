@@ -30,10 +30,10 @@ const runCase = async ({ initialLocal = [], initialTab = [], stay, adoptFails = 
     if (adoptFails) throw Error('simulated session adoption failure');
     return { user: { id: 'synthetic-user' } };
   };
-  const perform = new Function('saveStay', 'adopt', 'currentAccountId', 'stay', 'tokens', 'console',
+  const perform = new Function('saveStay', 'adopt', 'currentAccountId', 'clearFailedLoginSession', 'stay', 'tokens', 'console',
     'return (async () => {' + adoptionCode + ';return session})()');
   let error = null, session = null;
-  try { session = await perform(saveStay, adopt, async () => activeId, stay, {}, { warn() {} }); }
+  try { session = await perform(saveStay, adopt, async () => activeId, async () => {}, stay, {user:{id:'synthetic-user'}}, { warn() {} }); }
   catch (err) { error = err; }
   return { local, tab, attempts, error, session };
 };
