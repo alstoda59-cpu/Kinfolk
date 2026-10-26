@@ -66,6 +66,10 @@ with sync_playwright() as p:
             page.wait_for_function("!document.querySelector('.kf73Primary').disabled")
             assert page.locator('.kf73Primary').is_enabled(),'login button remained disabled after stale request'
             assert page.locator('.kf73Primary').inner_text()=='Log in','stale loading label remained after form remount'
+            # Reused mobile auth form can clear password fields on rerender; re-enter after the old request finishes.
+            page.locator('#kf73Email').fill('new@example.test')
+            page.locator('#kf73Password').fill('password9')
+            assert page.locator('#kf73Password').input_value()=='password9'
             page.locator('.kf73Primary').click()
             page.wait_for_timeout(400)
             if page.evaluate('window.__login224Calls')!=2:
