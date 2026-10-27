@@ -20,5 +20,12 @@ Date: 2026-10-27 (America/Los_Angeles). Scope: full main Kinfolk Social `kinfolk
 - This was **not a Node.js test runner, full GitHub Actions CI, real Supabase authentication, browser/device testing, or proof of email delivery**. The in-memory tests use synthetic accounts and mocked Auth/DOM/fetch.
 - Full native alpha packaging, Android/iPhone builds, physical-device QA, real synthetic-account signup/email verification/login/logout/session restoration, cross-account RLS, media/posts/messaging/notifications and teen safety E2E remain unverified.
 
+## Read-only isolated Supabase inspection
+- The existing designated alpha project `viantpfagtbgyyzavmtv` is `ACTIVE_HEALTHY`. No new project or organization was selected and no billable resource was created.
+- All **14 public tables** currently reported by the isolated project have RLS enabled. The security-advisor endpoint returned zero lints. A read-only `pg_policies` inventory showed policies for the account, posts, comments, messaging, notification and teen-safety tables.
+- For the inspected messaging/notification UPDATE policies, `information_schema.column_privileges` limits authenticated UPDATE privileges to `messages.first_read_at` and `notifications.read_at`, respectively. This does not replace adversarial two-user tests.
+- No database rows were inserted, updated or deleted. This was a structural inspection, **not real login, RLS penetration testing, or proof of teen privacy**.
+- Vercel reports a READY nonproduction preview for code/test commit `397413e5` at https://kinfolk-social-demo-mdw95m3e5-alstoda59-9779.vercel.app/ . Later test/docs commits are not verified READY; the latest docs commit has a build-rate-limit status. READY is deployment state only.
+
 ## Boundaries
 Only `kinfolk-social/` files changed on a new isolated branch. No shared live Supabase schema/data/auth/security, production aliases, Kinfolksworld, paid infrastructure or app-store submissions were modified.
