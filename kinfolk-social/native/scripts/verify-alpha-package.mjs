@@ -19,6 +19,17 @@ assert.ok(html.indexOf('src="/kinfolk-supabase-sdk.js"')<html.indexOf('const sb=
 assert.ok(html.includes(backend.url)&&html.includes(backend.key),'native entry must use the isolated backend');
 assert.doesNotMatch(html,/navigator\.serviceWorker\.register\('/,'Capacitor should not register a stale web service worker');
 
+// Native startup must not require a remote JavaScript host or silently omit a
+// local script when new main-app modules are introduced.
+const scriptTags=[...html.matchAll(/<script\\b[^>]*\\bsrc\\s*=\\s*(["'])(.*?)\\1[^>]*>/gi)];
+for(const match of scriptTags){
+  const src=match[2];
+  assert.ok(src.startsWith('/')&&!src.startsWith('//'), 'native script must be bundled locally: '+src);
+  assert.ok(!src.includes('?')&&!src.includes('#')&&!src.includes('..'), 'native script path must be a plain local asset: '+src);
+  assert.ok((await stat(path.join(output,src.slice(1)))).isFile(), 'native script asset missing: '+src);
+}
+assert.ok(scriptTags.length>=20,'native startup scripts must remain intact');
+
 const modules=[...html.matchAll(/<script\b[^>]*\bsrc\s*=\s*(["'])(\/kinfolk-[a-zA-Z0-9_-]+\.js)\1[^>]*>/gi)].map(m=>m[2]);
 assert.ok(modules.length>=20,'complete Kinfolk modules must be present');
 assert.ok(modules.includes('/kinfolk-reels159.js'),'shorts and reels must be packaged');
