@@ -53,8 +53,8 @@ test('reused login form restores signup submit and password rules, then login',(
   flush();
   assert.equal(button.type,'submit','signup must submit through the Phase79 capturing handler');
   assert.equal(button.onclick,null,'signup must not call the Phase95 login handler');
-  assert.equal(pass.minLength,5);
-  assert.equal(pass.maxLength,12);
+  assert.equal(pass.minLength,12);
+  assert.equal(pass.maxLength,128);
   assert.equal(pass.autocomplete,'new-password');
 
   title.textContent='Welcome back';
