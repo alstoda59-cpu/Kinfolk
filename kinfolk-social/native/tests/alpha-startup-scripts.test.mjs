@@ -32,3 +32,24 @@ test('fails closed on unquoted script src',async()=>{
 test('supports a future local nested JavaScript module',async()=>{
   assert.deepEqual(await verifyNativeStartupScripts('<script src="/modules/kinfolk-chat.js"></script>',async()=>true),['/modules/kinfolk-chat.js']);
 });
+
+test('data-src cannot conceal an actual remote script source',async()=>{
+  await assert.rejects(verifyNativeStartupScripts('<script data-src="/safe.js" src="https://remote.example.invalid/sdk.js"></script>',async()=>true),/plain bundled JavaScript path/);
+});
+
+test('data-src alone is not a startup script',async()=>{
+  assert.deepEqual(nativeStartupScripts('<script data-src="/not-loaded.js"></script>'),[]);
+});
+
+test('duplicate src attributes fail closed rather than trusting the first',async()=>{
+  await assert.rejects(verifyNativeStartupScripts('<script src="/safe.js" src="https://remote.example.invalid/sdk.js"></script>',async()=>true),/duplicate src attributes/);
+});
+
+test('quoted angle brackets and embedded src text do not confuse attribute parsing',async()=>{
+  const markup='<script data-note="a > src=\'/wrong.js\'" SRC = "/actual.js"></script>';
+  assert.deepEqual(await verifyNativeStartupScripts(markup,async()=>true),['/actual.js']);
+});
+
+test('malformed source attribute fails closed',async()=>{
+  await assert.rejects(verifyNativeStartupScripts('<script src></script>',async()=>true),/must be quoted/);
+});
