@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery264 (2026-10-27)
+
+Latest isolated checkpoint: [RECOVERY264.md](RECOVERY264.md). Consolidated both divergent Recovery263 authentication fixes into one branch: stalled mobile signup requests now have a bounded wait and duplicate-request hold, while stale verification resends and signup results cannot target a changed email address. **24/24 synthetic V8 regression scenarios passed** against exact committed source, and the test commit has a **READY nonproduction Vercel preview**. This is not actual Node CI, real Supabase/email verification, native packaging or physical-device proof. Full main Kinfolk Social features and dark UI preserved. Production, shared live Supabase, Kinfolksworld and store releases untouched.
+
 # Kinfolk Social | Recovery228 (2026-10-26)
 
 Latest isolated checkpoint: [RECOVERY228.md](RECOVERY228.md). Added client-side teen private-profile locking in Settings for valid signup birthdates ages 13–17, guarded asynchronous Settings loading/saves against account switches, and aligned legacy message audience options with the live `nobody` enum. **5/5 focused synthetic V8 checks passed** and the source/test commit has a READY isolated Vercel preview `dpl_84LUcsMQjhoxHPs91hWzUEEDZJam`. Full Node/browser CI, real Supabase/RLS and physical Android/iPhone verification are **not confirmed**. Client checks do not establish backend teen safety. Production, Kinfolksworld and shared live Supabase remain untouched.
