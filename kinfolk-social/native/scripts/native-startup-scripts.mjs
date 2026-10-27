@@ -1,14 +1,23 @@
 // Fail-closed startup asset discovery for Capacitor's offline web bundle.
-// This parses every script tag, not only scripts with a kinfolk- filename.
+// Parse attribute names, not substrings: data-src is not the script's src.
 import assert from 'node:assert/strict';
 
 export function nativeStartupScripts(html){
   const sources=[];
-  for(const [tag] of String(html).matchAll(/<script\b[^>]*>/gi)){
-    if(!/\bsrc\s*=/i.test(tag))continue;
-    const match=/\bsrc\s*=\s*(["'])(.*?)\1/i.exec(tag);
-    assert.ok(match,'native startup script src must be quoted: '+tag.slice(0,100));
-    sources.push(match[2]);
+  // A quoted '>' is legal inside an HTML attribute and must not end the tag.
+  for(const [tag] of String(html).matchAll(/<script\b(?:"[^"]*"|'[^']*'|[^'">])*>/gi)){
+    const attrs=tag.replace(/^<script\b/i,'').slice(0,-1);
+    let cursor=0,src=null;
+    for(const match of attrs.matchAll(/\s+([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g)){
+      assert.ok(!attrs.slice(cursor,match.index).trim(),'malformed native script attribute');
+      cursor=match.index+match[0].length;
+      if(match[1].toLowerCase()!=='src')continue;
+      assert.equal(src,null,'native startup script must not have duplicate src attributes');
+      assert.ok(match[2]!==undefined||match[3]!==undefined,'native startup script src must be quoted');
+      src=match[2]??match[3];
+    }
+    assert.ok(!attrs.slice(cursor).trim(),'malformed native script attribute');
+    if(src!==null)sources.push(src);
   }
   return sources;
 }
