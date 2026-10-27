@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery267 (2026-10-27)
+
+Latest isolated checkpoint: [RECOVERY267.md](RECOVERY267.md). Hardened native startup JavaScript verification against disguised remote `src` attributes, duplicate sources, and quoted-angle-bracket parsing. **10/10 actual Node.js 22 regression tests passed** against files matching exact GitHub committed blobs. The code/test commit has a **READY nonproduction Vercel preview**. Full native package/build CI, real isolated Supabase auth/RLS, and physical Android/iPhone testing are **not verified**. No production, shared live Supabase, Kinfolksworld or store changes.
+
 # Kinfolk Social | Recovery264 (2026-10-27)
 
 Latest isolated checkpoint: [RECOVERY264.md](RECOVERY264.md). Consolidated both divergent Recovery263 authentication fixes into one branch: stalled mobile signup requests now have a bounded wait and duplicate-request hold, while stale verification resends and signup results cannot target a changed email address. **24/24 synthetic V8 regression scenarios passed** against exact committed source, and the test commit has a **READY nonproduction Vercel preview**. This is not actual Node CI, real Supabase/email verification, native packaging or physical-device proof. Full main Kinfolk Social features and dark UI preserved. Production, shared live Supabase, Kinfolksworld and store releases untouched.
