@@ -398,6 +398,12 @@
         options:{...(redirect?{emailRedirectTo:redirect}:{}),data:{display_name,profile_display_name:display_name,signup_birthdate:birthdate,...(username?{username}:{}),...(bio?{bio,profile_bio:bio}:{}),preferred_language:preferredLanguage,...(interests.length?{interests}:{}),...(gender?{signup_gender:gender}:{}),profile_private:(age<18||privateProfile)?'true':'false'}}
       });
       if(error)throw error;
+      // A successful HTTP response is not proof that an account was created.
+      // Never claim email delivery or persist a session preference without a
+      // concrete signup user. An unexpected session for another account must
+      // not inherit the new signup's Stay Logged In choice.
+      if(!data?.user?.id)throw new Error('Kinfolk could not confirm account creation. Please try again.');
+      if(data.session&&data.session.user?.id!==data.user.id)throw new Error('Signup session did not match the new account. Sign in again.');
       // The user may have navigated to login while signup was in flight.
       // Do not persist signup preferences or update a replaced form.
       if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!(isSignupTitle(signupTitle?.textContent))){
