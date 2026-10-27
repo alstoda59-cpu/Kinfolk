@@ -232,9 +232,79 @@ async function addComment(e,pid){e.preventDefault();const body=e.target.body.val
 async function deletePost(id){if(!confirm('Delete this post?'))return;const {error}=await sb.from('posts').delete().eq('id',id);if(error)return toast(error.message,'danger');await loadFeed();await renderApp();toast('Post deleted')}
 function sharePost(id){navigator.clipboard?.writeText(location.origin+'/#post-'+id);toast('Post link copied')}
 function openPostModal(photo=false){modal('Create post',`<form id="postForm"><textarea class="textarea" id="postBody" placeholder="What’s happening?"></textarea><div class="label">Photo (optional)</div><input class="field" id="postFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" ${photo?'autofocus':''}><div id="postProgress" class="muted" style="margin:10px 0"></div><button class="btn primary full">Post</button></form>`);$('#postForm').onsubmit=createPost}
-async function createPost(e){e.preventDefault();const body=$('#postBody').value.trim(),file=$('#postFile').files[0];if(!body&&!file)return toast('Add text or a photo');let path=null;try{if(file){$('#postProgress').textContent='Uploading photo…';path=`${state.user.id}/posts/${crypto.randomUUID()}-${safeName(file.name)}`;const {error}=await sb.storage.from('kinfolk-media').upload(path,file,{upsert:false});if(error)throw error}const {error}=await sb.from('posts').insert({author_id:state.user.id,body:body||'',media_url:path});if(error)throw error;closeModal();await loadFeed();await renderApp();toast('Posted to Kinfolk','good')}catch(err){toast(err.message,'danger')}}
+// Alpha: a composer belongs to one login generation and one actual modal form.
+function kfAlphaComposerCurrent(epoch,uid,form,id){
+ return kfAlphaLoadCurrent(epoch,uid)&&!!form&&form.isConnected!==false&&document.getElementById(id)===form;
+}
+async function createPost(e){
+ e.preventDefault();
+ const form=e.currentTarget||e.target,epoch=kf129Epoch,uid=state.user?.id;
+ if(!kfAlphaComposerCurrent(epoch,uid,form,'postForm')||form.dataset.kfAlphaSending==='1')return;
+ const body=form.querySelector('#postBody')?.value.trim()||'',file=form.querySelector('#postFile')?.files?.[0];
+ if(!body&&!file)return toast('Add text or a photo');
+ form.dataset.kfAlphaSending='1';
+ const button=form.querySelector('button[type="submit"],button:not([type])');
+ if(button)button.disabled=true;
+ let path=null;
+ try{
+   if(file){
+     const progress=form.querySelector('#postProgress');
+     if(progress)progress.textContent='Uploading photo…';
+     path=`${uid}/posts/${crypto.randomUUID()}-${safeName(file.name)}`;
+     const {error}=await sb.storage.from('kinfolk-media').upload(path,file,{upsert:false});
+     if(!kfAlphaComposerCurrent(epoch,uid,form,'postForm'))return;
+     if(error)throw error;
+   }
+   if(!kfAlphaComposerCurrent(epoch,uid,form,'postForm'))return;
+   const {error}=await sb.from('posts').insert({author_id:uid,body,media_url:path});
+   if(!kfAlphaComposerCurrent(epoch,uid,form,'postForm'))return;
+   if(error)throw error;
+   closeModal();
+   await loadFeed();
+   if(!kfAlphaLoadCurrent(epoch,uid))return;
+   await renderApp();
+   if(kfAlphaLoadCurrent(epoch,uid))toast('Posted to Kinfolk','good');
+ }catch(err){
+   if(kfAlphaComposerCurrent(epoch,uid,form,'postForm'))toast(err?.message||String(err),'danger');
+ }finally{
+   delete form.dataset.kfAlphaSending;
+   if(button)button.disabled=false;
+ }
+}
 function openStoryModal(){modal('Create story',`<form id="storyForm"><textarea class="textarea" id="storyBody" placeholder="Add a caption…"></textarea><div class="label">Story image</div><input class="field" id="storyFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><div class="muted" style="font-size:12px;margin:8px 0">Stories expire after 24 hours.</div><button class="btn primary full">Share story</button></form>`);$('#storyForm').onsubmit=createStory}
-async function createStory(e){e.preventDefault();const file=$('#storyFile').files[0],body=$('#storyBody').value.trim();let path=null;try{if(file){path=`${state.user.id}/stories/${crypto.randomUUID()}-${safeName(file.name)}`;const {error}=await sb.storage.from('kinfolk-media').upload(path,file);if(error)throw error}if(!file&&!body)throw new Error('Add a photo or text.');const {error}=await sb.from('kinfolk_stories').insert({owner_id:state.user.id,body,media_url:path});if(error)throw error;closeModal();await loadStories();await renderApp();toast('Story shared','good')}catch(err){toast(err.message,'danger')}}
+async function createStory(e){
+ e.preventDefault();
+ const form=e.currentTarget||e.target,epoch=kf129Epoch,uid=state.user?.id;
+ if(!kfAlphaComposerCurrent(epoch,uid,form,'storyForm')||form.dataset.kfAlphaSending==='1')return;
+ const file=form.querySelector('#storyFile')?.files?.[0],body=form.querySelector('#storyBody')?.value.trim()||'';
+ if(!file&&!body)return toast('Add a photo or text.');
+ form.dataset.kfAlphaSending='1';
+ const button=form.querySelector('button[type="submit"],button:not([type])');
+ if(button)button.disabled=true;
+ let path=null;
+ try{
+   if(file){
+     path=`${uid}/stories/${crypto.randomUUID()}-${safeName(file.name)}`;
+     const {error}=await sb.storage.from('kinfolk-media').upload(path,file,{upsert:false});
+     if(!kfAlphaComposerCurrent(epoch,uid,form,'storyForm'))return;
+     if(error)throw error;
+   }
+   if(!kfAlphaComposerCurrent(epoch,uid,form,'storyForm'))return;
+   const {error}=await sb.from('kinfolk_stories').insert({owner_id:uid,body,media_url:path});
+   if(!kfAlphaComposerCurrent(epoch,uid,form,'storyForm'))return;
+   if(error)throw error;
+   closeModal();
+   await loadStories();
+   if(!kfAlphaLoadCurrent(epoch,uid))return;
+   await renderApp();
+   if(kfAlphaLoadCurrent(epoch,uid))toast('Story shared','good');
+ }catch(err){
+   if(kfAlphaComposerCurrent(epoch,uid,form,'storyForm'))toast(err?.message||String(err),'danger');
+ }finally{
+   delete form.dataset.kfAlphaSending;
+   if(button)button.disabled=false;
+ }
+}
 async function viewStory(id){const s=state.stories.find(x=>x.id===id);if(!s)return;const p=state.profiles.get(s.owner_id),u=s.media_url?await signed('kinfolk-media',s.media_url):null;modal(p?.display_name||'Story',`${u?`<img src="${esc(u)}" style="width:100%;max-height:70vh;object-fit:contain;background:#0b0a0d;border-radius:14px">`:''}<div style="padding:12px 2px;font-size:17px">${esc(s.body)}</div><div class="muted">${fmt(s.created_at)} · expires in 24h</div>`)}
 async function renderReels(main){const reels=state.videos.filter(v=>['reel','short'].includes(v.kind));main.innerHTML=`<div class="card"><div class="cardpad"><div class="sectionTitle">Reels & Shorts</div><div class="chips"><button class="chip active">For you</button><button class="chip" onclick="setView('channels')">Subscriptions</button><button class="btn small primary" style="margin-left:auto" onclick="openVideoModal()">＋ Upload</button></div></div></div><div class="videoGrid" id="reelGrid"></div>`;if(window.kf159RenderReels)await window.kf159RenderReels(main,reels);else await renderVideoGrid($('#reelGrid'),reels)}
 const videoReactionState={rows:[],available:false};
