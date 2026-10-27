@@ -362,6 +362,8 @@
   // Login remains owned by the existing Phase95/98 session handler.
   let signupBusy=false;
   let activeSignupTitle=null;
+  // A timed-out signup may still complete server-side. Delay duplicate requests.
+  let signupRetryAt=0;
   async function handleSignup(e){
     const form=e.target;
     if(form?.id!=='authForm'||form.dataset.kf73!=='1')return;
@@ -374,6 +376,10 @@
     e.stopImmediatePropagation();
     if(signupBusy){
       if(signupTitle!==activeSignupTitle)show(form,'A previous account creation request is still finishing. Please try again shortly.');
+      return;
+    }
+    if(Date.now()<signupRetryAt){
+      show(form,'A previous signup may still be processing. Check your inbox or try logging in before requesting another account. Please wait a minute before retrying.');
       return;
     }
     const btn=form.querySelector('.kf73Primary');
@@ -407,13 +413,30 @@
     signupBusy=true;
     activeSignupTitle=signupTitle;
     if(btn){btn.disabled=true;btn.textContent='Creating account…'}
+    let signupTimeoutId=null;
     try{
       if(typeof sb==='undefined'||!sb?.auth?.signUp)throw new Error('Kinfolk signup is not ready. Try again in a moment.');
       const redirect=emailRedirect();
-      const {data,error}=await sb.auth.signUp({
-        email,password,
-        options:{...(redirect?{emailRedirectTo:redirect}:{}),data:{display_name,profile_display_name:display_name,signup_birthdate:birthdate,...(username?{username}:{}),...(bio?{bio,profile_bio:bio}:{}),preferred_language:preferredLanguage,...(interests.length?{interests}:{}),...(gender?{signup_gender:gender}:{}),profile_private:(age<18||privateProfile)?'true':'false'}}
-      });
+      // A mobile connection can leave signUp unresolved forever. Limit the UI
+      // wait without claiming failure: the server may have created the account.
+      const timedOut=Symbol('signup-timeout');
+      const result=await Promise.race([
+        sb.auth.signUp({
+          email,password,
+          options:{...(redirect?{emailRedirectTo:redirect}:{}),data:{display_name,profile_display_name:display_name,signup_birthdate:birthdate,...(username?{username}:{}),...(bio?{bio,profile_bio:bio}:{}),preferred_language:preferredLanguage,...(interests.length?{interests}:{}),...(gender?{signup_gender:gender}:{}),profile_private:(age<18||privateProfile)?'true':'false'}}
+        }),
+        new Promise(resolve=>{signupTimeoutId=setTimeout(()=>resolve(timedOut),25000)})
+      ]);
+      if(result===timedOut){
+        signupRetryAt=Date.now()+60000;
+        if(form.isConnected&&form.querySelector('.kf73Title')===signupTitle&&isSignupTitle(signupTitle?.textContent)){
+          show(form,'Account creation is taking too long to confirm. It may have succeeded. Check your inbox or try logging in before retrying in a minute.');
+          if(btn){btn.disabled=false;btn.textContent='Create account'}
+        }
+        return;
+      }
+      if(!result||typeof result!=='object')throw new Error('Kinfolk could not confirm account creation. Check your email or try logging in before retrying.');
+      const {data,error}=result;
       if(error)throw error;
       // A successful HTTP response is not proof that an account was created.
       // Never claim email delivery or persist a session preference without a
@@ -491,6 +514,7 @@
       show(form,message);
       if(btn){btn.disabled=false;btn.textContent='Create account'}
     }finally{
+      if(signupTimeoutId!==null)clearTimeout(signupTimeoutId);
       // The active request owns the lock; a navigation does not silently
       // allow duplicate account creation while the original request is pending.
       if(activeSignupTitle===signupTitle){signupBusy=false;activeSignupTitle=null}
