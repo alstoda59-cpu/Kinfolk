@@ -27,3 +27,21 @@ Date: 2026-10-27. Scope: FULL MAIN Kinfolk Social in `kinfolk-social/` only.
 4. Produce functional isolated-backend Android/iOS builds and obtain explicit owner approval for any production/store release or any nonzero-cost resource.
 
 Do not merge into production based solely on the 34 static checks.
+
+## Follow-on mobile signup and regression work in this checkpoint
+- `a811de6360310226878906d8610770ca83d136e0`: update older native-backend security test fixtures for the designated isolated Supabase project, preserve rejection of other backends. Subsequent Node suites passed.
+- `a8c559e73a61ee8d8627f7c0cc0de812cb7b16a8`: correct invalid-length synthetic confirmation password in Recovery218 browser test.
+- `3a575c19c893eaf8b3d7058af3729110422ab2de`: add actionable signup-retry diagnostics to Recovery133.
+- `ac3ad8daa367d590725a45358ec722fef1c900ab`: render pending-email verification panel synchronously on signup success instead of relying only on a later observer callback.
+- `eb5ce5020f5ea687b5ac0e0b0bc0e7c8946b07df`: upgrade three synthetic Node DOM fixtures to support the verification panel without faking authenticated accounts.
+- `7468a130df4150f73d18a42f834890892cbc91d4`: instrument Recovery221 browser test and locate a fast-mobile form mismatch: browser validity passed, but the two password input values differed; Auth was correctly not called.
+- `1e9673c8d78232b3939ec2a41010f3e701757240`: ensure the reused signup password field receives 12–128 character limits as soon as the signup gate mounts. Password minimum and age protections remain unchanged.
+- `03bd75a856f90b89e5fc09de78c2021e6bef0967`: assert those bounds are ready before synthetic Recovery221 signup.
+- `5f0b06315434ea43591934165a3462d750ff86c6`: make Recovery129 synthetic age-gate test wait for both mounted password inputs and compare their values before submit. Recovery129 passed in CI run `40494175850`.
+- `e2e844f2956fb19a4cc9d79679a11bd61eb9a458`: apply corresponding readiness guard to Recovery133 synthetic signup, age and retry tests.
+
+## Actual CI limitations
+- Multiple GitHub Actions rounds exposed previously masked fixture and timing failures. The Node regression suite passed at the latest checked code round before this note, but the **full workflow has not passed**.
+- CI run `40494175850` passed Node and Recovery129 browser scenarios, then failed in Recovery133 at an underage assertion. Recovery133 now waits for the password limits and verifies field equality, but this latest code requires a fresh CI result.
+- Real email delivery, confirmed two-account JWT RLS tests, native functional APK/IPA, device QA, signup and social media end-to-end tests are **still outstanding**.
+- The changes have not been approved for merge, production, paid use, or store submission.
