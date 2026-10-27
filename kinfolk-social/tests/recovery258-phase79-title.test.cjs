@@ -58,7 +58,7 @@ function harness(titleText='Create Account',authOverrides={}){
   },{timeout:3000});
   function event(){return{target:form,prevented:false,stopped:false,
     preventDefault(){this.prevented=true},stopImmediatePropagation(){this.stopped=true}}}
-  return {title,form,btn,nodes,signups,resends,event,submit:e=>submit(e),expireResend:()=>{for(const fn of resendTimeouts.splice(0))fn()},expireSignup:()=>{for(const fn of signupTimeouts.splice(0))fn()}};
+  return {title,form,btn,fields,nodes,signups,resends,event,submit:e=>submit(e),expireResend:()=>{for(const fn of resendTimeouts.splice(0))fn()},expireSignup:()=>{for(const fn of signupTimeouts.splice(0))fn()}};
 }
 
 test('alternate Create Account heading submits a real Phase79 signup and shows verification',async()=>{
@@ -115,7 +115,7 @@ test('alternate-title email verification resend remains available',async()=>{
 test('Phase79 mounts and protects every async branch using the same signup-title predicate',()=>{
   assert.match(source,/function mountSignupGate\(\)[\s\S]*?if\(!isSignupTitle\(title\)\)/);
   assert.match(source,/const current=\(\)=>[\s\S]*?isSignupTitle\(form\.querySelector\('\.kf73Title'\)\?\.textContent\)/);
-  assert.equal((source.match(/isSignupTitle\(signupTitle\?\.textContent\)/g)||[]).length,7);
+  assert.equal((source.match(/isSignupTitle\(signupTitle\?\.textContent\)/g)||[]).length,8);
   assert.equal((source.match(/\.includes\('create your kinfolk'\)/g)||[]).length,1);
 });
 
@@ -288,4 +288,41 @@ test('malformed null signup response fails closed without email verification suc
   assert.equal(h.form.querySelector('#kf221Verification'),null);
   assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/could not confirm account creation/i);
   assert.equal(h.btn.disabled,false);
+});
+
+test('editing signup email disables stale verification resend for old account',async()=>{
+  const h=harness();
+  await h.submit(h.event());
+  const panel=h.form.querySelector('#kf221Verification');
+  const resend=panel.children.find(n=>n.textContent==='Resend verification email');
+  h.fields['#kf73Email'].value='other@example.invalid';
+  await resend.onclick();
+  assert.equal(h.resends.length,0);
+  assert.equal(resend.disabled,true);
+  assert.match(panel.children[3].textContent,/email address changed/i);
+});
+
+test('email edit during pending signup cannot show previous address verification success',async()=>{
+  let resolveSignup;
+  const h=harness('Create Account',{signUp:()=>new Promise(resolve=>{resolveSignup=resolve})});
+  const operation=h.submit(h.event());
+  h.fields['#kf73Email'].value='other@example.invalid';
+  resolveSignup({data:{user:{id:'synthetic-id',email:'synthetic@example.invalid'},session:null},error:null});
+  await operation;
+  assert.equal(h.form.querySelector('#kf221Verification'),null);
+  assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/email changed while account creation/i);
+  assert.equal(h.btn.disabled,false);
+  await h.submit(h.event());
+  assert.equal(h.signups.length,1);
+});
+
+test('verification resend accepts case-only changes to the same email',async()=>{
+  const h=harness();
+  await h.submit(h.event());
+  h.fields['#kf73Email'].value='SYNTHETIC@EXAMPLE.INVALID';
+  const panel=h.form.querySelector('#kf221Verification');
+  const resend=panel.children.find(n=>n.textContent==='Resend verification email');
+  await resend.onclick();
+  assert.equal(h.resends.length,1);
+  assert.equal(h.resends[0].email,'synthetic@example.invalid');
 });
