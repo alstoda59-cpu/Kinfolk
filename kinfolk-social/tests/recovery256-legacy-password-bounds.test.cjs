@@ -79,7 +79,7 @@ test('Phase88 core no longer reinstalls obsolete signup password limits or hint'
 });
 
 function coreHarness(mode) {
-  const title={textContent:mode==='signup'?'Create your Kinfolk':'Welcome back'};
+  const title={textContent:mode==='signup'?'Create your Kinfolk':mode==='alternate'?'Create Account':'Welcome back'};
   let hint='';
   const password={
     minLength:0,maxLength:12,autocomplete:'',
@@ -139,3 +139,11 @@ for(const order of [['98'],['88','98'],['98','88']]){
     assert.equal(password.maxLength,128);
   });
 }
+
+test('Phase88 core treats alternate Create Account heading as signup, including delayed repair',()=>{
+  const {password,hint}=coreHarness('alternate');
+  assert.equal(password.minLength,12);
+  assert.equal(password.maxLength,128);
+  assert.equal(password.autocomplete,'new-password');
+  assert.match(hint,/12[–-]128/);
+});
