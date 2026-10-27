@@ -28,9 +28,9 @@ with sync_playwright() as p:
     def fill(date):
         page.locator('#kf73Name').fill('Synthetic QA')
         page.locator('#kf73Email').fill('synthetic@example.test')
-        page.locator('#kf73Password').fill('pass123')
+        page.locator('#kf73Password').fill('pass123456789')
         page.locator('#kf217Username').fill('synthetic_qa')
-        page.locator('#kf217ConfirmPassword').fill('pass123')
+        page.locator('#kf217ConfirmPassword').fill('pass123456789')
         page.locator('#kf79Birthdate').fill(date)
     reset_signup()
     fill('2020-01-01')
