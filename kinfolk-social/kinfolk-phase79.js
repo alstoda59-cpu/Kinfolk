@@ -427,6 +427,9 @@
       if(data?.session)show(form,'Account created. Opening Kinfolk…',true);
       else {
         form.__kf221Verification={email,busy:false,retryAt:0};
+        // Render immediately. Waiting for the DOM observer can drop the email
+        // verification panel if a mock/native event schedules another render.
+        mountVerification(form);
         show(form,'Check your email to confirm your account, then log in.',true);
       }
       // Email-confirmation signups do not have a session yet. Keep the form
