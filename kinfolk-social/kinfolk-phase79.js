@@ -106,11 +106,18 @@
     }
   }
 
+  // Phase76 and legacy auth wrappers use two signup headings. Keep every
+  // submit, resend and async navigation guard aligned with both variants.
+  function isSignupTitle(value){
+    const title=String(value||'').trim().toLowerCase();
+    return title.includes('create your kinfolk')||title.includes('create account');
+  }
+
   function mountSignupGate(){
     const form=document.querySelector('#authForm[data-kf73="1"]');
     if(!form) return;
     const title=(form.querySelector('.kf73Title')?.textContent||'').trim().toLowerCase();
-    if(!title.includes('create your kinfolk')){
+    if(!isSignupTitle(title)){
       delete form.__kf221Verification;
       form.querySelector('#kf221Verification')?.remove();
       return;
@@ -314,7 +321,7 @@
     button.type='button';button.className='kf218ConfirmToggle';button.textContent='Resend verification email';
     const status=document.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
     const current=()=>form.isConnected&&panel.isConnected&&form.__kf221Verification===pending&&
-      (form.querySelector('.kf73Title')?.textContent||'').toLowerCase().includes('create your kinfolk');
+      isSignupTitle(form.querySelector('.kf73Title')?.textContent);
     button.onclick=async()=>{
       if(!current()||pending.busy)return;
       if(Date.now()<pending.retryAt){status.textContent='Please wait a minute before requesting another email.';return}
@@ -345,7 +352,7 @@
     // Capture the actual title node so an old async response cannot update a
     // *new* signup screen that happens to have the same title after navigating back.
     const signupTitle=form.querySelector('.kf73Title');
-    if(!(signupTitle?.textContent||'').toLowerCase().includes('create your kinfolk'))return;
+    if(!isSignupTitle(signupTitle?.textContent))return;
     e.preventDefault();
     e.stopImmediatePropagation();
     if(signupBusy){
@@ -393,7 +400,7 @@
       if(error)throw error;
       // The user may have navigated to login while signup was in flight.
       // Do not persist signup preferences or update a replaced form.
-      if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!((signupTitle?.textContent||'').toLowerCase().includes('create your kinfolk'))){
+      if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!(isSignupTitle(signupTitle?.textContent))){
         console.info('Kinfolk signup completed after leaving the signup screen; ignoring stale UI result.');
         return;
       }
@@ -402,7 +409,7 @@
       if(data?.session){
         const verifiedSignupSession=await signupSessionIsCurrent(data.session);
         // Session verification is asynchronous: the form may have changed again.
-        if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!((signupTitle?.textContent||'').toLowerCase().includes('create your kinfolk')))return;
+        if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!(isSignupTitle(signupTitle?.textContent)))return;
         if(!verifiedSignupSession){
           show(form,'Account created, but the active login changed. Sign in again to set Stay Logged In.');
           if(btn){btn.disabled=false;btn.textContent='Create account'}
@@ -424,7 +431,7 @@
             }
           }
           // Local sign-out may take time. Do not paint its error over a new login screen.
-          if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!((signupTitle?.textContent||'').toLowerCase().includes('create your kinfolk')))return;
+          if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!(isSignupTitle(signupTitle?.textContent)))return;
           show(form,storageError.message+' Enable browser storage, then log in again.'+(signOutFailed?' Your session may still be active; sign out manually.':''));
           if(btn){btn.disabled=false;btn.textContent='Create account'}
           return;
@@ -432,7 +439,7 @@
       }
       // A storage failure cleanup can await sign-out while navigation changes.
       // Never display success in a screen that is no longer the signup form.
-      if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!((signupTitle?.textContent||'').toLowerCase().includes('create your kinfolk')))return;
+      if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!(isSignupTitle(signupTitle?.textContent)))return;
       if(data?.session)show(form,'Account created. Opening Kinfolk…',true);
       else {
         form.__kf221Verification={email,busy:false,retryAt:0};
@@ -447,7 +454,7 @@
     }catch(err){
       // An in-flight signup can fail after the user navigates to login.
       // Never write its error into a different screen or reset that screen's button.
-      if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!((signupTitle?.textContent||'').toLowerCase().includes('create your kinfolk')))return;
+      if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!(isSignupTitle(signupTitle?.textContent)))return;
       const raw=err?.message||String(err),low=raw.toLowerCase();
       let message=raw;
       if(low.includes('birthday is required'))message='Enter your birthday to create a Kinfolk account.';
