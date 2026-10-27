@@ -85,11 +85,12 @@ test('successful post and story use captured authors and render once',async()=>{
   assert.equal(x.toasts.length,1);
  }
 });
-test('upload error re-enables the composer for retry',async()=>{
- let uploads=0;
- const x=setup('post',{file:null});
+test('upload error re-enables the composer and allows another attempt',async()=>{
+ const pending=deferred(),x=setup('post',{uploadPending:pending});
  const button=x.form.fields['button[type="submit"],button:not([type])'];
- await x.submit();assert.equal(x.inserts.length,1);assert.equal(button.disabled,false);
- assert.equal(x.form.dataset.kfAlphaSending,undefined);
- await x.submit();assert.equal(x.inserts.length,2);
+ const first=x.submit();pending.finish({error:new Error('Network unavailable')});await first;
+ assert.equal(x.inserts.length,0);assert.equal(x.uploads.length,1);
+ assert.equal(button.disabled,false);assert.equal(x.form.dataset.kfAlphaSending,undefined);
+ assert.equal(x.toasts.length,1);
+ await x.submit();assert.equal(x.uploads.length,2);assert.equal(x.inserts.length,0);
 });
