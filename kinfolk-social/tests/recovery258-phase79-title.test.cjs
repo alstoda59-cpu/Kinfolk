@@ -115,7 +115,7 @@ test('alternate-title email verification resend remains available',async()=>{
 test('Phase79 mounts and protects every async branch using the same signup-title predicate',()=>{
   assert.match(source,/function mountSignupGate\(\)[\s\S]*?if\(!isSignupTitle\(title\)\)/);
   assert.match(source,/const current=\(\)=>[\s\S]*?isSignupTitle\(form\.querySelector\('\.kf73Title'\)\?\.textContent\)/);
-  assert.equal((source.match(/isSignupTitle\(signupTitle\?\.textContent\)/g)||[]).length,6);
+  assert.equal((source.match(/isSignupTitle\(signupTitle\?\.textContent\)/g)||[]).length,7);
   assert.equal((source.match(/\.includes\('create your kinfolk'\)/g)||[]).length,1);
 });
 
