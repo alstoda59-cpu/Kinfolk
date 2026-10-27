@@ -42,7 +42,7 @@ function harness(titleText='Create Account',authOverrides={}){
   let submit,signups=[],resends=[];
   const sb={auth:{
     async signUp(payload){signups.push(payload);return authOverrides.signUp?authOverrides.signUp(payload):{data:{user:{id:'synthetic-id'},session:null},error:null}},
-    async resend(payload){resends.push(payload);return {error:null}}
+    async resend(payload){resends.push(payload);return authOverrides.resend?authOverrides.resend(payload):{error:null}}
   }};
   const document={
     head:{appendChild(){}},documentElement:{},
@@ -186,4 +186,31 @@ test('signup accepts case-normalized matching response email and uses neutral ve
   assert.ok(panel);
   assert.match(panel.children[1].textContent,/if verification is required/i);
   assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/if verification is required/i);
+});
+
+
+test('transient verification resend failure permits immediate retry',async()=>{
+  let calls=0;
+  const h=harness('Create Account',{resend:async()=>({error:++calls===1?{status:503,message:'Service unavailable'}:null})});
+  await h.submit(h.event());
+  const panel=h.form.querySelector('#kf221Verification');
+  const resend=panel.children.find(n=>n.textContent==='Resend verification email');
+  await resend.onclick();
+  assert.equal(resend.disabled,false);
+  assert.match(panel.children[3].textContent,/could not request/i);
+  await resend.onclick();
+  assert.equal(h.resends.length,2);
+  assert.match(panel.children[3].textContent,/new email has been requested/i);
+});
+
+test('verification resend rate-limit response retains cooldown',async()=>{
+  const h=harness('Create Account',{resend:async()=>({error:{status:429,message:'Too many requests'}})});
+  await h.submit(h.event());
+  const panel=h.form.querySelector('#kf221Verification');
+  const resend=panel.children.find(n=>n.textContent==='Resend verification email');
+  await resend.onclick();
+  assert.match(panel.children[3].textContent,/too many email requests/i);
+  await resend.onclick();
+  assert.equal(h.resends.length,1);
+  assert.match(panel.children[3].textContent,/wait a minute/i);
 });
