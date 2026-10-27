@@ -9,7 +9,7 @@
     "sync": "npm run prepare:web && npx cap sync",
     "android:open": "npx cap open android",
     "ios:open": "npx cap open ios",
-    "alpha:verify": "node scripts/verify-alpha-package.mjs && node --test tests/alpha-backend-config.test.mjs tests/alpha-signup-password.test.mjs tests/alpha-functional-backend-gate.test.mjs tests/alpha-auth-reachability.test.mjs tests/alpha-auth-signup-readiness.test.mjs && npm run alpha:rls:test",
+    "alpha:verify": "node scripts/verify-alpha-package.mjs && node --test tests/alpha-startup-scripts.test.mjs tests/alpha-backend-config.test.mjs tests/alpha-signup-password.test.mjs tests/alpha-functional-backend-gate.test.mjs tests/alpha-auth-reachability.test.mjs tests/alpha-auth-signup-readiness.test.mjs && npm run alpha:rls:test",
     "alpha:config:test": "node --test tests/alpha-backend-config.test.mjs",
     "alpha:auth:test": "node --test tests/alpha-signup-password.test.mjs",
     "alpha:verify:functional": "node scripts/verify-functional-alpha.mjs",
@@ -17,7 +17,8 @@
     "alpha:auth:reachability:test": "node --test tests/alpha-auth-reachability.test.mjs",
     "alpha:auth:signup:test": "node --test tests/alpha-auth-signup-readiness.test.mjs",
     "alpha:rls:test": "node --test tests/alpha-two-user-rls.test.mjs",
-    "alpha:verify:rls": "node scripts/verify-two-user-rls.mjs"
+    "alpha:verify:rls": "node scripts/verify-two-user-rls.mjs",
+    "alpha:startup:test": "node --test tests/alpha-startup-scripts.test.mjs"
   },
   "dependencies": {
     "@capacitor/core": "7.6.9",
