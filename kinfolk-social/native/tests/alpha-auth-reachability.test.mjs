@@ -44,6 +44,6 @@ test('propagates aborted network failures without logging credentials',async()=>
 test('functional package verifier requires reachability after static checks',async()=>{
   const script=await readFile(new URL('../scripts/verify-functional-alpha.mjs',import.meta.url),'utf8');
   assert.match(script,/await import\('\.\/verify-alpha-package\.mjs'\)/);
-  assert.match(script,/await verifyIsolatedAuthReachability\(config\)/);
-  assert.ok(script.indexOf('await verifyIsolatedAuthReachability(config)')>script.indexOf("await import('./verify-alpha-package.mjs')"));
+  assert.match(script,/await verifyIsolatedAuthReachability\(config,\s*\{\s*requireEmailSignupReady:true\s*\}\)/);
+  assert.ok(script.indexOf('await verifyIsolatedAuthReachability(config,')>script.indexOf("await import('./verify-alpha-package.mjs')"));
 });
