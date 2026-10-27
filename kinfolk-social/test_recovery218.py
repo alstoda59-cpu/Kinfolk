@@ -21,7 +21,8 @@ with sync_playwright() as p:
     page.locator('#kf73Email').fill('mobile@example.test')
     page.locator('#kf79Birthdate').fill('2000-01-01')
     page.locator('#kf73Password').fill('secure12345!')
-    page.locator('#kf217ConfirmPassword').fill('wrong12345!')
+    # Valid-length mismatch must reach the app's matching validation, not browser minLength.
+    page.locator('#kf217ConfirmPassword').fill('wrong123456!')
     page.locator('.kf73Primary').click()
     page.wait_for_timeout(130)
     assert page.evaluate('window.__kfMock.signupCalls')==0
