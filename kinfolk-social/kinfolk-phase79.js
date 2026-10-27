@@ -322,7 +322,7 @@
     const status=document.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
     const current=()=>form.isConnected&&panel.isConnected&&form.__kf221Verification===pending&&
       isSignupTitle(form.querySelector('.kf73Title')?.textContent)&&
-      String(form.querySelector('input[type="email"]')?.value||'').trim().toLowerCase()===String(pending.email||'').trim().toLowerCase();
+      String((form.querySelector('#kf73Email')||form.querySelector('input[type="email"]'))?.value||'').trim().toLowerCase()===String(pending.email||'').trim().toLowerCase();
     button.onclick=async()=>{
       if(!current()||pending.busy)return;
       if(Date.now()<pending.retryAt){status.textContent='Please wait a minute before requesting another email.';return}
