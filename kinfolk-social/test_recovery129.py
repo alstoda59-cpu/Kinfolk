@@ -137,10 +137,12 @@ with sync_playwright() as p:
  assert page.locator('#kf79Birthdate').count()==1
  page.locator('#kf73Name').fill('Young QA')
  page.locator('#kf217Username').fill('young_qa')
- page.locator('#kf217ConfirmPassword').fill('pass123456789')
+ page.wait_for_function("document.querySelector('#kf73Password')?.maxLength === 128 && document.querySelector('#kf217ConfirmPassword')?.maxLength === 128")
  page.locator('#kf73Email').fill('young@example.test')
  page.locator('#kf73Password').fill('pass123456789')
+ page.locator('#kf217ConfirmPassword').fill('pass123456789')
  page.locator('#kf79Birthdate').fill('2020-01-01')
+ assert page.locator('#kf73Password').input_value()==page.locator('#kf217ConfirmPassword').input_value(), 'signup passwords were unexpectedly altered before submit'
  page.locator('.kf73Primary').click()
  page.wait_for_timeout(400)
  print('UNDERAGE',page.locator('.kf73Msg').all_inner_texts(),page.evaluate('window.__kfMock.signupCalls'))
