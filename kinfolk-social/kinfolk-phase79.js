@@ -115,6 +115,15 @@
       form.querySelector('#kf221Verification')?.remove();
       return;
     }
+    // Phase76 reuses the login password field. Set the signup limits here,
+    // before the new confirmation input can be filled on a fast mobile device.
+    const signupPassword=form.querySelector('#kf73Password');
+    if(signupPassword){
+      signupPassword.minLength=12;
+      signupPassword.maxLength=128;
+      signupPassword.autocomplete='new-password';
+      signupPassword.removeAttribute?.('pattern');
+    }
     mountVerification(form);
     const introduction=form.querySelector('.kf73Text');
     if(introduction&&introduction.dataset.kf218Intro!=='1'){
