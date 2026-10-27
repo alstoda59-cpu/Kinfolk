@@ -104,3 +104,19 @@ test('changing Stay Logged In during adoption restores preference and clears new
   assert.equal(h.tab.size,0);
   assert.match(h.fields['.kf73Msg'].textContent,/login details changed/i);
 });
+
+for(const stay of [true,false]){
+  test('unchanged Stay Logged In '+stay+' completes normal login',async()=>{
+    const h=fixture({stage:'immediate'});
+    h.fields['#kf73Stay'].checked=stay;
+    await h.submit();
+    assert.equal(h.tokenCalls,1);
+    assert.equal(h.adoptions,1);
+    assert.equal(h.activations,1);
+    assert.equal(h.signouts,0);
+    assert.equal(h.prefs.get('kinfolk_stay_logged_in_v1'),stay?'1':'0');
+    assert.equal(h.prefs.get('kinfolk_stay_logged_in'),stay?'1':'0');
+    if(stay)assert.equal(h.tab.has('kinfolk_session_tab'),false);
+    else assert.equal(h.tab.get('kinfolk_session_tab'),'1');
+  });
+}
