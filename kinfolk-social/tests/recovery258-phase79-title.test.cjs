@@ -58,7 +58,7 @@ function harness(titleText='Create Account',authOverrides={}){
   },{timeout:3000});
   function event(){return{target:form,prevented:false,stopped:false,
     preventDefault(){this.prevented=true},stopImmediatePropagation(){this.stopped=true}}}
-  return {title,form,btn,nodes,signups,resends,event,submit:e=>submit(e),expireResend:()=>{for(const fn of resendTimeouts.splice(0))fn()}};
+  return {title,form,btn,fields,nodes,signups,resends,event,submit:e=>submit(e),expireResend:()=>{for(const fn of resendTimeouts.splice(0))fn()}};
 }
 
 test('alternate Create Account heading submits a real Phase79 signup and shows verification',async()=>{
@@ -242,4 +242,14 @@ test('malformed resend success response does not falsely claim email was request
   assert.match(panel.children[3].textContent,/could not request/i);
   await resend.onclick();
   assert.equal(h.resends.length,2);
+});
+
+test('changing signup email invalidates old verification resend controls',async()=>{
+  const h=harness();
+  await h.submit(h.event());
+  const panel=h.form.querySelector('#kf221Verification');
+  const resend=panel.children.find(n=>n.textContent==='Resend verification email');
+  h.fields['#kf73Email'].value='new@example.invalid';
+  await resend.onclick();
+  assert.equal(h.resends.length,0);
 });
