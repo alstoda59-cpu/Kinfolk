@@ -40,7 +40,7 @@ function harness(titleText='Create Account',authOverrides={}){
     appendChild(child){nodes.push(child);return child}
   };
   let submit,signups=[],resends=[];
-  const resendTimeouts=[];
+  const resendTimeouts=[],signupTimeouts=[];
   const sb={auth:{
     async signUp(payload){signups.push(payload);return authOverrides.signUp?authOverrides.signUp(payload):{data:{user:{id:'synthetic-id'},session:null},error:null}},
     async resend(payload){resends.push(payload);return authOverrides.resend?authOverrides.resend(payload):{error:null}}
@@ -54,11 +54,11 @@ function harness(titleText='Create Account',authOverrides={}){
   vm.runInNewContext(source,{
     window:{},document,sb,location:{origin:'https://alpha.example.invalid'},URL,Date,
     MutationObserver:class{observe(){}},
-    setTimeout(fn,ms){if(ms===20000)resendTimeouts.push(fn);return 1},clearTimeout(){},console:{info(){},warn(){}}
+    setTimeout(fn,ms){if(ms===20000)resendTimeouts.push(fn);if(ms===25000)signupTimeouts.push(fn);return 1},clearTimeout(){},console:{info(){},warn(){}}
   },{timeout:3000});
   function event(){return{target:form,prevented:false,stopped:false,
     preventDefault(){this.prevented=true},stopImmediatePropagation(){this.stopped=true}}}
-  return {title,form,btn,nodes,signups,resends,event,submit:e=>submit(e),expireResend:()=>{for(const fn of resendTimeouts.splice(0))fn()}};
+  return {title,form,btn,nodes,signups,resends,event,submit:e=>submit(e),expireResend:()=>{for(const fn of resendTimeouts.splice(0))fn()},expireSignup:()=>{for(const fn of signupTimeouts.splice(0))fn()}};
 }
 
 test('alternate Create Account heading submits a real Phase79 signup and shows verification',async()=>{
@@ -242,4 +242,50 @@ test('malformed resend success response does not falsely claim email was request
   assert.match(panel.children[3].textContent,/could not request/i);
   await resend.onclick();
   assert.equal(h.resends.length,2);
+});
+
+
+test('stalled mobile signup releases the button but blocks immediate duplicate account creation',async()=>{
+  const h=harness('Create Account',{signUp:()=>new Promise(()=>{})});
+  const operation=h.submit(h.event());
+  assert.equal(h.btn.disabled,true);
+  assert.equal(h.signups.length,1);
+  h.expireSignup();
+  await operation;
+  assert.equal(h.btn.disabled,false);
+  assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/may have succeeded/i);
+  assert.equal(h.form.querySelector('#kf221Verification'),null);
+  await h.submit(h.event());
+  assert.equal(h.signups.length,1);
+  assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/wait a minute/i);
+});
+
+test('late signup completion after UI timeout cannot claim success or save a session',async()=>{
+  let resolveSignup;
+  const h=harness('Create Account',{signUp:()=>new Promise(resolve=>{resolveSignup=resolve})});
+  const operation=h.submit(h.event());
+  h.expireSignup();
+  await operation;
+  resolveSignup({data:{user:{id:'synthetic-id'},session:null},error:null});
+  await Promise.resolve();
+  assert.equal(h.form.querySelector('#kf221Verification'),null);
+  assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/may have succeeded/i);
+});
+
+test('signup timeout after navigation never paints an error onto the login screen',async()=>{
+  const h=harness('Create Account',{signUp:()=>new Promise(()=>{})});
+  const operation=h.submit(h.event());
+  h.title.textContent='Welcome back';
+  h.expireSignup();
+  await operation;
+  assert.equal(h.form.querySelector('.kf73Msg'),null);
+  assert.equal(h.form.querySelector('#kf221Verification'),null);
+});
+
+test('malformed null signup response fails closed without email verification success',async()=>{
+  const h=harness('Create Account',{signUp:async()=>null});
+  await h.submit(h.event());
+  assert.equal(h.form.querySelector('#kf221Verification'),null);
+  assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/could not confirm account creation/i);
+  assert.equal(h.btn.disabled,false);
 });
