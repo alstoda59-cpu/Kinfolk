@@ -20,7 +20,7 @@ function mock({cross=false,anon=false,missing=false,deny=false}={}){
 test('GET-only checks five owner fixtures, cross-account directions and anonymous access',async()=>{
   let calls=0;const fetchImpl=async(...args)=>{calls++;return mock()(...args)};
   assert.deepEqual(await verifyTwoUserRls(config,{...opts,fetchImpl}),{projectRef:ALPHA_REF,checkedTables:5,readOnly:true});
-  assert.equal(calls,PRIVATE_TABLES.length*5);
+  assert.equal(calls,PRIVATE_TABLES.length*6);
 });
 test('empty owner fixtures cannot produce false privacy pass',async()=>{
   await assert.rejects(verifyTwoUserRls(config,{...opts,tables:['user_settings'],fetchImpl:mock({missing:true})}),/fixture missing/);
@@ -45,4 +45,14 @@ test('distinct designated authenticated subjects and known tables required',asyn
   for(const bad of [{...opts,tokenB:tokenA},{...opts,idB:A},{...opts,tokenA:'invalid'}])
     await assert.rejects(verifyTwoUserRls(config,{...bad,fetchImpl:mock()}));
   await assert.rejects(verifyTwoUserRls(config,{...opts,tables:['profiles'],fetchImpl:mock()}),/owner-private/);
+});
+
+test('anonymous access to second owner fails independently',async()=>{
+  const fetchImpl=async(url,init)=>{
+    const owner=new URL(url).searchParams.get('user_id').slice(3);
+    const own=init.headers.Authorization==='Bearer '+jwt(owner);
+    const exposed=!init.headers.Authorization&&owner===B;
+    return {status:200,headers:{get:()=> 'application/json'},json:async()=>own||exposed?[{user_id:owner}]:[]};
+  };
+  await assert.rejects(verifyTwoUserRls(config,{...opts,tables:['user_settings'],fetchImpl}),/Anonymous RLS exposure/);
 });
