@@ -10,7 +10,7 @@ const phase88=source('kinfolk-phase88.js');
 const phase98=source('kinfolk-phase98.js');
 const phase88Core=source('kinfolk-phase88-core.js');
 
-function signupHarness(order) {
+function signupHarness(order,titleText='Create your Kinfolk') {
   const password={
     minLength:0,maxLength:12,autocomplete:'',type:'password',
     removeAttribute(name) {
@@ -18,7 +18,7 @@ function signupHarness(order) {
       if(name==='maxlength')this.maxLength=0;
     }
   };
-  const title={textContent:'Create your Kinfolk'};
+  const title={textContent:titleText};
   const form={
     dataset:{kf73:'1'},
     querySelector(selector) {
@@ -127,3 +127,15 @@ test('Phase88 core does not impose signup restrictions on existing-user login',(
   assert.equal(password.autocomplete,'current-password');
   assert.equal(hint,'');
 });
+
+for(const order of [['98'],['88','98'],['98','88']]){
+  test('alternate Create Account heading retains 12-128 signup bounds '+order.join(' then '),()=>{
+    const {password,intervals}=signupHarness(order,'Create Account');
+    assert.equal(password.minLength,12);
+    assert.equal(password.maxLength,128);
+    assert.equal(password.autocomplete,'new-password');
+    for(const fallback of intervals)fallback();
+    assert.equal(password.minLength,12);
+    assert.equal(password.maxLength,128);
+  });
+}
