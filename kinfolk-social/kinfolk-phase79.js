@@ -326,11 +326,23 @@
       if(!current()||pending.busy)return;
       if(Date.now()<pending.retryAt){status.textContent='Please wait a minute before requesting another email.';return}
       pending.busy=true;pending.retryAt=Date.now()+60000;button.disabled=true;status.textContent='Requesting verification email…';
+      // Some mobile networks never settle a request. Bound the UI wait while
+      // retaining the one-minute cooldown: the server may still send the email.
+      const timedOut=Symbol('verification-resend-timeout');
+      let timeoutId=null;
       try{
         if(typeof sb==='undefined'||!sb?.auth?.resend)throw new Error('Email resend is unavailable. Please try again later.');
         const redirect=emailRedirect();
-        const {error}=await sb.auth.resend({type:'signup',email:pending.email,...(redirect?{options:{emailRedirectTo:redirect}}:{})});
-        if(error)throw error;
+        const result=await Promise.race([
+          sb.auth.resend({type:'signup',email:pending.email,...(redirect?{options:{emailRedirectTo:redirect}}:{})}),
+          new Promise(resolve=>{timeoutId=setTimeout(()=>resolve(timedOut),20000)})
+        ]);
+        if(result===timedOut){
+          if(current())status.textContent='The email request is taking too long. It may still arrive; check your inbox before retrying in a minute.';
+          return;
+        }
+        if(!result||typeof result!=='object')throw new Error('Verification resend returned no result.');
+        if(result.error)throw result.error;
         if(current())status.textContent='If this account needs verification, a new email has been requested. Check your inbox and spam folder.';
       }catch(error){
         // A network outage or server error did not confirm a resend. Do not
@@ -339,7 +351,7 @@
         const code=Number(error?.status);
         if(!Number.isFinite(code)||!code||code===408||code>=500)pending.retryAt=0;
         if(current())status.textContent=code===429?'Too many email requests. Please wait before trying again.':'Could not request an email. Please try again.';
-      }finally{pending.busy=false;if(current())button.disabled=false}
+      }finally{if(timeoutId!==null)clearTimeout(timeoutId);pending.busy=false;if(current())button.disabled=false}
     };
     panel.append(heading,note,button,status);form.appendChild(panel);
   }
