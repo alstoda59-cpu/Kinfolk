@@ -26,3 +26,16 @@ export function alphaBackendConfig(env=process.env){
 export function isolateNativeAsset(source,config){
   return source.replaceAll(LIVE_REF,config.projectRef).replaceAll(LIVE_KEY,config.key);
 }
+
+/**
+ * Release verification is stricter than offline CI packaging. A packaging-only
+ * artifact may compile into an APK, but it must never pass the functional gate.
+ * This checks configuration, not actual Supabase connectivity or email delivery.
+ */
+export function requireFunctionalAlphaBackend(env=process.env){
+  const config=alphaBackendConfig(env);
+  if(config.offlineStub||config.projectRef!==ALPHA_REF){
+    throw new Error('Functional native alpha requires the designated isolated Supabase backend; offline CI packaging is not a functional build.');
+  }
+  return config;
+}
