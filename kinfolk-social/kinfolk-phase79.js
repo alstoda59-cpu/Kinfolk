@@ -316,7 +316,7 @@
     panel.id='kf221Verification';panel.className='kf218Review';panel.__pending=pending;
     const heading=document.createElement('strong');heading.textContent='Verify your email';
     const note=document.createElement('p');
-    note.textContent='Check '+pending.email+' and your spam folder. Follow the confirmation link, then return to Log in. If this address is already registered, try logging in or resetting your password.';
+    note.textContent='If verification is required for '+pending.email+', check your inbox and spam folder for a confirmation link, then return to Log in. If you already have an account, try logging in or resetting your password.';
     const button=document.createElement('button');
     button.type='button';button.className='kf218ConfirmToggle';button.textContent='Resend verification email';
     const status=document.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
@@ -403,7 +403,12 @@
       // concrete signup user. An unexpected session for another account must
       // not inherit the new signup's Stay Logged In choice.
       if(!data?.user?.id)throw new Error('Kinfolk could not confirm account creation. Please try again.');
-      if(data.session&&data.session.user?.id!==data.user.id)throw new Error('Signup session did not match the new account. Sign in again.');
+      // Supabase can return a user-shaped response without an active session.
+      // Never accept an explicitly different email identity as this signup.
+      // Case differences are normal; missing email is tolerated for older auth adapters.
+      const matchesSubmittedEmail=value=>value==null||String(value).trim().toLowerCase()===email.toLowerCase();
+      if(!matchesSubmittedEmail(data.user.email))throw new Error('Signup returned a different email account. Sign in again.');
+      if(data.session&&(data.session.user?.id!==data.user.id||!matchesSubmittedEmail(data.session.user?.email)))throw new Error('Signup session did not match the new account. Sign in again.');
       // The user may have navigated to login while signup was in flight.
       // Do not persist signup preferences or update a replaced form.
       if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!(isSignupTitle(signupTitle?.textContent))){
@@ -452,7 +457,7 @@
         // Render immediately. Waiting for the DOM observer can drop the email
         // verification panel if a mock/native event schedules another render.
         mountVerification(form);
-        show(form,'Check your email to confirm your account, then log in.',true);
+        show(form,'If verification is required, check your email for a confirmation link, then log in.',true);
       }
       // Email-confirmation signups do not have a session yet. Keep the form
       // usable so the member can correct an address or retry if necessary.
