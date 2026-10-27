@@ -4,10 +4,12 @@ const assert=require('node:assert/strict');
 const {pathToFileURL}=require('node:url');
 const path=require('node:path');
 const modulePromise=import(pathToFileURL(path.resolve(__dirname,'../native/scripts/alpha-backend-config.mjs')).href);
-const REF='bbbbbbbbbbbbbbbbbbbb',KEY='sb_publishable_synthetic_alpha_testing_key';
+// The security gate now permits only the designated owner-isolated test project.
+const REF='viantpfagtbgyyzavmtv',KEY='sb_publishable_synthetic_alpha_testing_key';
 const env=(overrides={})=>({KINFOLK_ALPHA_SUPABASE_URL:'https://'+REF+'.supabase.co',KINFOLK_ALPHA_SUPABASE_PUBLISHABLE_KEY:KEY,...overrides});
 test('native backend config requires explicit isolated project and publishable key',async()=>{
- const {alphaBackendConfig}=await modulePromise;
+ const {alphaBackendConfig,ALPHA_REF}=await modulePromise;
+ assert.equal(REF,ALPHA_REF,'test fixture must track the designated isolated project');
  assert.throws(()=>alphaBackendConfig({}),/requires KINFOLK_ALPHA_SUPABASE_URL/);
  assert.throws(()=>alphaBackendConfig(env({KINFOLK_ALPHA_SUPABASE_URL:'http://'+REF+'.supabase.co'})),/canonical HTTPS/);
  assert.throws(()=>alphaBackendConfig(env({KINFOLK_ALPHA_SUPABASE_URL:'https://'+REF+'.supabase.co/path'})),/canonical HTTPS/);
@@ -17,7 +19,7 @@ test('native backend config requires explicit isolated project and publishable k
 test('native build rejects the existing shared live project and key',async()=>{
  const {alphaBackendConfig,LIVE_REF,LIVE_KEY}=await modulePromise;
  assert.throws(()=>alphaBackendConfig(env({KINFOLK_ALPHA_SUPABASE_URL:'https://'+LIVE_REF+'.supabase.co'})),/refuses the shared live/);
- assert.throws(()=>alphaBackendConfig(env({KINFOLK_ALPHA_SUPABASE_PUBLISHABLE_KEY:LIVE_KEY})),/never use the live key/);
+ assert.throws(()=>alphaBackendConfig(env({KINFOLK_ALPHA_SUPABASE_PUBLISHABLE_KEY:LIVE_KEY})),/separate Supabase publishable key/);
 });
 test('offline CI placeholder cannot be packaged as a functional alpha',async()=>{
  const {alphaBackendConfig,CI_REF,CI_KEY}=await modulePromise;
@@ -36,4 +38,9 @@ test('native asset isolation changes project ref, storage key and publishable ke
  assert.ok(result.includes(KEY));
  assert.ok(result.includes('Kinfolk Social'));
  assert.ok(!result.includes(LIVE_REF)&&!result.includes(LIVE_KEY));
+});
+
+test('native alpha rejects other valid-looking nonproduction projects',async()=>{
+ const {alphaBackendConfig}=await modulePromise;
+ assert.throws(()=>alphaBackendConfig(env({KINFOLK_ALPHA_SUPABASE_URL:'https://bbbbbbbbbbbbbbbbbbbb.supabase.co'})),/unapproved Supabase project/);
 });
