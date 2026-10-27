@@ -14,6 +14,8 @@ with sync_playwright() as p:
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.set_content(ns['test_html'](), wait_until='load')
         page.locator('[data-kf73-mode="signup"]').click()
+        # The reused login password input must adopt signup limits before any typing.
+        page.wait_for_function("document.querySelector('#kf217ConfirmPassword') && document.querySelector('#kf73Password').maxLength === 128")
         page.locator('#kf73Name').fill('Synthetic Member')
         page.locator('#kf217Username').fill('synthetic221')
         page.locator('#kf73Email').fill('synthetic@example.test')
