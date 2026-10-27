@@ -1,13 +1,19 @@
-// Exact source-to-package inventory check, including ordering and duplicates.
+// Preserve the complete ordered Kinfolk module inventory in native packages.
+// Reuse the already-tested HTML script parser so attributes before src, such
+// as defer or data-src, cannot hide a missing or substituted app module.
 import assert from 'node:assert/strict';
+import { nativeStartupScripts } from './native-startup-scripts.mjs';
+
+function appModules(html){
+  return nativeStartupScripts(html).filter(src=>/^\/kinfolk-[A-Za-z0-9_-]+\.js$/.test(src)&&src!=='/kinfolk-supabase-sdk.js');
+}
 
 export function assertNativeModuleParity(sourceHTML, packagedHTML){
-  const pattern=/<script\\s+src=["'](\\/kinfolk-[a-zA-Z0-9_-]+\\.js)["']/gi;
-  const source=[...sourceHTML.matchAll(pattern)].map(match=>match[1]);
-  const packaged=[...packagedHTML.matchAll(pattern)].map(match=>match[1]);
+  const source=appModules(sourceHTML);
+  const packaged=appModules(packagedHTML);
   assert.ok(source.length>=20,'main app module inventory unexpectedly small');
   assert.equal(new Set(source).size,source.length,'duplicate main app module script');
   assert.equal(new Set(packaged).size,packaged.length,'duplicate packaged module script');
-  assert.deepEqual(packaged.filter(name=>name!=='/kinfolk-supabase-sdk.js'),source,'native package must preserve every main-app module in source order');
+  assert.deepEqual(packaged,source,'native package must preserve every main-app module in source order');
   return source.length;
 }
