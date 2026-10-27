@@ -2,6 +2,8 @@
 // to Kinfolk's shared live backend. The web preview remains unchanged.
 export const LIVE_REF='zojajuzmfjpvubzibzgg';
 export const LIVE_KEY='sb_publishable_1te_hrDXQciMD7Gp1EXmRw_dvQmszvi';
+// Recovery248: the only owner-isolated project permitted in functional native builds.
+export const ALPHA_REF='viantpfagtbgyyzavmtv';
 export const CI_REF='aaaaaaaaaaaaaaaaaaaa';
 export const CI_KEY='sb_publishable_ci_packaging_only_no_auth';
 
@@ -13,6 +15,7 @@ export function alphaBackendConfig(env=process.env){
   if(!match)throw new Error('Native alpha Supabase URL must be a canonical HTTPS project URL.');
   const projectRef=match[1];
   if(projectRef===LIVE_REF)throw new Error('Native alpha refuses the shared live Kinfolk Supabase project.');
+  if(projectRef!==ALPHA_REF&&projectRef!==CI_REF)throw new Error('Native alpha refuses unapproved Supabase project; use the designated isolated Kinfolk alpha project.');
   if(!/^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(key)||key===LIVE_KEY)throw new Error('Native alpha requires a separate Supabase publishable key; never use the live key or a service-role key.');
   const offlineStub=projectRef===CI_REF&&key===CI_KEY;
   if((projectRef===CI_REF||key===CI_KEY)&&!offlineStub)throw new Error('Offline CI backend markers must be used together.');
