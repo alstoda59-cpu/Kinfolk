@@ -21,8 +21,24 @@ with sync_playwright() as p:
         page.locator('#kf217ConfirmPassword').fill('password9!234')
         page.locator('#kf79Birthdate').fill('2000-01-01')
         page.locator('.kf73Primary').click()
+        page.wait_for_timeout(220)
+        signup_state=page.evaluate("""() => {
+            const form=document.querySelector('#authForm');
+            return {
+                signupCalls:window.__kfMock.signupCalls,
+                valid:form?.checkValidity(),
+                invalid:[...form.querySelectorAll('input,select')].filter(e=>!e.checkValidity()).map(e=>({id:e.id,reason:e.validationMessage,length:e.value.length})),
+                title:form.querySelector('.kf73Title')?.textContent,
+                message:form.querySelector('.kf73Msg')?.textContent,
+                verificationPending:!!form.__kf221Verification,
+                panelCount:form.querySelectorAll('#kf221Verification').length,
+                errors:window.__kf221Errors||[]
+            };
+        }""")
+        assert signup_state['signupCalls']==1,signup_state
         panel = page.locator('#kf221Verification')
-        panel.wait_for(state='visible')
+        assert panel.count()==1,signup_state
+        panel.wait_for(state='visible',timeout=5000)
         assert 'synthetic@example.test' in panel.inner_text()
         assert page.evaluate("localStorage.getItem('kinfolk_stay_logged_in_v1')") is None
         page.evaluate("""() => {
