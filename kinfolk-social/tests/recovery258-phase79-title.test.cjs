@@ -110,3 +110,21 @@ test('alternate-title email verification resend remains available',async()=>{
   assert.equal(h.resends[0].type,'signup');
   assert.equal(h.resends[0].email,'synthetic@example.invalid');
 });
+
+test('Phase79 mounts and protects every async branch using the same signup-title predicate',()=>{
+  assert.match(source,/function mountSignupGate\(\)[\s\S]*?if\(!isSignupTitle\(title\)\)/);
+  assert.match(source,/const current=\(\)=>[\s\S]*?isSignupTitle\(form\.querySelector\('\.kf73Title'\)\?\.textContent\)/);
+  assert.equal((source.match(/isSignupTitle\(signupTitle\?\.textContent\)/g)||[]).length,6);
+  assert.equal((source.match(/\.includes\('create your kinfolk'\)/g)||[]).length,1);
+});
+
+test('alternate heading still enforces 13+ signup and blocks underage requests',async()=>{
+  const h=harness();
+  const birthday=h.form.querySelector('#kf79Birthdate');
+  birthday.value='2020-01-01';
+  const e=h.event();
+  await h.submit(e);
+  assert.equal(e.prevented,true);
+  assert.equal(h.signups.length,0);
+  assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/ages 13 and older/i);
+});
