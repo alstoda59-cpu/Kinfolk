@@ -5,7 +5,7 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { alphaBackendConfig, isolateNativeAsset, LIVE_REF, LIVE_KEY } from './alpha-backend-config.mjs';
-import { verifyNativeStartupScripts } from './native-startup-scripts.mjs';
+import { verifyNativeStartupScripts, nativeStartupScripts } from './native-startup-scripts.mjs';
 import { assertNativeModuleParity } from './native-module-parity.mjs';
 const backend=alphaBackendConfig();
 
@@ -30,7 +30,7 @@ const startupScripts=await verifyNativeStartupScripts(html,async relativePath=>{
 });
 assert.ok(startupScripts.length>=20,'native startup scripts must remain intact');
 
-const modules=[...html.matchAll(/<script\b[^>]*\bsrc\s*=\s*(["'])(\/kinfolk-[a-zA-Z0-9_-]+\.js)\1[^>]*>/gi)].map(m=>m[2]);
+const modules=nativeStartupScripts(html).filter(src=>/^\/kinfolk-[A-Za-z0-9_-]+\.js$/.test(src));
 assertNativeModuleParity(original,html);
 assert.ok(modules.length>=20,'complete Kinfolk modules must be present');
 assert.ok(modules.includes('/kinfolk-reels159.js'),'shorts and reels must be packaged');
