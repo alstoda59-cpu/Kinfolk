@@ -34,7 +34,7 @@ export async function verifyTwoUserRls(config,{tokenA,tokenB,idA,idB,fetchImpl=g
   for(const table of tables){
     if(await count(table,a,tokenA,1)!==1||await count(table,b,tokenB,1)!==1)throw Error('RLS owner fixture missing in '+table);
     if(await count(table,b,tokenA,0)!==0||await count(table,a,tokenB,0)!==0)throw Error('Cross-account RLS exposure in '+table);
-    if(await count(table,a,null,0)!==0)throw Error('Anonymous RLS exposure in '+table);
+    if(await count(table,a,null,0)!==0||await count(table,b,null,0)!==0)throw Error('Anonymous RLS exposure in '+table);
   }
   return {projectRef:ALPHA_REF,checkedTables:tables.length,readOnly:true};
 }
