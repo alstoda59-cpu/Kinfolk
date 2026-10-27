@@ -128,3 +128,31 @@ test('alternate heading still enforces 13+ signup and blocks underage requests',
   assert.equal(h.signups.length,0);
   assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/ages 13 and older/i);
 });
+
+test('signup response without a created user never claims email verification success',async()=>{
+  const h=harness('Create Account',{signUp:async()=>({data:{user:null,session:null},error:null})});
+  await h.submit(h.event());
+  assert.equal(h.signups.length,1);
+  assert.equal(h.form.querySelector('#kf221Verification'),null);
+  assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/could not confirm account creation/i);
+  assert.equal(h.btn.disabled,false);
+});
+
+test('a session belonging to a different account cannot inherit signup persistence',async()=>{
+  const h=harness('Create Account',{signUp:async()=>({
+    data:{user:{id:'created-account'},session:{user:{id:'different-account'}}},error:null
+  })});
+  await h.submit(h.event());
+  assert.equal(h.form.querySelector('#kf221Verification'),null);
+  assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/session did not match/i);
+  assert.equal(h.btn.disabled,false);
+});
+
+test('a signup session without a user identity fails closed',async()=>{
+  const h=harness('Create Account',{signUp:async()=>({
+    data:{user:{id:'created-account'},session:{user:null}},error:null
+  })});
+  await h.submit(h.event());
+  assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/session did not match/i);
+  assert.equal(h.form.querySelector('#kf221Verification'),null);
+});
