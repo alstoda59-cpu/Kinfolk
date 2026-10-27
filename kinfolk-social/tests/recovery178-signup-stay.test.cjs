@@ -23,11 +23,11 @@ function fixture(signupResult) {
     querySelector(selector) {
       return selector === '.kf73Msg' ? message || null : fields[selector] || null;
     },
-    appendChild(element) { message = element; },
+    appendChild(element) { if(element.className==='kf73Msg') message = element; },
   };
   const document = {
     head: { appendChild() {} }, documentElement: {},
-    createElement() { return { style: {}, setAttribute() {} }; },
+    createElement() { return { style: {}, setAttribute() {}, append() {}, remove() {} }; },
     addEventListener(type, fn, capture) {
       if (type === 'submit') { assert.equal(capture, true); submit = fn; }
     },
