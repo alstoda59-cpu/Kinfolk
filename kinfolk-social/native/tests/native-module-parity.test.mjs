@@ -18,3 +18,16 @@ test('rejects duplicate packaged module',()=>{
 test('rejects duplicate source module',()=>{
   assert.throws(()=>assertNativeModuleParity(html([...names,names[0]]),html(names)),/duplicate main app module/);
 });
+
+test('detects modules when src follows defer and data-src attributes',()=>{
+  const source=names.map(n=>'<script defer data-src="https://invalid.test/fake.js" src="'+n+'"></script>').join('');
+  assert.equal(assertNativeModuleParity(source,html(names)),23);
+});
+test('rejects missing module even when source uses non-leading src attribute',()=>{
+  const source=names.map(n=>'<script async src="'+n+'"></script>').join('');
+  assert.throws(()=>assertNativeModuleParity(source,html(names.slice(1))),/preserve every main-app module/);
+});
+test('does not count a fake data-src module as a real script',()=>{
+  const source=html(names)+'<script data-src="/kinfolk-fake.js"></script>';
+  assert.equal(assertNativeModuleParity(source,html(names)),23);
+});
