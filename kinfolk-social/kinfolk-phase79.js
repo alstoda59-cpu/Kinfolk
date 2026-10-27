@@ -333,7 +333,12 @@
         if(error)throw error;
         if(current())status.textContent='If this account needs verification, a new email has been requested. Check your inbox and spam folder.';
       }catch(error){
-        if(current())status.textContent=error?.status===429?'Too many email requests. Please wait before trying again.':'Could not request an email. Please wait a minute and try again.';
+        // A network outage or server error did not confirm a resend. Do not
+        // impose a false one-minute cooldown; retain it for rate limits and
+        // rejected requests to avoid hammering the authentication service.
+        const code=Number(error?.status);
+        if(!Number.isFinite(code)||!code||code===408||code>=500)pending.retryAt=0;
+        if(current())status.textContent=code===429?'Too many email requests. Please wait before trying again.':'Could not request an email. Please try again.';
       }finally{pending.busy=false;if(current())button.disabled=false}
     };
     panel.append(heading,note,button,status);form.appendChild(panel);
