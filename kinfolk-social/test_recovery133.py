@@ -60,7 +60,16 @@ with sync_playwright() as p:
     page.locator('#kf79Birthdate').fill('2000-01-01')
     page.evaluate("document.querySelector('#authForm').requestSubmit();document.querySelector('#authForm').requestSubmit()")
     page.wait_for_timeout(200)
-    assert page.evaluate('window.__kfMock.signupCalls')==1
+    retry_state=page.evaluate("""() => ({
+      calls:window.__kfMock.signupCalls,
+      valid:document.querySelector('#authForm').checkValidity(),
+      invalid:[...document.querySelectorAll('#authForm input,#authForm select')].filter(e=>!e.checkValidity()).map(e=>({id:e.id,name:e.name,valueLength:e.value.length,reason:e.validationMessage})),
+      message:document.querySelector('.kf73Msg')?.textContent||'',
+      title:document.querySelector('.kf73Title')?.textContent||'',
+      buttonDisabled:document.querySelector('.kf73Primary')?.disabled,
+      pending:document.querySelector('#authForm')?.dataset?.kf95LoginPending||''
+    })""")
+    assert page.evaluate('window.__kfMock.signupCalls')==1,retry_state
     assert page.evaluate('window.__signupArgs.options.emailRedirectTo === undefined')
     assert page.evaluate('window.__signupArgs.options.data.signup_birthdate')=='2000-01-01'
     # Email confirmation is still pending; keep the submit control available.
