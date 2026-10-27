@@ -26,12 +26,14 @@ with sync_playwright() as p:
         page.wait_for_timeout(180)
         assert page.locator('#kf79Birthdate').count()==1
     def fill(date):
+        page.wait_for_function("document.querySelector('#kf73Password')?.maxLength === 128 && document.querySelector('#kf217ConfirmPassword')?.maxLength === 128")
         page.locator('#kf73Name').fill('Synthetic QA')
         page.locator('#kf73Email').fill('synthetic@example.test')
         page.locator('#kf73Password').fill('pass123456789')
         page.locator('#kf217Username').fill('synthetic_qa')
         page.locator('#kf217ConfirmPassword').fill('pass123456789')
         page.locator('#kf79Birthdate').fill(date)
+        assert page.locator('#kf73Password').input_value()==page.locator('#kf217ConfirmPassword').input_value(), 'signup password fields diverged before the test submit'
     reset_signup()
     fill('2020-01-01')
     page.locator('.kf73Primary').click()
