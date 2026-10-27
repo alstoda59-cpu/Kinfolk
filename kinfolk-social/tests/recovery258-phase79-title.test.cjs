@@ -156,3 +156,34 @@ test('a signup session without a user identity fails closed',async()=>{
   assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/session did not match/i);
   assert.equal(h.form.querySelector('#kf221Verification'),null);
 });
+
+test('signup refuses a returned user email belonging to another address',async()=>{
+  const h=harness('Create Account',{signUp:async()=>({
+    data:{user:{id:'synthetic-id',email:'other@example.invalid'},session:null},error:null
+  })});
+  await h.submit(h.event());
+  assert.equal(h.form.querySelector('#kf221Verification'),null);
+  assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/different email account/i);
+  assert.equal(h.btn.disabled,false);
+});
+
+test('signup refuses a same-id session whose email differs from the submitted address',async()=>{
+  const h=harness('Create Account',{signUp:async()=>({
+    data:{user:{id:'synthetic-id',email:'synthetic@example.invalid'},session:{user:{id:'synthetic-id',email:'other@example.invalid'}}},error:null
+  })});
+  await h.submit(h.event());
+  assert.equal(h.form.querySelector('#kf221Verification'),null);
+  assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/session did not match/i);
+  assert.equal(h.btn.disabled,false);
+});
+
+test('signup accepts case-normalized matching response email and uses neutral verification copy',async()=>{
+  const h=harness('Create Account',{signUp:async()=>({
+    data:{user:{id:'synthetic-id',email:'SYNTHETIC@EXAMPLE.INVALID'},session:null},error:null
+  })});
+  await h.submit(h.event());
+  const panel=h.form.querySelector('#kf221Verification');
+  assert.ok(panel);
+  assert.match(panel.children[1].textContent,/if verification is required/i);
+  assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/if verification is required/i);
+});
