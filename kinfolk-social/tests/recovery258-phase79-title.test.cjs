@@ -40,6 +40,7 @@ function harness(titleText='Create Account',authOverrides={}){
     appendChild(child){nodes.push(child);return child}
   };
   let submit,signups=[],resends=[];
+  const resendTimeouts=[];
   const sb={auth:{
     async signUp(payload){signups.push(payload);return authOverrides.signUp?authOverrides.signUp(payload):{data:{user:{id:'synthetic-id'},session:null},error:null}},
     async resend(payload){resends.push(payload);return authOverrides.resend?authOverrides.resend(payload):{error:null}}
@@ -53,11 +54,11 @@ function harness(titleText='Create Account',authOverrides={}){
   vm.runInNewContext(source,{
     window:{},document,sb,location:{origin:'https://alpha.example.invalid'},URL,Date,
     MutationObserver:class{observe(){}},
-    setTimeout(){return 1},clearTimeout(){},console:{info(){},warn(){}}
+    setTimeout(fn,ms){if(ms===20000)resendTimeouts.push(fn);return 1},clearTimeout(){},console:{info(){},warn(){}}
   },{timeout:3000});
   function event(){return{target:form,prevented:false,stopped:false,
     preventDefault(){this.prevented=true},stopImmediatePropagation(){this.stopped=true}}}
-  return {title,form,btn,nodes,signups,resends,event,submit:e=>submit(e)};
+  return {title,form,btn,nodes,signups,resends,event,submit:e=>submit(e),expireResend:()=>{for(const fn of resendTimeouts.splice(0))fn()}};
 }
 
 test('alternate Create Account heading submits a real Phase79 signup and shows verification',async()=>{
@@ -213,4 +214,32 @@ test('verification resend rate-limit response retains cooldown',async()=>{
   await resend.onclick();
   assert.equal(h.resends.length,1);
   assert.match(panel.children[3].textContent,/wait a minute/i);
+});
+
+test('stalled verification resend releases mobile button but retains cooldown',async()=>{
+  const h=harness('Create Account',{resend:()=>new Promise(()=>{})});
+  await h.submit(h.event());
+  const panel=h.form.querySelector('#kf221Verification');
+  const resend=panel.children.find(n=>n.textContent==='Resend verification email');
+  const operation=resend.onclick();
+  assert.equal(resend.disabled,true);
+  assert.equal(h.resends.length,1);
+  h.expireResend();
+  await operation;
+  assert.equal(resend.disabled,false);
+  assert.match(panel.children[3].textContent,/may still arrive/i);
+  await resend.onclick();
+  assert.equal(h.resends.length,1);
+  assert.match(panel.children[3].textContent,/wait a minute/i);
+});
+
+test('malformed resend success response does not falsely claim email was requested',async()=>{
+  const h=harness('Create Account',{resend:async()=>null});
+  await h.submit(h.event());
+  const panel=h.form.querySelector('#kf221Verification');
+  const resend=panel.children.find(n=>n.textContent==='Resend verification email');
+  await resend.onclick();
+  assert.match(panel.children[3].textContent,/could not request/i);
+  await resend.onclick();
+  assert.equal(h.resends.length,2);
 });
