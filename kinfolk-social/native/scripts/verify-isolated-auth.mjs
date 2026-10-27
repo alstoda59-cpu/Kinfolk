@@ -2,7 +2,21 @@
 // A successful response does NOT prove signup, email delivery, RLS, or device QA.
 import { ALPHA_REF } from './alpha-backend-config.mjs';
 
-export async function verifyIsolatedAuthReachability(config, { fetchImpl=globalThis.fetch, timeoutMs=8000 }={}) {
+// A reachable Auth API can still be unusable for Kinfolk's email-confirmed signup.
+// Fail closed if the server omits a setting; do not infer that confirmation is on.
+export function assertEmailSignupReady(settings) {
+  if (settings?.disable_signup !== false) {
+    throw new Error('Isolated Auth signup is disabled or its signup setting is unavailable.');
+  }
+  if (settings?.external?.email !== true) {
+    throw new Error('Isolated Auth email/password provider is disabled or its setting is unavailable.');
+  }
+  if (settings?.mailer_autoconfirm !== false) {
+    throw new Error('Isolated Auth email confirmation must be explicitly enabled for the alpha.');
+  }
+}
+
+export async function verifyIsolatedAuthReachability(config, { fetchImpl=globalThis.fetch, timeoutMs=8000, requireEmailSignupReady=false }={}) {
   if (!config || config.projectRef!==ALPHA_REF || config.offlineStub ||
       config.url!=='https://'+ALPHA_REF+'.supabase.co' || !config.key) {
     throw new Error('Auth reachability check requires the designated isolated alpha backend.');
@@ -28,6 +42,7 @@ export async function verifyIsolatedAuthReachability(config, { fetchImpl=globalT
           typeof data.disable_signup==='boolean' || typeof data.mailer_autoconfirm==='boolean')) {
       throw new Error('Isolated Auth settings response was not recognized.');
     }
+    if (requireEmailSignupReady) assertEmailSignupReady(data);
     return { projectRef:ALPHA_REF, reachable:true };
   } finally {
     clearTimeout(timeout);
