@@ -320,10 +320,20 @@
     const button=document.createElement('button');
     button.type='button';button.className='kf218ConfirmToggle';button.textContent='Resend verification email';
     const status=document.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+    // The signup form is reused across screens. Never resend for an address
+    // that no longer matches the visible signup email field.
     const current=()=>form.isConnected&&panel.isConnected&&form.__kf221Verification===pending&&
-      isSignupTitle(form.querySelector('.kf73Title')?.textContent);
+      isSignupTitle(form.querySelector('.kf73Title')?.textContent)&&
+      String((form.querySelector('#kf73Email')||form.querySelector('input[type="email"]'))?.value||'').trim().toLowerCase()===String(pending.email||'').trim().toLowerCase();
     button.onclick=async()=>{
-      if(!current()||pending.busy)return;
+      if(!current()){
+        if(form.isConnected&&panel.isConnected&&isSignupTitle(form.querySelector('.kf73Title')?.textContent)){
+          status.textContent='Email address changed. Submit the form again to verify the new address.';
+          button.disabled=true;
+        }
+        return;
+      }
+      if(pending.busy)return;
       if(Date.now()<pending.retryAt){status.textContent='Please wait a minute before requesting another email.';return}
       pending.busy=true;pending.retryAt=Date.now()+60000;button.disabled=true;status.textContent='Requesting verification email…';
       // Some mobile networks never settle a request. Bound the UI wait while
@@ -433,6 +443,16 @@
           show(form,'Account creation is taking too long to confirm. It may have succeeded. Check your inbox or try logging in before retrying in a minute.');
           if(btn){btn.disabled=false;btn.textContent='Create account'}
         }
+        return;
+      }
+      // The email field can change while an earlier network request is pending.
+      // Never attach the earlier account's verification panel or save its Stay
+      // Logged In preference to a form now showing a different address.
+      if(form.isConnected&&form.querySelector('.kf73Title')===signupTitle&&isSignupTitle(signupTitle?.textContent)&&
+         String(form.querySelector('#kf73Email')?.value||'').trim().toLowerCase()!==email.toLowerCase()){
+        signupRetryAt=Date.now()+60000;
+        show(form,'The email changed while account creation was processing. The earlier request may have succeeded. Check that inbox or log in before trying again in a minute.');
+        if(btn){btn.disabled=false;btn.textContent='Create account'}
         return;
       }
       if(!result||typeof result!=='object')throw new Error('Kinfolk could not confirm account creation. Check your email or try logging in before retrying.');
