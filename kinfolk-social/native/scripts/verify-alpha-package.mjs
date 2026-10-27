@@ -30,6 +30,14 @@ const startupScripts=await verifyNativeStartupScripts(html,async relativePath=>{
 assert.ok(startupScripts.length>=20,'native startup scripts must remain intact');
 
 const modules=[...html.matchAll(/<script\b[^>]*\bsrc\s*=\s*(["'])(\/kinfolk-[a-zA-Z0-9_-]+\.js)\1[^>]*>/gi)].map(m=>m[2]);
+// Every locally referenced main-app module must be included, including future
+// modules not matching the historical minimum count. Detect omitted and duplicate
+// entries before an installable alpha can be described as complete.
+const sourceModules=[...original.matchAll(/<script\\s+src=["'](\\/kinfolk-[a-zA-Z0-9_-]+\\.js)["']/gi)].map(m=>m[1]);
+assert.ok(sourceModules.length>=20,'main app module inventory unexpectedly small');
+assert.equal(new Set(sourceModules).size,sourceModules.length,'duplicate main app module script');
+assert.equal(new Set(modules).size,modules.length,'duplicate packaged module script');
+assert.deepEqual(modules.filter(name=>name!=='/kinfolk-supabase-sdk.js'),sourceModules,'native package must preserve every main-app module in source order');
 assert.ok(modules.length>=20,'complete Kinfolk modules must be present');
 assert.ok(modules.includes('/kinfolk-reels159.js'),'shorts and reels must be packaged');
 for(const name of modules){
