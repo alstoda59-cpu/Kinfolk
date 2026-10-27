@@ -8,6 +8,7 @@ const path=require('node:path');
 const source=filename=>fs.readFileSync(path.join(__dirname,'..',filename),'utf8');
 const phase88=source('kinfolk-phase88.js');
 const phase98=source('kinfolk-phase98.js');
+const phase88Core=source('kinfolk-phase88-core.js');
 
 function signupHarness(order) {
   const password={
@@ -69,3 +70,60 @@ for(const order of [['88'],['98'],['88','98'],['98','88']]){
     }
   });
 }
+
+
+test('Phase88 core no longer reinstalls obsolete signup password limits or hint',()=>{
+  assert.doesNotMatch(phase88Core,/password\.minLength=5;password\.maxLength=12/);
+  assert.doesNotMatch(phase88Core,/Use 5[–-]12 characters/);
+  assert.match(phase88Core,/password\.minLength=12;password\.maxLength=128/);
+});
+
+function coreHarness(mode) {
+  const title={textContent:mode==='signup'?'Create your Kinfolk':'Welcome back'};
+  let hint='';
+  const password={
+    minLength:0,maxLength:12,autocomplete:'',
+    removeAttribute(name){
+      if(name==='minlength')this.minLength=0;
+      if(name==='maxlength')this.maxLength=0;
+    },
+    insertAdjacentElement(_place,element){hint=element.textContent}
+  };
+  const form={
+    querySelector(selector){
+      if(selector==='.kf73Title')return title;
+      if(selector==='#kf73Password')return password;
+      return null;
+    }
+  };
+  const document={
+    documentElement:{},
+    querySelector(selector){return selector==='#authForm[data-kf73="1"]'?form:null},
+    getElementById(){return null},
+    createElement(){return {textContent:'',className:'',id:''}}
+  };
+  vm.runInNewContext(phase88Core,{
+    window:{},document,sb:{auth:{}},Date,
+    MutationObserver:class{observe(){}},
+    setTimeout(fn){fn();return 1},
+    clearTimeout(){},
+    console:{}
+  },{timeout:2500});
+  return {password,hint};
+}
+
+test('Phase88 core keeps full signup length and accurate hint in simulated DOM',()=>{
+  const {password,hint}=coreHarness('signup');
+  assert.equal(password.minLength,12);
+  assert.equal(password.maxLength,128);
+  assert.equal(password.autocomplete,'new-password');
+  assert.match(hint,/12[–-]128/);
+});
+
+test('Phase88 core does not impose signup restrictions on existing-user login',()=>{
+  const {password,hint}=coreHarness('login');
+  assert.equal(password.minLength,0);
+  assert.equal(password.maxLength,0);
+  assert.equal(password.autocomplete,'current-password');
+  assert.equal(hint,'');
+});
