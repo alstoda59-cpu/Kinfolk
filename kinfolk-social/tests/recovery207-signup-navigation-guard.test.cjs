@@ -17,7 +17,7 @@ test('signup guard verifies the form still represents signup, not login',()=>{
 });
 
 test('signup rechecks navigation after asynchronous session verification',()=>{
- const start=source.indexOf('const verifiedSignupSession=await signupSessionIsCurrent(data.session);');
+ const start=source.indexOf('const verifiedSignupSession=await signupSessionIsCurrent(data.session,email);');
  const guard=source.indexOf('if(!form.isConnected||',start);
  const decision=source.indexOf('if(!verifiedSignupSession)',start);
  const save=source.indexOf('try{saveStay(stay)}',start);

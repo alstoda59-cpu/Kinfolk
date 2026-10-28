@@ -43,12 +43,13 @@ function fixture(stage){
       signupCalls++;
       if(stage==='signup'||stage==='signup-error')await wait.promise;
       if(stage==='signup-error')return {data:null,error:Error('Synthetic signup rejected')};
-      return {data:{session:{user:{id:'qa'}}},error:null};
+      return {data:{user:{id:'qa',email:'synthetic@example.invalid'},session:{user:{id:'qa',email:'synthetic@example.invalid'}}},error:null};
     },
     async getSession(){
       sessionChecks++;
+      if(sessionChecks===1)return {data:{session:null},error:null};
       if(stage==='session')await wait.promise;
-      return {data:{session:{user:{id:'qa'}}},error:null};
+      return {data:{session:{user:{id:'qa',email:'synthetic@example.invalid'}}},error:null};
     },
     async signOut(){
       signouts++;
@@ -78,6 +79,7 @@ async function tickUntil(fn){
 }
 test('late signup response does not write preference or success after navigation',async()=>{
   const f=fixture('signup'),task=f.submit();
+  await tickUntil(()=>f.signupCalls>0);
   f.fields['.kf73Title'].textContent='Welcome back';
   f.wait.resolve();
   await task;
@@ -87,7 +89,7 @@ test('late signup response does not write preference or success after navigation
 });
 test('late session verification does not write preference after navigation',async()=>{
   const f=fixture('session'),task=f.submit();
-  await tickUntil(()=>f.sessionChecks>0);
+  await tickUntil(()=>f.sessionChecks>1);
   f.form.isConnected=false;
   f.wait.resolve();
   await task;
@@ -107,6 +109,7 @@ test('late local sign-out after storage failure does not update replaced login f
 
 test('reused auth form cannot receive old signup success after login-to-signup roundtrip',async()=>{
   const f=fixture('signup'),oldTask=f.submit();
+  await tickUntil(()=>f.signupCalls>0);
   // Phase76 replaces the form children but keeps the same #authForm element.
   f.fields['.kf73Title']={textContent:'Welcome back'};
   f.fields['.kf73Title']={textContent:'Create your Kinfolk'};
@@ -124,6 +127,7 @@ test('reused auth form cannot receive old signup success after login-to-signup r
 
 test('reused auth form cannot receive old signup error after login-to-signup roundtrip',async()=>{
   const f=fixture('signup-error'),oldTask=f.submit();
+  await tickUntil(()=>f.signupCalls>0);
   f.fields['.kf73Title']={textContent:'Welcome back'};
   f.fields['.kf73Title']={textContent:'Create your Kinfolk'};
   await f.submit();
@@ -136,7 +140,7 @@ test('reused auth form cannot receive old signup error after login-to-signup rou
 
 test('delayed session verification cannot persist prior signup on remounted title node',async()=>{
   const f=fixture('session'),oldTask=f.submit();
-  await tickUntil(()=>f.sessionChecks>0);
+  await tickUntil(()=>f.sessionChecks>1);
   f.fields['.kf73Title']={textContent:'Create your Kinfolk'};
   f.wait.resolve();await oldTask;
   assert.equal(f.local.size,0);

@@ -19,7 +19,7 @@ for(const [field,changed] of Object.entries({email:'other@example.test',password
   test('signup identity rejects changed '+field,()=>assert.equal(unchanged(form({...baseline,[field]:changed}),baseline),false));
 }
 test('guard is checked after signup response and after asynchronous session verification',()=>{
-  assert.equal(source.split('!signupInputsUnchanged(form,signupSnapshot)').length-1,2);
+  assert.equal(source.split('!signupInputsUnchanged(form,signupSnapshot)').length-1,3);
   assert.ok(source.indexOf('const result=await Promise.race(')<source.indexOf('!signupInputsUnchanged(form,signupSnapshot)'));
   assert.ok(source.lastIndexOf('!signupInputsUnchanged(form,signupSnapshot)')>source.indexOf('const verifiedSignupSession=await signupSessionIsCurrent(data.session,email)'));
 });

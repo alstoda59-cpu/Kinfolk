@@ -8,7 +8,7 @@ function fixture(origin='https://preview.example.test'){
   const title={textContent:'Create your Kinfolk'};
   const pending={email:'synthetic@example.test',retryAt:0,busy:false};
   const form={isConnected:true,__kf221Verification:pending,
-    querySelector:s=>s==='#kf221Verification'?panel:s==='.kf73Title'?title:null,
+    querySelector:s=>s==='#kf221Verification'?panel:s==='.kf73Title'?title:s==='#kf73Email'?{value:'synthetic@example.test'}:null,
     appendChild:p=>{panel=p;p.isConnected=true}
   };
   const window={};
@@ -32,7 +32,7 @@ test('duplicate in-flight and cooldown clicks do not resend',async()=>{
  const f=fixture(),task=f.button.onclick();await f.button.onclick();assert.equal(f.calls.length,1);
  f.resolve({error:null});await task;await f.button.onclick();assert.equal(f.calls.length,1);assert.match(f.status.textContent,/wait a minute/);
 });
-test('native localhost callback is omitted',async()=>{
+test('localhost web-preview origin does not produce a public callback',async()=>{
  const f=fixture('https://localhost'),task=f.button.onclick();assert.equal(f.calls[0].options,undefined);f.resolve({error:null});await task;
 });
 test('rate limit and other errors allow retry after cooldown without false success',async()=>{

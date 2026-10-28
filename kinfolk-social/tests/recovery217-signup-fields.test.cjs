@@ -11,6 +11,6 @@ test('signup validates matching password and username before auth request',()=>{
  const start=source.indexOf('async function handleSignup');
  const username=source.indexOf('test(username)',start);
  const match=source.indexOf('confirmPassword!==password',start);
- const signup=source.indexOf('await sb.auth.signUp',start);
+ const signup=source.indexOf('sb.auth.signUp',start);
  assert.ok(start>=0&&username>start&&match>username&&signup>match);
 });

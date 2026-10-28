@@ -318,7 +318,7 @@ test('email edit during pending signup cannot show previous address verification
   resolveSignup({data:{user:{id:'synthetic-id',email:'synthetic@example.invalid'},session:null},error:null});
   await operation;
   assert.equal(h.form.querySelector('#kf221Verification'),null);
-  assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/email changed while account creation/i);
+  assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/signup details changed while account creation/i);
   assert.equal(h.btn.disabled,false);
   await h.submit(h.event());
   assert.equal(h.signups.length,1);
