@@ -19,7 +19,7 @@ assert.ok(login>=0&&pref>login,'save preference after successful credentials but
 async function eventCase({stay=true,tab=false,stale=false,event='SIGNED_IN'}={}){
   let current=null,listener=null,signouts=0;
   const queued=[],activations=[];
-  const user={user:{id:'synthetic-A'}};
+  const user={user:{id:'synthetic-A',email:'synthetic@example.test'}};
   const sb={auth:{
     getSession:async()=>({data:{session:current},error:null}),
     signOut:async()=>{signouts++;current=null;return {error:null}},
@@ -52,8 +52,8 @@ async function eventCase({stay=true,tab=false,stale=false,event='SIGNED_IN'}={})
   assert.equal(result.activations.length,1,'profile updates preserve authenticated session');
   const stored={},seen=[];
   const sb={auth:{
-    setSession:async()=>{seen.push({...stored});return {data:{session:{user:{id:'synthetic-A'}}},error:null}},
-    getSession:async()=>({data:{session:{user:{id:'synthetic-A'}}}})
+    setSession:async()=>{seen.push({...stored});return {data:{session:{user:{id:'synthetic-A',email:'synthetic@example.test'}}},error:null}},
+    getSession:async()=>({data:{session:{user:{id:'synthetic-A',email:'synthetic@example.test'}}}})
   }};
   const prefNames="const PREF1='kinfolk_stay_logged_in_v1',PREF2='kinfolk_stay_logged_in',TAB='kinfolk_session_tab';";
   const functions=new Function('sb','localStorage','sessionStorage','console','setTimeout','Date',prefNames+save+adopt+';return {saveStay,adopt};')(
