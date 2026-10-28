@@ -310,7 +310,7 @@
     let redirect=null;
     try{
       const target=new URL(custom||location.origin);
-      if(target.protocol==='https:'&&!target.username&&!target.password&&
+      if(target.protocol==='https:'&&!target.username&&!target.password&&!target.hash&&
          !['localhost','127.0.0.1','0.0.0.0'].includes(target.hostname)){
         redirect=custom?target.href:target.origin;
       }

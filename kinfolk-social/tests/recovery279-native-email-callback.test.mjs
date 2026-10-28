@@ -38,6 +38,14 @@ test('native refuses insecure, localhost and credential-bearing callbacks',()=>{
     assert.throws(()=>resolve({native:true,custom}),/approved HTTPS email verification callback/);
   }
 });
+test('native rejects callback fragments that could carry auth tokens',()=>{
+  for(const fragment of ['#access_token=synthetic','#code=synthetic']){
+    assert.throws(()=>resolve({native:true,custom:'https://alpha.example/auth/callback'+fragment}),/approved HTTPS email verification callback/);
+  }
+});
+test('web preview ignores fragment-bearing optional callback overrides',()=>{
+  assert.equal(resolve({custom:'https://alpha.example/auth/callback#code=synthetic'}),null);
+});
 test('web preview continues returning null for invalid optional override',()=>{
   assert.equal(resolve({custom:'http://alpha.example/auth'}),null);
 });

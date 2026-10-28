@@ -8,6 +8,8 @@ on:
       - kinfolk-social/recovery226-login-remount-cleanup
       # Recovery233 packages the full app against an unreachable CI-only backend.
       - kinfolk-social/recovery233-native-backend-isolation
+      # Recovery280: current full-app offline-only Android/iOS compilation; no live credentials.
+      - kinfolk-social/recovery280-native-build-and-redirect-safety-20261027
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
