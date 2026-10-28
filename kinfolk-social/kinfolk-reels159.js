@@ -38,10 +38,28 @@
  @media(prefers-reduced-motion:reduce){.kf159-feed{scroll-behavior:auto}}
  `;
  document.head.appendChild(style);
- const active={observer:null,root:null,pausedByUser:new Set(),generation:0,scrollHandler:null,resizeController:null};
+ const active={observer:null,root:null,pausedByUser:new Set(),generation:0,scrollHandler:null,resizeController:null,feedMode:'for_you',feedUserId:null};
  window.kf161ToggleSound=function(id){const v=document.getElementById('kf159-video-'+id);if(!v)return;v.muted=!v.muted;const slide=v.closest('.kf159-slide');const b=[...slide.querySelectorAll('.kf159-actions button')].find(x=>x.textContent.includes('Sound')||x.textContent.includes('Mute'));if(b)b.innerHTML=v.muted?'<span>🔇</span>Sound':'<span>🔊</span>Mute'};
  function teardown(){active.resizeController?.abort();active.resizeController=null;active.generation++;if(active.root&&active.scrollHandler)active.root.removeEventListener('scroll',active.scrollHandler);active.scrollHandler=null;active.observer?.disconnect();active.root?.querySelectorAll('video').forEach(v=>v.pause());active.observer=null;active.root=null;active.pausedByUser.clear()}
  window.kf159StopReels=teardown;
+ // Channel subscriptions are separate from paid Gold Star subscriptions.
+ // Filter only the already safety-permitted reel set supplied by phase82.
+ function subscribedReels(reels,channels,subscriptions,userId){
+  if(!userId)return [];
+  const subscribed=new Set((channels||[]).filter(c=>c.is_subscribed||
+   (subscriptions?.get?.(c.id)||[]).some(s=>s.user_id===userId)).map(c=>c.id));
+  return reels.filter(v=>v.channel_id&&subscribed.has(v.channel_id));
+ }
+ window.kf296SubscribedReels=subscribedReels;
+ window.kf296SelectReelMode=function(mode){
+  if(mode!=='for_you'&&mode!=='subscriptions')return;
+  if(state.view!=='reels'||!state.user?.id)return;
+  if(active.feedUserId!==state.user.id){active.feedUserId=state.user.id;active.feedMode='for_you'}
+  if(active.feedMode===mode)return;
+  active.feedMode=mode;
+  teardown(); // Immediately stop previous reel audio before switching tabs.
+  renderApp();
+ };
  document.addEventListener('visibilitychange',()=>{if(document.hidden)active.root?.querySelectorAll('video').forEach(v=>v.pause());else if(active.root){const visible=[...active.root.querySelectorAll('.kf159-slide')].find(slide=>{const a=slide.getBoundingClientRect(),b=active.root.getBoundingClientRect();return Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>a.height*.65});const video=visible?.querySelector('video');if(video&&!active.pausedByUser.has(visible.dataset.id)){pauseOthers(video);video.play().catch(()=>{})}}});
  function pauseOthers(current){document.querySelectorAll('.kf159-slide video').forEach(v=>{if(v!==current)v.pause()})}
  function tap(id){const v=document.getElementById('kf159-video-'+id);if(!v)return;const icon=v.parentElement.querySelector('.kf159-playicon');if(v.paused){active.pausedByUser.delete(id);pauseOthers(v);v.play().catch(()=>{if(icon)icon.textContent='▶'})}else{active.pausedByUser.add(id);v.pause();if(icon)icon.textContent='▶'}}
@@ -114,19 +132,23 @@
   // A pending media signature must never render a previous member's private feed
   // after the app switches accounts while remaining on the Reels screen.
   const renderUserId=state.user?.id??null;
-  const isCurrent=()=>generation===active.generation&&main.isConnected&&state.view==='reels'&&(state.user?.id??null)===renderUserId;
+  if(active.feedUserId!==renderUserId){active.feedUserId=renderUserId;active.feedMode='for_you'}
+  const mode=active.feedMode;
+  const isCurrent=()=>generation===active.generation&&active.feedMode===mode&&main.isConnected&&state.view==='reels'&&(state.user?.id??null)===renderUserId;
   active.pausedByUser.clear();
-  if(!reels.length){main.innerHTML='<div class="card"><div class="empty">No reels yet.</div></div>';return}
+  const visibleReels=mode==='subscriptions'?subscribedReels(reels,state.channels,state.subscriptions,renderUserId):reels;
+  const header=`<div class="kf159-top"><b>Reels & Shorts</b><div class="kf159-tabs" role="group" aria-label="Reels feed"><button type="button" aria-pressed="${mode==='for_you'}" onclick="kf296SelectReelMode('for_you')">For You</button><button type="button" aria-pressed="${mode==='subscriptions'}" onclick="kf296SelectReelMode('subscriptions')">Subscriptions</button></div><button class="btn small" onclick="openVideoModal()">＋ Upload</button></div>`;
+  if(!visibleReels.length){main.innerHTML=header+`<div class="card"><div class="empty">${mode==='subscriptions'?'No reels from your subscribed channels yet.':'No reels yet.'}</div></div>`;return}
   // Reactions are optional to playback. Start signing private media while
   // counters load instead of making mobile viewers wait for both in series.
   const [reactionsReady,urls]=await Promise.all([
    kf289LoadReactions(),
-   kf287ResolveReelUrls(reels,signed,isCurrent)
+   kf287ResolveReelUrls(visibleReels,signed,isCurrent)
   ]);
   if(!isCurrent())return;
   const cards=[];
-  for(let i=0;i<reels.length;i++){
-   const v=reels[i];
+  for(let i=0;i<visibleReels.length;i++){
+   const v=visibleReels[i];
    const p=state.profiles.get(v.creator_id);
    const rawUrl=urls[i];
    // External media and storage URLs must be navigable web URLs, never executable schemes.
@@ -155,7 +177,7 @@
    cards.push(`<section class="kf159-slide" data-id="${id}" aria-label="Reel: ${esc(v.title||'Untitled')}">${media}<div class="kf159-overlay"><div class="kf159-info"><b>${esc(p?.display_name||p?.username||'Creator')}</b><p>${esc(v.title||'')}</p></div><div class="kf159-actions">${actions}</div></div></section>`);
   }
   if(!isCurrent())return;
-  main.innerHTML=`<div class="kf159-top"><b>Reels & Shorts</b><div class="kf159-tabs" role="group" aria-label="Reels feed"><button type="button" aria-current="page">For You</button><button type="button" onclick="setView('channels')" aria-label="Subscriptions videos in Channels">Subscriptions</button></div><button class="btn small" onclick="openVideoModal()">＋ Upload</button></div><div class="kf159-feed" id="kf159-feed" aria-label="Swipe up or down for reels">${cards.join('')}</div>`;
+  main.innerHTML=header+`<div class="kf159-feed" id="kf159-feed" aria-label="Swipe up or down for reels">${cards.join('')}</div>`;
   active.resizeController=new AbortController();
   const feed=main.querySelector('#kf159-feed');active.root=feed;
   // Size to the actual space above the app's bottom navigation rather than guessing header height.
