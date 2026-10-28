@@ -12,7 +12,7 @@ test('mobile reels teardown aborts viewport listeners and pauses videos',()=>{
 });
 test('reels reject late async rendering after navigation',()=>{
  assert.match(reels,/const isCurrent=\(\)=>generation===active\.generation&&main\.isConnected&&state\.view==='reels'/);
- assert.match(reels,/await loadVideoReactions\(\);\s*if\(!isCurrent\(\)\)return/);
+ assert.match(reels,/const reactionsReady=await kf289LoadReactions\(\);\s*if\(!isCurrent\(\)\)return/);
  assert.match(reels,/const urls=await kf287ResolveReelUrls\(reels,signed,isCurrent\)/);
  assert.match(reels,/if\(!isCurrent\(\)\)return;\s*const cards=\[\]/);
 });
