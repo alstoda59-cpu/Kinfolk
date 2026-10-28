@@ -17,7 +17,7 @@ function reactionHelper(loader){
   });
 }
 
-function harness(loader){
+function harness(loader,signer=async()=> 'https://media.example/synthetic.mp4'){
   const state={user:{id:'synthetic-account-a'},view:'reels',profiles:new Map()};
   const feed={
     isConnected:true,clientHeight:600,style:{setProperty(){}},
@@ -36,7 +36,7 @@ function harness(loader){
   };
   vm.runInNewContext(source,{
     window,document,state,loadVideoReactions:loader,
-    signed:async()=> 'https://media.example/synthetic.mp4',
+    signed:signer,
     videoReactionState,esc:v=>String(v),savedKinfolkVideoIds:()=>[],
     AbortController:class{abort(){}},getComputedStyle:()=>({position:'static'}),
     setTimeout,clearTimeout
@@ -73,7 +73,24 @@ test('hung reactions query is bounded rather than blocking video playback foreve
 test('reactions helper reports success and failure without swallowing navigation checks',async()=>{
   assert.equal(await reactionHelper(async()=>{})(20),true);
   assert.equal(await reactionHelper(async()=>{throw Error('offline')})(20),false);
-  assert.match(source,/const reactionsReady=await kf289LoadReactions\(\);\s*if\(!isCurrent\(\)\)return;/);
+  assert.match(source,/const \[reactionsReady,urls\]=await Promise\.all\(\[\s*kf289LoadReactions\(\),\s*kf287ResolveReelUrls\(reels,signed,isCurrent\)\s*\]\);\s*if\(!isCurrent\(\)\)return;/);
   assert.match(source,/const rows=reactionsReady\?videoReactionState\.rows\.filter/);
   assert.match(source,/const disabled=reactionsReady&&videoReactionState\.available/);
+});
+
+
+test('private video signing begins before the optional reactions query finishes',async()=>{
+  let finishReactions,signingStarted=false;
+  const h=harness(()=>new Promise(resolve=>{finishReactions=resolve}),async()=>{
+    signingStarted=true;
+    return 'https://media.example/synthetic.mp4';
+  });
+  const pending=h.render();
+  // Flush microtasks; a serial implementation cannot sign until the deferred
+  // reactions request completes, while the parallel implementation can.
+  for(let i=0;i<8;i++)await Promise.resolve();
+  assert.equal(signingStarted,true,'private media signing must not wait for reactions');
+  finishReactions();
+  await pending;
+  assert.match(h.main.innerHTML,/https:\/\/media\.example\/synthetic\.mp4/);
 });
