@@ -80,10 +80,14 @@
     console.warn('Kinfolk Reels recovered locally',err);
   }
 
+  // Overlapping async renders must always filter from the original account feed,
+  // never from another render's temporary filtered array.
+  const originalRenderSource=new WeakMap();
   if(typeof baseHome==='function')window.renderHome=async main=>{
     const userId=syncSafetyUser();
-    const all=Array.isArray(state.feed)?state.feed:[];
+    const all=Array.isArray(state.feed)?(originalRenderSource.get(state.feed)||state.feed):[];
     const permitted=lane==='xxx'?(safetyCache.adult&&safetyCache.allow&&!native?all.filter(chosen):all.filter(generalOnly)):all.filter(generalOnly);
+    originalRenderSource.set(permitted,all);
     state.feed=permitted;
     try{await baseHome(main)}catch(e){if(state?.user?.id===userId&&state.view==='home')renderHomeFallback(main,permitted,e)}finally{if(state.feed===permitted)state.feed=state?.user?.id===userId?all:[]}
     addBar(main,'home');
@@ -92,12 +96,13 @@
 
   if(typeof baseReels==='function')window.renderReels=async main=>{
     const userId=syncSafetyUser();
-    const all=Array.isArray(state.videos)?state.videos:[];
+    const all=Array.isArray(state.videos)?(originalRenderSource.get(state.videos)||state.videos):[];
     if(lane==='xxx'&&safetyCache.known&&safetyCache.adult&&!safetyCache.allow&&!native){
       main.innerHTML=`<div class="card"><div class="kf82gate"><b>XXX content is off</b><p>Enable the adult filter to open this separate video lane.</p><button class="btn primary" type="button" onclick="kf82Enable(this)">Enable XXX content</button></div></div>`;
       addBar(main,'reels');return;
     }
     const permitted=lane==='xxx'?(safetyCache.adult&&safetyCache.allow&&!native?all.filter(chosen):[]):all.filter(generalOnly);
+    originalRenderSource.set(permitted,all);
     state.videos=permitted;
     try{await baseReels(main)}catch(e){if(state?.user?.id===userId&&state.view==='reels')renderReelsFallback(main,permitted,e)}finally{if(state.videos===permitted)state.videos=state?.user?.id===userId?all:[]}
     addBar(main,'reels');
