@@ -10,7 +10,7 @@ const reels=[
  {id:'r2',kind:'short',channel_id:'unfollowed',creator_id:B,source_type:'upload',storage_path:'r2.mp4'},
  {id:'r3',kind:'reel',channel_id:null,creator_id:B,source_type:'upload',storage_path:'r3.mp4'}
 ];
-function harness(){
+function harness({signer}={}){
  const state={user:{id:A},view:'reels',channels:[{id:'followed',is_subscribed:false},{id:'unfollowed',is_subscribed:false}],subscriptions:new Map([['followed',[{user_id:A}]]]),profiles:new Map()};
  const mediaSigned=[],rerenders=[];
  const feed={isConnected:true,clientHeight:600,style:{setProperty(){}},getBoundingClientRect(){return {top:100,bottom:700,height:600}},querySelectorAll(){return []},addEventListener(){},removeEventListener(){}};
@@ -18,7 +18,7 @@ function harness(){
  const document={head:{appendChild(){}},createElement(){return {textContent:''}},addEventListener(){},querySelectorAll(){return []},getElementById(){return null},hidden:false};
  const window={innerHeight:800,addEventListener(){}};
  const context={state,window,document,console,renderApp:()=>{rerenders.push(state.user?.id)},
-  loadVideoReactions:async()=>{},signed:async(_bucket,path)=>{mediaSigned.push(path);return 'https://media.example/'+path},
+  loadVideoReactions:async()=>{},signed:async(_bucket,path)=>{mediaSigned.push(path);return signer?signer(path):'https://media.example/'+path},
   videoReactionState:{rows:[],available:true},esc:x=>String(x),savedKinfolkVideoIds:()=>[],
   AbortController,getComputedStyle:()=>({position:'static'}),setTimeout,clearTimeout};
  vm.runInNewContext(source,context);
@@ -69,4 +69,17 @@ test('invalid or inactive tab requests do not trigger navigation',async()=>{
  h.window.kf296SelectReelMode('bogus');
  h.state.view='profile';h.window.kf296SelectReelMode('subscriptions');
  assert.deepEqual(h.rerenders,[]);
+});
+
+test('late private media signature cannot overwrite a newly selected feed',async()=>{
+ let resolve;
+ const h=harness({signer:()=>new Promise(r=>{resolve=r})});
+ const pending=h.window.kf159RenderReels(h.main,[reels[0]]);
+ for(let i=0;i<8;i++)await Promise.resolve();
+ assert.equal(typeof resolve,'function');
+ h.window.kf296SelectReelMode('subscriptions');
+ h.main.innerHTML='new feed pending';
+ resolve('https://media.example/r1.mp4');
+ await pending;
+ assert.equal(h.main.innerHTML,'new feed pending');
 });
