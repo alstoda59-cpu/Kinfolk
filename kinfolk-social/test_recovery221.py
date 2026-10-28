@@ -63,8 +63,7 @@ with sync_playwright() as p:
         resend.click()
         assert 'wait a minute' in panel.inner_text()
         assert page.evaluate('window.__resends.length') == 1
-        # Address edits must not silently redirect a resend to an unsubmitted address.
-        page.locator('#kf73Email').fill('different@example.test')
+        # A rate-limited resend retains its cooldown for the original email.
         page.evaluate("document.querySelector('#authForm').__kf221Verification.retryAt=0")
         resend.click()
         assert page.evaluate('window.__resends[1].email') == 'synthetic@example.test'
@@ -81,5 +80,30 @@ with sync_playwright() as p:
         assert 'Welcome back' in page.locator('.kf73Title').inner_text()
         assert page.locator('.kf73Primary').is_enabled()
         assert not errors, errors
-        print('PASS Recovery221', engine, 'mobile resend, cooldown, captured email, error and navigation guards')
+        # A changed email invalidates the old verification panel. It must not
+        # resend to the original address after the member edits the form.
+        page2=browser.new_page(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
+        page2.route('**/*',lambda route:route.abort())
+        page2.set_content(ns['test_html'](),wait_until='load')
+        page2.locator('[data-kf73-mode="signup"]').click()
+        page2.wait_for_function("document.querySelector('#kf217ConfirmPassword')")
+        page2.locator('#kf73Name').fill('Synthetic Member')
+        page2.locator('#kf217Username').fill('synthetic221')
+        page2.locator('#kf73Email').fill('synthetic@example.test')
+        page2.locator('#kf73Password').fill('password9!234')
+        page2.locator('#kf217ConfirmPassword').fill('password9!234')
+        page2.locator('#kf79Birthdate').fill('2000-01-01')
+        page2.locator('.kf73Primary').click()
+        page2.locator('#kf221Verification').wait_for(state='visible',timeout=5000)
+        page2.evaluate("""() => {
+            window.__resends=[];
+            window.__kfMock.client.auth.resend=async args=>{window.__resends.push(args);return {error:null}};
+        }""")
+        page2.locator('#kf73Email').fill('different@example.test')
+        page2.locator('#kf221Verification button').click()
+        assert page2.evaluate('window.__resends.length')==0
+        assert 'Email address changed' in page2.locator('#kf221Verification').inner_text()
+        assert page2.locator('#kf221Verification button').is_disabled()
+        page2.close()
+        print('PASS Recovery221', engine, 'mobile resend, cooldown, stale-email refusal and navigation guards')
         browser.close()

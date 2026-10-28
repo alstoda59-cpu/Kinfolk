@@ -7,7 +7,7 @@ const storage=()=>{const m=new Map();return {getItem:k=>m.has(k)?m.get(k):null,s
 Object.defineProperty(window,'localStorage',{configurable:true,value:storage()});Object.defineProperty(window,'sessionStorage',{configurable:true,value:storage()});
 const user={id:'11111111-1111-4111-8111-111111111111',email:'qa@example.test',user_metadata:{username:'qa_member',display_name:'QA Member'},app_metadata:{}};
 const profile={id:user.id,username:'qa_member',display_name:'QA Member',bio:'Test',accent_color:'#14b8a6'};
-let session=null;const listeners=[],queries=[];let signupCalls=0;
+let session=null,authEmail=user.email;const listeners=[],queries=[];let signupCalls=0;
 function emit(e,s){for(const f of listeners)Promise.resolve().then(()=>f(e,s))}
 function rows(table){if(table==='profiles')return [profile];if(table==='kinfolk_profile_extras')return [{user_id:user.id,music_url:null,gender:'Female'}];return []}
 function from(table){let method='select',filters=[],values=null,selected=false,one=false;const q={
@@ -16,10 +16,10 @@ function from(table){let method='select',filters=[],values=null,selected=false,o
  let data=rows(table).filter(x=>filters.every(([k,v])=>x[k]===v));if(method==='insert'||method==='upsert'){data=one?(Array.isArray(values)?values[0]:values):values} else if(method==='update'&&table!=='profiles'){data=one?null:[]}
  return {data:one?(data[0]||null):data,error:null,count:(method==='update'||method==='upsert')?1:0};});return promise.then(ok,bad)}
 };return q}
-const auth={getSession:async()=>({data:{session},error:null}),setSession:async()=>{session={user,access_token:'fake',refresh_token:'fake'};emit('SIGNED_IN',session);return{data:{session},error:null}},signInWithPassword:async()=>auth.setSession(),signUp:async()=>{signupCalls++;return{data:{user,session:null},error:null}},signOut:async()=>{session=null;emit('SIGNED_OUT',null);return{error:null}},onAuthStateChange:f=>{listeners.push(f);Promise.resolve().then(()=>f('INITIAL_SESSION',session));return{data:{subscription:{unsubscribe(){}}}}},resetPasswordForEmail:async()=>({error:null})};
+const auth={getSession:async()=>({data:{session},error:null}),setSession:async()=>{session={user:{...user,email:authEmail},access_token:'fake',refresh_token:'fake'};emit('SIGNED_IN',session);return{data:{session},error:null}},signInWithPassword:async()=>auth.setSession(),signUp:async args=>{signupCalls++;return{data:{user:{...user,email:args.email},session:null},error:null}},signOut:async()=>{session=null;emit('SIGNED_OUT',null);return{error:null}},onAuthStateChange:f=>{listeners.push(f);Promise.resolve().then(()=>f('INITIAL_SESSION',session));return{data:{subscription:{unsubscribe(){}}}}},resetPasswordForEmail:async()=>({error:null})};
 const client={auth,from,rpc:async()=>({data:[],error:null}),storage:{from:()=>({createSignedUrl:async(path)=>({data:{signedUrl:'https://example.test/'+path},error:null}),upload:async()=>({error:null}),remove:async()=>({error:null})})}};
 window.supabase={createClient:()=>client};window.__kfMock={get session(){return session},get signupCalls(){return signupCalls},queries,profile,emit,client,user};
-const nativeFetch=window.fetch;window.fetch=async function(url,opts){if(String(url).includes('/auth/v1/token'))return new Response(JSON.stringify({access_token:'fake',refresh_token:'fake',user}),{status:200,headers:{'Content-Type':'application/json'}});return new Response(JSON.stringify([]),{status:200,headers:{'Content-Type':'application/json'}})};
+const nativeFetch=window.fetch;window.fetch=async function(url,opts){if(String(url).includes('/auth/v1/token')){try{authEmail=JSON.parse(opts?.body||'{}').email||user.email}catch{authEmail=user.email}return new Response(JSON.stringify({access_token:'fake',refresh_token:'fake',user:{...user,email:authEmail}}),{status:200,headers:{'Content-Type':'application/json'}});}return new Response(JSON.stringify([]),{status:200,headers:{'Content-Type':'application/json'}})};
 })();'''
 
 def test_html():
