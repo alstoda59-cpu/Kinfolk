@@ -109,9 +109,12 @@
   const isCurrent=()=>generation===active.generation&&main.isConnected&&state.view==='reels'&&(state.user?.id??null)===renderUserId;
   active.pausedByUser.clear();
   if(!reels.length){main.innerHTML='<div class="card"><div class="empty">No reels yet.</div></div>';return}
-  const reactionsReady=await kf289LoadReactions();
-  if(!isCurrent())return;
-  const urls=await kf287ResolveReelUrls(reels,signed,isCurrent);
+  // Reactions are optional to playback. Start signing private media while
+  // counters load instead of making mobile viewers wait for both in series.
+  const [reactionsReady,urls]=await Promise.all([
+   kf289LoadReactions(),
+   kf287ResolveReelUrls(reels,signed,isCurrent)
+  ]);
   if(!isCurrent())return;
   const cards=[];
   for(let i=0;i<reels.length;i++){
