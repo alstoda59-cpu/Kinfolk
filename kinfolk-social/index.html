@@ -138,12 +138,24 @@ async function kf129RestorableSession(){
   return session;
 }
 window.kf129Retry=async()=>{try{await kf129ActivateSession(await kf129RestorableSession())}catch(error){kf129Error(error?.message||String(error))}};
+// A delayed SIGNED_OUT callback can arrive after a different session was
+// established. Recheck outside Supabase's auth callback lock before clearing UI.
+// On a failed or stalled check, fail closed rather than leave private data visible.
+async function kf286HandleSignedOutEvent(){
+  try{
+    const {data,error}=await kf129Timeout(sb.auth.getSession(),4000,'Sign-out verification');
+    if(error)throw error;
+    if(data?.session?.user?.id)return false;
+  }catch(error){console.warn('Kinfolk could not verify signed-out session; clearing private UI',error)}
+  await kf129ActivateSession(null);
+  return true;
+}
 async function boot(){
   try{
     await kf129ActivateSession(await kf129RestorableSession());
   }catch(error){console.error('Kinfolk initial session',error);kf129Error(error?.message||String(error))}
   sb.auth.onAuthStateChange((event,session)=>{
-    if(event==='SIGNED_OUT'){void kf129ActivateSession(null);return}
+    if(event==='SIGNED_OUT'){setTimeout(()=>{void kf286HandleSignedOutEvent().catch(error=>console.error('Kinfolk sign-out cleanup failed',error))},0);return}
     if((event==='SIGNED_IN'||event==='USER_UPDATED')&&session?.user?.id){
       // Auth callbacks must not await Supabase APIs directly (auth lock deadlock).
       // Defer validation so SIGNED_IN / USER_UPDATED cannot bypass Stay Logged In.
