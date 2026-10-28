@@ -20,3 +20,7 @@ Recovery286 report and source, latest recovery branches, Vercel READY preview fo
 
 ## Next work
 Check the latest CI job and fix any remaining failures without weakening safeguards. Then use the designated isolated backend and approved callback for synthetic-account end-to-end auth/RLS, private media and native-device QA.
+
+## CI follow-up (same checkpoint)
+- Full source CI run `40672076687` passed the complete 342-case synthetic .cjs suite, browser regressions, JavaScript syntax, and native asset preparation. It then failed at the final native verification because an older Recovery284 profile fixture had a doubly escaped regular expression in its `finally` cleanup assertion (9/10 focused profile tests passed). This was a test assertion defect, not a reported app runtime failure.
+- Commit `31967959d534240d648f708c9dbb350771d00a82` repairs only that fixture's regex. Recheck the new Actions run for complete native verification including the new Recovery287 Reels tests. Do not count the full pipeline as passed until it finishes successfully.
