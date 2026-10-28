@@ -82,7 +82,10 @@
  window.kf159RenderReels=async function(main,reels){
   teardown();
   const generation=active.generation;
-  const isCurrent=()=>generation===active.generation&&main.isConnected&&state.view==='reels';
+  // A pending media signature must never render a previous member's private feed
+  // after the app switches accounts while remaining on the Reels screen.
+  const renderUserId=state.user?.id??null;
+  const isCurrent=()=>generation===active.generation&&main.isConnected&&state.view==='reels'&&(state.user?.id??null)===renderUserId;
   active.pausedByUser.clear();
   if(!reels.length){main.innerHTML='<div class="card"><div class="empty">No reels yet.</div></div>';return}
   await loadVideoReactions();
