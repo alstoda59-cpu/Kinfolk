@@ -36,7 +36,7 @@ function fixture(withVisualViewport){
     profiles:new Map([['synthetic-account',{display_name:'Test creator'}]])
   };
   const context={
-    window,document,state,console,AbortController,
+    window,document,state,console,AbortController,setTimeout,clearTimeout,
     IntersectionObserver:class{observe(){}disconnect(){}},
     getComputedStyle:()=>({position:'fixed'}),
     videoReactionState:{rows:[],available:true},
