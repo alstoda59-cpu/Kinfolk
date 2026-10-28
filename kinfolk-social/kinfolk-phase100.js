@@ -24,6 +24,18 @@ function lockEditorFields(editor){
   for(const [field] of previous)field.disabled=true;
   return ()=>{for(const [field,wasDisabled] of previous)field.disabled=wasDisabled};
 }
+// A detached editor can be reopened while its previous database request is
+// still in flight. A form-local busy flag cannot prevent overlapping writes
+// from two different editor nodes, including across account switches.
+let activeProfileSaveAccount=null;
+function claimProfileSave(accountId){
+  if(activeProfileSaveAccount!==null)return false;
+  activeProfileSaveAccount=accountId;
+  return true;
+}
+function releaseProfileSave(accountId){
+  if(activeProfileSaveAccount===accountId)activeProfileSaveAccount=null;
+}
 function form(){return document.getElementById('profileForm')}function saveButton(f=form()){return f?[...f.querySelectorAll('button')].find(b=>/save profile|saving/i.test((b.textContent||'').trim())):null}function patch(){const f=form();if(!f)return;for(const id of ['editAvatar','editWallpaper']){const input=document.getElementById(id);if(!input)continue;input.setAttribute('accept',ACCEPT);try{Object.defineProperty(input,'accept',{configurable:true,get:()=>ACCEPT,set:()=>{}})}catch{}}f.onsubmit=save;window.saveProfile=save;f.dataset.kf100='1'}async function save(e){
   e?.preventDefault?.();
   e?.stopPropagation?.();
@@ -31,6 +43,7 @@ function form(){return document.getElementById('profileForm')}function saveButto
   if(!f||f.dataset.kf100Busy==='1')return;
   const accountId=state?.user?.id;
   if(!accountId)return notify('Your session is not ready. Please log in again.');
+  if(!claimProfileSave(accountId))return notify('A previous profile save is still finishing. Please wait before saving again.');
   f.dataset.kf100Busy='1';
   const btn=saveButton(f),old=btn?.textContent||'Save profile',uploaded=[];
   if(btn){btn.disabled=true;btn.textContent='Saving…'}
@@ -89,6 +102,7 @@ function form(){return document.getElementById('profileForm')}function saveButto
   }finally{
     restoreEditorFields();
     f.dataset.kf100Busy='0';
+    releaseProfileSave(accountId);
     if(btn&&document.contains(btn)&&form()===f&&state?.user?.id===accountId){
       btn.disabled=false;btn.textContent=old;
     }
