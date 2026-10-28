@@ -19,7 +19,7 @@
     "alpha:rls:test": "node --test tests/alpha-two-user-rls.test.mjs",
     "alpha:verify:rls": "node scripts/verify-two-user-rls.mjs",
     "alpha:startup:test": "node --test tests/alpha-startup-scripts.test.mjs",
-    "alpha:auth:source:test": "node --test ../tests/recovery276-signup-redirect.test.mjs ../tests/recovery277-signup-session-email.test.mjs"
+    "alpha:auth:source:test": "node --test ../tests/recovery276-signup-redirect.test.mjs ../tests/recovery277-signup-session-email.test.mjs ../tests/recovery278-signup-active-session.test.mjs"
   },
   "dependencies": {
     "@capacitor/core": "7.6.9",
