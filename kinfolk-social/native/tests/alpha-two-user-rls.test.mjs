@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { ALPHA_REF } from '../scripts/alpha-backend-config.mjs';
 import { jwtSubject, verifyTwoUserRls, PRIVATE_TABLES } from '../scripts/verify-two-user-rls.mjs';
 const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222';
-const jwt=id=>'h.'+Buffer.from(JSON.stringify({sub:id,role:'authenticated'})).toString('base64url')+'.s';
+const jwt=id=>'h.'+Buffer.from(JSON.stringify({sub:id,role:'authenticated',exp:Math.floor(Date.now()/1000)+3600})).toString('base64url')+'.s';
 const tokenA=jwt(A),tokenB=jwt(B),config={projectRef:ALPHA_REF,url:'https://'+ALPHA_REF+'.supabase.co',key:'sb_publishable_synthetic_test',offlineStub:false};
 const opts={tokenA,tokenB,idA:A,idB:B};
 function mock({cross=false,anon=false,missing=false,deny=false}={}){
@@ -55,4 +55,18 @@ test('anonymous access to second owner fails independently',async()=>{
     return {status:200,headers:{get:()=> 'application/json'},json:async()=>own||exposed?[{user_id:owner}]:[]};
   };
   await assert.rejects(verifyTwoUserRls(config,{...opts,tables:['user_settings'],fetchImpl}),/Anonymous RLS exposure/);
+});
+
+test('expired and undated synthetic JWTs fail before any RLS network requests',async()=>{
+  let calls=0;
+  const fetchImpl=async()=>{calls++;throw Error('unexpected network call')};
+  for(const payload of [
+    {sub:A,role:'authenticated'},
+    {sub:A,role:'authenticated',exp:Math.floor(Date.now()/1000)-10},
+    {sub:A,role:'authenticated',exp:'9999999999'}
+  ]){
+    const bad='h.'+Buffer.from(JSON.stringify(payload)).toString('base64url')+'.s';
+    await assert.rejects(verifyTwoUserRls(config,{...opts,tokenA:bad,fetchImpl}),/future expiry/);
+  }
+  assert.equal(calls,0);
 });
