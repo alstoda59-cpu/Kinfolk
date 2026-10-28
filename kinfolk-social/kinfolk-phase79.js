@@ -374,6 +374,26 @@
   let activeSignupTitle=null;
   // A timed-out signup may still complete server-side. Delay duplicate requests.
   let signupRetryAt=0;
+  // A signup request is immutable once sent. If the reused mobile form changes
+  // during the network request, never attach the earlier result or apply its
+  // session-persistence choice to the newly displayed details.
+  function signupInputsUnchanged(form,expected){
+    const read=id=>form.querySelector('#'+id)?.value||'';
+    const interests=Array.from(form.querySelectorAll('input[name="kf218Interest"]:checked'),el=>el.value);
+    return read('kf73Name').trim()===expected.display_name
+      && read('kf73Email').trim().toLowerCase()===expected.email.toLowerCase()
+      && read('kf73Password')===expected.password
+      && read('kf79Birthdate')===expected.birthdate
+      && read('kf217Username').trim()===expected.username
+      && form.querySelector('#kf217ConfirmPassword')?.value===expected.confirmPassword
+      && read('kf218Bio').trim()===expected.bio
+      && (read('kf218Language')||'en')===expected.preferredLanguage
+      && (read('kf219Gender')||'')===expected.gender
+      && interests.length===expected.interests.length
+      && interests.every((value,i)=>value===expected.interests[i])
+      && (form.querySelector('#kf219Private')?.checked===true)===expected.privateProfile
+      && (form.querySelector('#kf73Stay')?.checked!==false)===expected.stay;
+  }
   async function handleSignup(e){
     const form=e.target;
     if(form?.id!=='authForm'||form.dataset.kf73!=='1')return;
@@ -405,6 +425,7 @@
     const gender=form.querySelector('#kf219Gender')?.value||'';
     const privateProfile=form.querySelector('#kf219Private')?.checked===true;
     const stay=form.querySelector('#kf73Stay')?.checked!==false;
+    const signupSnapshot={display_name,email,password,birthdate,username,confirmPassword,bio,preferredLanguage,interests,gender,privateProfile,stay};
     if(!display_name){show(form,'Enter a display name.');return}
     if(form.querySelector('#kf217Username')&&!/^[a-zA-Z0-9_]{3,24}$/.test(username)){show(form,'Choose a username using 3–24 letters, numbers, or underscores.');return}
     if(!email){show(form,'Enter your email address.');return}
@@ -445,13 +466,12 @@
         }
         return;
       }
-      // The email field can change while an earlier network request is pending.
-      // Never attach the earlier account's verification panel or save its Stay
-      // Logged In preference to a form now showing a different address.
+      // Do not bind a completed request to changed signup details, especially
+      // birthday/teen privacy, email, password or Stay Logged In preference.
       if(form.isConnected&&form.querySelector('.kf73Title')===signupTitle&&isSignupTitle(signupTitle?.textContent)&&
-         String(form.querySelector('#kf73Email')?.value||'').trim().toLowerCase()!==email.toLowerCase()){
+         !signupInputsUnchanged(form,signupSnapshot)){
         signupRetryAt=Date.now()+60000;
-        show(form,'The email changed while account creation was processing. The earlier request may have succeeded. Check that inbox or log in before trying again in a minute.');
+        show(form,'Signup details changed while account creation was processing. The earlier request may have succeeded. Check the original email inbox or log in before retrying in a minute.');
         if(btn){btn.disabled=false;btn.textContent='Create account'}
         return;
       }
@@ -481,6 +501,11 @@
         const verifiedSignupSession=await signupSessionIsCurrent(data.session);
         // Session verification is asynchronous: the form may have changed again.
         if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!(isSignupTitle(signupTitle?.textContent)))return;
+        if(!signupInputsUnchanged(form,signupSnapshot)){
+          show(form,'Signup details changed while your session was being verified. Sign in again to choose Stay Logged In.');
+          if(btn){btn.disabled=false;btn.textContent='Create account'}
+          return;
+        }
         if(!verifiedSignupSession){
           show(form,'Account created, but the active login changed. Sign in again to set Stay Logged In.');
           if(btn){btn.disabled=false;btn.textContent='Create account'}
