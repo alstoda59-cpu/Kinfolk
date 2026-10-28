@@ -13,7 +13,7 @@ const reels=[
 function harness(){
  const state={user:{id:A},view:'reels',channels:[{id:'followed',is_subscribed:false},{id:'unfollowed',is_subscribed:false}],subscriptions:new Map([['followed',[{user_id:A}]]]),profiles:new Map()};
  const mediaSigned=[],rerenders=[];
- const feed={isConnected:true,clientHeight:600,style:{setProperty(){}},getBoundingClientRect(){return {top:100,bottom:700,height:600}},querySelectorAll(){return []},addEventListener(){}};
+ const feed={isConnected:true,clientHeight:600,style:{setProperty(){}},getBoundingClientRect(){return {top:100,bottom:700,height:600}},querySelectorAll(){return []},addEventListener(){},removeEventListener(){}};
  const main={isConnected:true,innerHTML:'',querySelector(){return feed}};
  const document={head:{appendChild(){}},createElement(){return {textContent:''}},addEventListener(){},querySelectorAll(){return []},getElementById(){return null},hidden:false};
  const window={innerHeight:800,addEventListener(){}};
