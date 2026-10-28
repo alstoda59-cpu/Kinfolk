@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery288 (2026-10-28)
+
+Latest isolated checkpoint: [RECOVERY288.md](RECOVERY288.md). Reels now abort stale private-video rendering when the active account changes during reaction loading or signed URL requests. Two synthetic V8 runtime scenarios passed against the exact committed Reels source; the code/test integration commit has a READY nonproduction preview. Current full GitHub CI, real Supabase cross-account enforcement, native functional builds and physical-device QA remain unverified. No production, shared live Supabase, Kinfolksworld or store changes.
+
 # Kinfolk Social | Recovery267 (2026-10-27)
 
 Latest isolated checkpoint: [RECOVERY267.md](RECOVERY267.md). Hardened native startup JavaScript verification against disguised remote `src` attributes, duplicate sources, and quoted-angle-bracket parsing. **10/10 actual Node.js 22 regression tests passed** against files matching exact GitHub committed blobs. The code/test commit has a **READY nonproduction Vercel preview**. Full native package/build CI, real isolated Supabase auth/RLS, and physical Android/iPhone testing are **not verified**. No production, shared live Supabase, Kinfolksworld or store changes.
