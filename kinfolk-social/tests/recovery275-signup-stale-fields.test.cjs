@@ -6,7 +6,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'..','kinfolk-phase79.js'),'utf8');
 const start=source.indexOf('  function signupInputsUnchanged(form,expected){');
-const end=source.indexOf('  async function handleSignup(e){',start);
+const end=source.indexOf('  // Never start signup over an authenticated account.',start);
 assert.ok(start>=0&&end>start,'Phase79 signup identity guard must exist');
 const unchanged=Function('return ('+source.slice(start,end).trim()+')')();
 const baseline={display_name:'Synthetic Member',email:'synthetic@example.test',password:'correct_password_123',birthdate:'2009-10-01',username:'test_teen',confirmPassword:'correct_password_123',bio:'hello',preferredLanguage:'en',interests:['music','games'],gender:'',privateProfile:true,stay:true};
@@ -21,7 +21,7 @@ for(const [field,changed] of Object.entries({email:'other@example.test',password
 test('guard is checked after signup response and after asynchronous session verification',()=>{
   assert.equal(source.split('!signupInputsUnchanged(form,signupSnapshot)').length-1,2);
   assert.ok(source.indexOf('const result=await Promise.race(')<source.indexOf('!signupInputsUnchanged(form,signupSnapshot)'));
-  assert.ok(source.lastIndexOf('!signupInputsUnchanged(form,signupSnapshot)')>source.indexOf('const verifiedSignupSession=await signupSessionIsCurrent(data.session)'));
+  assert.ok(source.lastIndexOf('!signupInputsUnchanged(form,signupSnapshot)')>source.indexOf('const verifiedSignupSession=await signupSessionIsCurrent(data.session,email)'));
 });
 
 test('email case-only changes retain the same signup identity',()=>{

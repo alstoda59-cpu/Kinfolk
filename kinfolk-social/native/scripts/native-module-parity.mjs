@@ -11,10 +11,10 @@ function appModules(html){
   // replaced by the native packager.
   for(const src of scripts){
     if(src.startsWith('/kinfolk-')&&src!=='/kinfolk-supabase-sdk.js'){
-      assert.match(src,/^\\/kinfolk-[A-Za-z0-9_-]+\\.js$/,'invalid Kinfolk app module script path');
+      assert.match(src,/^\/kinfolk-[A-Za-z0-9_-]+\.js$/,'invalid Kinfolk app module script path');
     }
   }
-  return scripts.filter(src=>/^\\/kinfolk-[A-Za-z0-9_-]+\\.js$/.test(src)&&src!=='/kinfolk-supabase-sdk.js');
+  return scripts.filter(src=>/^\/kinfolk-[A-Za-z0-9_-]+\.js$/.test(src)&&src!=='/kinfolk-supabase-sdk.js');
 }
 
 export function assertNativeModuleParity(sourceHTML, packagedHTML){

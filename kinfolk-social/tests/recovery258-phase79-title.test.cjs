@@ -42,6 +42,7 @@ function harness(titleText='Create Account',authOverrides={}){
   let submit,signups=[],resends=[];
   const resendTimeouts=[],signupTimeouts=[];
   const sb={auth:{
+    async getSession(){return {data:{session:null},error:null}},
     async signUp(payload){signups.push(payload);return authOverrides.signUp?authOverrides.signUp(payload):{data:{user:{id:'synthetic-id'},session:null},error:null}},
     async resend(payload){resends.push(payload);return authOverrides.resend?authOverrides.resend(payload):{error:null}}
   }};
@@ -60,6 +61,8 @@ function harness(titleText='Create Account',authOverrides={}){
     preventDefault(){this.prevented=true},stopImmediatePropagation(){this.stopped=true}}}
   return {title,form,btn,fields,nodes,signups,resends,event,submit:e=>submit(e),expireResend:()=>{for(const fn of resendTimeouts.splice(0))fn()},expireSignup:()=>{for(const fn of signupTimeouts.splice(0))fn()}};
 }
+
+async function settlePreflight(){for(let i=0;i<8;i++)await Promise.resolve()}
 
 test('alternate Create Account heading submits a real Phase79 signup and shows verification',async()=>{
   const h=harness();
@@ -92,6 +95,7 @@ test('async signup completion cannot overwrite login after heading changes',asyn
   const pending=new Promise(r=>resolve=r);
   const h=harness('Create Account',{signUp:()=>pending}),e=h.event();
   const operation=h.submit(e);
+  await settlePreflight();
   assert.equal(h.signups.length,1);
   h.title.textContent='Welcome back';
   resolve({data:{user:{id:'synthetic-id'},session:null},error:null});
@@ -115,7 +119,7 @@ test('alternate-title email verification resend remains available',async()=>{
 test('Phase79 mounts and protects every async branch using the same signup-title predicate',()=>{
   assert.match(source,/function mountSignupGate\(\)[\s\S]*?if\(!isSignupTitle\(title\)\)/);
   assert.match(source,/const current=\(\)=>[\s\S]*?isSignupTitle\(form\.querySelector\('\.kf73Title'\)\?\.textContent\)/);
-  assert.equal((source.match(/isSignupTitle\(signupTitle\?\.textContent\)/g)||[]).length,8);
+  assert.equal((source.match(/isSignupTitle\(signupTitle\?\.textContent\)/g)||[]).length,9);
   assert.equal((source.match(/\.includes\('create your kinfolk'\)/g)||[]).length,1);
 });
 
@@ -248,6 +252,7 @@ test('malformed resend success response does not falsely claim email was request
 test('stalled mobile signup releases the button but blocks immediate duplicate account creation',async()=>{
   const h=harness('Create Account',{signUp:()=>new Promise(()=>{})});
   const operation=h.submit(h.event());
+  await settlePreflight();
   assert.equal(h.btn.disabled,true);
   assert.equal(h.signups.length,1);
   h.expireSignup();
@@ -264,6 +269,7 @@ test('late signup completion after UI timeout cannot claim success or save a ses
   let resolveSignup;
   const h=harness('Create Account',{signUp:()=>new Promise(resolve=>{resolveSignup=resolve})});
   const operation=h.submit(h.event());
+  await settlePreflight();
   h.expireSignup();
   await operation;
   resolveSignup({data:{user:{id:'synthetic-id'},session:null},error:null});
@@ -275,6 +281,7 @@ test('late signup completion after UI timeout cannot claim success or save a ses
 test('signup timeout after navigation never paints an error onto the login screen',async()=>{
   const h=harness('Create Account',{signUp:()=>new Promise(()=>{})});
   const operation=h.submit(h.event());
+  await settlePreflight();
   h.title.textContent='Welcome back';
   h.expireSignup();
   await operation;
@@ -306,6 +313,7 @@ test('email edit during pending signup cannot show previous address verification
   let resolveSignup;
   const h=harness('Create Account',{signUp:()=>new Promise(resolve=>{resolveSignup=resolve})});
   const operation=h.submit(h.event());
+  await settlePreflight();
   h.fields['#kf73Email'].value='other@example.invalid';
   resolveSignup({data:{user:{id:'synthetic-id',email:'synthetic@example.invalid'},session:null},error:null});
   await operation;
