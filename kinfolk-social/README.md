@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery300 (2026-10-28)
+
+Latest isolated checkpoint: [RECOVERY300.md](RECOVERY300.md). Fixed cross-account direct-message races: delayed inbox/DM responses cannot reopen or overwrite another account's modal, and stale send forms cannot write as a newly signed-in member. Added eight Node regressions to the native alpha verification command; nine source-backed synthetic V8 scenarios passed, while Node CI and device/backend end-to-end tests remain unverified. Read-only isolated Supabase inspection confirms RLS-enabled messaging tables but also identifies 13 public tables referenced by the main app that are not yet present in the isolated alpha database. Nonproduction only; no shared live Supabase or app-store changes.
+
 # Kinfolk Social | Recovery299 (2026-10-28)
 
 Latest isolated checkpoint: [RECOVERY299.md](RECOVERY299.md). Repaired a mobile Reels layout race: the immersive player now recalculates its height when the age/content filter is inserted or updated after asynchronous video rendering. Existing account/teardown guards prevent stale viewport updates. Focused source-backed synthetic V8 checks passed; current Node/GitHub CI, real isolated Supabase auth/RLS and physical-device QA remain unverified. Nonproduction only, no shared live backend or store changes.
