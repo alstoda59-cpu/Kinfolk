@@ -13,7 +13,18 @@ async function upload(file,folder,paths,accountId,editor){
   paths.push(path);
   requireEditor(accountId,editor);
   return path;
-}function form(){return document.getElementById('profileForm')}function saveButton(f=form()){return f?[...f.querySelectorAll('button')].find(b=>/save profile|saving/i.test((b.textContent||'').trim())):null}function patch(){const f=form();if(!f)return;for(const id of ['editAvatar','editWallpaper']){const input=document.getElementById(id);if(!input)continue;input.setAttribute('accept',ACCEPT);try{Object.defineProperty(input,'accept',{configurable:true,get:()=>ACCEPT,set:()=>{}})}catch{}}f.onsubmit=save;window.saveProfile=save;f.dataset.kf100='1'}async function save(e){
+}
+// Freeze the editor after capturing its values and files. Otherwise a slow
+// mobile upload can save older fields while the member is editing newer ones.
+// Restore each field's original disabled state, including fields that were
+// already disabled for privacy or validation reasons.
+function lockEditorFields(editor){
+  const fields=[...editor.querySelectorAll('input,textarea,select')];
+  const previous=fields.map(field=>[field,field.disabled]);
+  for(const [field] of previous)field.disabled=true;
+  return ()=>{for(const [field,wasDisabled] of previous)field.disabled=wasDisabled};
+}
+function form(){return document.getElementById('profileForm')}function saveButton(f=form()){return f?[...f.querySelectorAll('button')].find(b=>/save profile|saving/i.test((b.textContent||'').trim())):null}function patch(){const f=form();if(!f)return;for(const id of ['editAvatar','editWallpaper']){const input=document.getElementById(id);if(!input)continue;input.setAttribute('accept',ACCEPT);try{Object.defineProperty(input,'accept',{configurable:true,get:()=>ACCEPT,set:()=>{}})}catch{}}f.onsubmit=save;window.saveProfile=save;f.dataset.kf100='1'}async function save(e){
   e?.preventDefault?.();
   e?.stopPropagation?.();
   const f=form();
@@ -24,6 +35,7 @@ async function upload(file,folder,paths,accountId,editor){
   const btn=saveButton(f),old=btn?.textContent||'Save profile',uploaded=[];
   if(btn){btn.disabled=true;btn.textContent='Saving…'}
   let profileSaved=false;
+  let restoreEditorFields=()=>{};
   try{
     requireEditor(accountId,f);
     patch();
@@ -34,6 +46,9 @@ async function upload(file,folder,paths,accountId,editor){
     const wallpaperFile=f.querySelector('#editWallpaper')?.files?.[0];
     const po={display_name:read('editDisplay'),username:read('editUsername'),bio:read('editBio')};
     const ex={user_id:accountId,location_text:read('editLocation')||null,website_url:read('editWebsite')||null,music_url:read('editMusic')||null,gender:read('editGender')||null,orientation:read('editOrientation')||null,relationship_status:read('editRelationship')||null,birthday:read('editBirthday')||null,updated_at:new Date().toISOString()};
+    // Values/files above are immutable for this save; prevent later edits
+    // from appearing to be included while compression or uploads are pending.
+    restoreEditorFields=lockEditorFields(f);
     const avatar=await prepare(avatarFile,'Profile photo');
     requireEditor(accountId,f);
     const wallpaper=await prepare(wallpaperFile,'Wallpaper');
@@ -72,6 +87,7 @@ async function upload(file,folder,paths,accountId,editor){
     if(!profileSaved)await removeUploaded(uploaded);
     if(state?.user?.id===accountId && form()===f)notify(err?.message||'Profile update failed');
   }finally{
+    restoreEditorFields();
     f.dataset.kf100Busy='0';
     if(btn&&document.contains(btn)&&form()===f&&state?.user?.id===accountId){
       btn.disabled=false;btn.textContent=old;
