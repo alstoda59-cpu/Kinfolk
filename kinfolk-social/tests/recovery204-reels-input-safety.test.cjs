@@ -19,7 +19,7 @@ function fixture(){
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
   const state={view:'reels',user:{id:'synthetic'},profiles:new Map([['synthetic',{display_name:'Tester'}]])};
-  const context={window,document,state,esc,console,AbortController,
+  const context={window,document,state,esc,console,AbortController,setTimeout,clearTimeout,
     IntersectionObserver:class{observe(){}disconnect(){}},
     getComputedStyle:()=>({position:'fixed'}),
     videoReactionState:{rows:[],available:true},
