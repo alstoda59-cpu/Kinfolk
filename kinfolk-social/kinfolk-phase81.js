@@ -111,6 +111,7 @@
   function stopMusic(){
     if(player?.audio){try{player.audio.pause();player.audio.src=''}catch{}}
     if(player?.iframe){try{player.iframe.remove()}catch{}}
+    document.querySelectorAll('.kf51Music audio').forEach(audio=>{try{audio.pause();audio.autoplay=false;audio.muted=true}catch{}});
     document.getElementById('kf81-profile-player')?.remove();
     document.getElementById('kf54YT')?.remove();
     player=null;musicKey='';
