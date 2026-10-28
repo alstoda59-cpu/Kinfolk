@@ -42,5 +42,5 @@ test('save claims before async work and releases in finally',()=>{
   const claim=save.indexOf('if(!claimProfileSave(accountId))');
   const firstAwait=save.indexOf('const avatar=await prepare(avatarFile');
   assert.ok(claim>0&&firstAwait>claim);
-  assert.match(save,/}finally\\{\\s*restoreEditorFields\\(\\);\\s*f\\.dataset\\.kf100Busy='0';\\s*releaseProfileSave\\(accountId\\);/);
+  assert.match(save,/}finally\{\s*restoreEditorFields\(\);\s*f\.dataset\.kf100Busy='0';\s*releaseProfileSave\(accountId\);/);
 });
