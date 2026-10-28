@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery289 (2026-10-28)
+
+Latest isolated checkpoint: [RECOVERY289.md](RECOVERY289.md). Reels now continues loading private video slides when reaction counts fail or stall; unavailable reaction controls are disabled without displaying stale counts. **4/4 focused synthetic V8 checks passed** against exact committed source, and the integration commit has a READY nonproduction Vercel preview. Full GitHub CI, real backend auth/RLS, functional Android/iOS builds and physical-device QA remain unverified. Production, shared live Supabase, Kinfolksworld and app stores untouched.
+
 # Kinfolk Social | Recovery288 (2026-10-28)
 
 Latest isolated checkpoint: [RECOVERY288.md](RECOVERY288.md). Reels now abort stale private-video rendering when the active account changes during reaction loading or signed URL requests. Two synthetic V8 runtime scenarios passed against the exact committed Reels source; the code/test integration commit has a READY nonproduction preview. Current full GitHub CI, real Supabase cross-account enforcement, native functional builds and physical-device QA remain unverified. No production, shared live Supabase, Kinfolksworld or store changes.
