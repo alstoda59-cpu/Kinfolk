@@ -73,14 +73,18 @@
     }
   }
 
-  // Ignore signup results after a different account has become active.
-  async function signupSessionIsCurrent(session){
+  // Only persist signup preferences for the exact new email identity.
+  // Checking ID alone misses an email changed on that account while getSession
+  // is pending. Fail closed on missing email, including during cleanup.
+  async function signupSessionIsCurrent(session,submittedEmail){
     if(typeof sb==='undefined'||typeof sb?.auth?.getSession!=='function')throw new Error('Kinfolk could not verify the signup session. Sign in again to set Stay Logged In.');
     const expected=session?.user?.id;
-    if(!expected)return false;
+    const email=String(submittedEmail||'').trim().toLowerCase();
+    if(!expected||!email||typeof session?.user?.email!=='string'||session.user.email.trim().toLowerCase()!==email)return false;
     const {data,error}=await sb.auth.getSession();
     if(error)throw error;
-    return data?.session?.user?.id===expected;
+    const active=data?.session?.user;
+    return active?.id===expected&&typeof active.email==='string'&&active.email.trim().toLowerCase()===email;
   }
 
   function updateSignupPrivacy(form){
@@ -498,7 +502,7 @@
       // An email-confirmation signup has no authenticated session yet.
       // Do not persist Stay Logged In until signup actually returns a session.
       if(data?.session){
-        const verifiedSignupSession=await signupSessionIsCurrent(data.session);
+        const verifiedSignupSession=await signupSessionIsCurrent(data.session,email);
         // Session verification is asynchronous: the form may have changed again.
         if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!(isSignupTitle(signupTitle?.textContent)))return;
         if(!signupInputsUnchanged(form,signupSnapshot)){
@@ -515,7 +519,7 @@
         catch(storageError){
           // Never sign out another account that became active during cleanup.
           let sameAccount=false,signOutFailed=false;
-          try{sameAccount=await signupSessionIsCurrent(data.session)}
+          try{sameAccount=await signupSessionIsCurrent(data.session,email)}
           catch(checkError){console.warn('Kinfolk signup session recheck failed',checkError)}
           if(sameAccount){
             try{
