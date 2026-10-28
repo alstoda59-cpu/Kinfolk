@@ -9,7 +9,7 @@
     "sync": "npm run prepare:web && npx cap sync",
     "android:open": "npx cap open android",
     "ios:open": "npx cap open ios",
-    "alpha:verify": "node scripts/verify-alpha-package.mjs && node --test tests/profile-music-navigation.test.mjs tests/native-module-parity.test.mjs tests/alpha-startup-scripts.test.mjs tests/alpha-backend-config.test.mjs tests/alpha-signup-password.test.mjs tests/alpha-functional-backend-gate.test.mjs tests/alpha-auth-reachability.test.mjs tests/alpha-auth-signup-readiness.test.mjs tests/alpha-email-callback.test.mjs && npm run alpha:rls:test && npm run alpha:auth:source:test && npm run alpha:profile:source:test && npm run alpha:reels:source:test",
+    "alpha:verify": "node scripts/verify-alpha-package.mjs && node --test tests/profile-music-navigation.test.mjs tests/native-module-parity.test.mjs tests/alpha-startup-scripts.test.mjs tests/alpha-backend-config.test.mjs tests/alpha-signup-password.test.mjs tests/alpha-functional-backend-gate.test.mjs tests/alpha-auth-reachability.test.mjs tests/alpha-auth-signup-readiness.test.mjs tests/alpha-email-callback.test.mjs && npm run alpha:rls:test && npm run alpha:auth:source:test && npm run alpha:profile:source:test && npm run alpha:reels:source:test && npm run alpha:messages:source:test",
     "alpha:config:test": "node --test tests/alpha-backend-config.test.mjs",
     "alpha:auth:test": "node --test tests/alpha-signup-password.test.mjs",
     "alpha:verify:functional": "node scripts/verify-functional-alpha.mjs",
@@ -21,7 +21,8 @@
     "alpha:startup:test": "node --test tests/alpha-startup-scripts.test.mjs",
     "alpha:auth:source:test": "node --test ../tests/recovery276-signup-redirect.test.mjs ../tests/recovery277-signup-session-email.test.mjs ../tests/recovery278-signup-active-session.test.mjs ../tests/recovery279-native-email-callback.test.mjs ../tests/recovery282-signup-age-guard.test.cjs ../tests/recovery285-login-activation-result.test.mjs ../tests/recovery286-signout-event-race.test.mjs",
     "alpha:profile:source:test": "node --test ../tests/recovery283-profile-save-input-lock.test.mjs ../tests/recovery284-profile-save-cross-form.test.mjs ../tests/recovery295-gold-star-single-badge.test.mjs ../tests/recovery297-settings-hub-account.test.mjs",
-    "alpha:reels:source:test": "node --test ../tests/recovery299-reels-filter-viewport.test.mjs ../tests/recovery287-reels-signed-urls.test.mjs ../tests/recovery288-reels-account-switch.test.mjs ../tests/recovery289-reels-reaction-resilience.test.mjs ../tests/recovery294-video-download-session.test.mjs ../tests/recovery295-reels-immersive.test.mjs ../tests/recovery296-reels-subscriptions.test.mjs ../tests/recovery298-overlapping-content-renders.test.mjs"
+    "alpha:reels:source:test": "node --test ../tests/recovery299-reels-filter-viewport.test.mjs ../tests/recovery287-reels-signed-urls.test.mjs ../tests/recovery288-reels-account-switch.test.mjs ../tests/recovery289-reels-reaction-resilience.test.mjs ../tests/recovery294-video-download-session.test.mjs ../tests/recovery295-reels-immersive.test.mjs ../tests/recovery296-reels-subscriptions.test.mjs ../tests/recovery298-overlapping-content-renders.test.mjs",
+    "alpha:messages:source:test": "node --test ../tests/recovery300-dm-account-isolation.test.mjs"
   },
   "dependencies": {
     "@capacitor/core": "7.6.9",
