@@ -40,7 +40,7 @@ function fixture(kind){
     getSession:async()=>({data:{session},error:null}),
     setSession:async()=>{
       if(kind==='adoption-pending')await new Promise(resolve=>{finishAdoption=resolve});
-      session={user:{id:'account-1'}};
+      session={user:{id:'account-1',email:'test@example.invalid'}};
       return {data:{session},error:null};
     }
   }};
@@ -49,7 +49,7 @@ function fixture(kind){
     if(kind==='invalid-password')return {ok:false,status:401,json:async()=>({error:'Invalid login credentials'})};
     if(kind==='timeout')throw new Error('Kinfolk login timed out. Check your connection and try again.');
     return {ok:true,json:async()=>({
-      access_token:'synthetic',refresh_token:'synthetic',user:{id:'account-1'}
+      access_token:'synthetic',refresh_token:'synthetic',user:{id:'account-1',email:'test@example.invalid'}
     })};
   };
   const timers=[];

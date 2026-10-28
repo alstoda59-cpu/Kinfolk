@@ -35,7 +35,7 @@ test('password login sends publishable key in apikey, never as a bearer token',a
     assert.deepEqual(JSON.parse(options.body),{email:'qa@example.test',password:'synthetic-password'});
     assert.ok(options.signal instanceof AbortSignal);
     return {ok:true,status:200,json:async()=>({
-      access_token:'synthetic-user-jwt',refresh_token:'synthetic-refresh',user:{id:'synthetic-user'}
+      access_token:'synthetic-user-jwt',refresh_token:'synthetic-refresh',user:{id:'synthetic-user',email:'qa@example.test'}
     })};
   });
   const result=await login('qa@example.test','synthetic-password');

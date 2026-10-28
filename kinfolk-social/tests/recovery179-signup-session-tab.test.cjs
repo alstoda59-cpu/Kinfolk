@@ -7,7 +7,7 @@ const source = fs.readFileSync('kinfolk-social/kinfolk-phase79.js', 'utf8');
 
 function fixture({ stay = false, session = true, error = null } = {}) {
   const localWrites = [], tabWrites = [], calls = [];
-  let submit, message;
+  let submit, message, sessionReads=0;
   const fields = {
     '.kf73Title': { textContent: 'Create your Kinfolk' },
     '#kf73Name': { value: 'Synthetic QA' },
@@ -31,10 +31,10 @@ function fixture({ stay = false, session = true, error = null } = {}) {
       if (type === 'submit') { assert.equal(capture, true); submit = fn; }
     },
   };
-  const sb = { auth: { async getSession() { return { data: { session: session ? { user: { id: 'synthetic-user' } } : null }, error: null }; }, async signUp(args) {
+  const sb = { auth: { async getSession() { return { data: { session: sessionReads++===0?null:(session ? { user: { id: 'synthetic-user', email:'synthetic@example.test' } } : null) }, error: null }; }, async signUp(args) {
     calls.push(args);
-    return { data: { user: { id: 'synthetic-user' },
-      session: session ? { user: { id: 'synthetic-user' } } : null }, error };
+    return { data: { user: { id: 'synthetic-user', email:'synthetic@example.test' },
+      session: session ? { user: { id: 'synthetic-user', email:'synthetic@example.test' } } : null }, error };
   } } };
   const context = {
     window: {}, document, sb, URL, Date,
@@ -84,7 +84,7 @@ test('immediate signup session with Stay Logged In on clears old one-tab marker'
 
 test('unconfirmed signup must not mutate session preferences', async () => {
   const f = fixture({ stay: false, session: false });
-  assert.match(await f.submit(), /Check your email/);
+  assert.match(await f.submit(), /check your email/i);
   assert.equal(f.calls.length, 1);
   assert.deepEqual(f.localWrites, []);
   assert.deepEqual(f.tabWrites, []);

@@ -7,7 +7,7 @@ const source = fs.readFileSync('kinfolk-social/kinfolk-phase79.js', 'utf8');
 
 function fixture(signupResult) {
   const writes = [], calls = [];
-  let submit, message;
+  let submit, message, sessionReads=0;
   const button = { disabled: false, textContent: 'Create account' };
   const fields = {
     '.kf73Title': { textContent: 'Create your Kinfolk' },
@@ -32,7 +32,7 @@ function fixture(signupResult) {
       if (type === 'submit') { assert.equal(capture, true); submit = fn; }
     },
   };
-  const sb = { auth: { async getSession() { return {data:{session:signupResult.data?.session},error:null}; }, async signUp(args) { calls.push(args); return signupResult; } } };
+  const sb = { auth: { async getSession() { return {data:{session:sessionReads++===0?null:(signupResult.data?.session||null)},error:null}; }, async signUp(args) { calls.push(args); return signupResult; } } };
   const context = {
     window: {}, document, sb, URL, Date,
     location: { origin: 'https://isolated-qa.supabase.co' },
@@ -63,12 +63,12 @@ test('unconfirmed signup does not enable persistent login', async () => {
   const msg = await f.submit();
   assert.equal(f.calls.length, 1);
   assert.deepEqual(f.writes, []);
-  assert.match(msg, /Check your email/);
+  assert.match(msg, /check your email/i);
   assert.equal(f.button.disabled, false);
 });
 
 test('signup with a real session honors Stay Logged In', async () => {
-  const f = fixture({ data: { user: { id: 'new-user' }, session: { user: {id:'new-user'}, access_token: 'synthetic' } }, error: null });
+  const f = fixture({ data: { user: { id: 'new-user' }, session: { user: {id:'new-user',email:'authorized@example.test'}, access_token: 'synthetic' } }, error: null });
   const msg = await f.submit();
   assert.equal(f.calls.length, 1);
   assert.equal(f.writes.length, 2);

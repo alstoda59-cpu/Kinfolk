@@ -7,7 +7,7 @@ const source=fs.readFileSync('kinfolk-social/kinfolk-phase79.js','utf8');
 
 // Synthetic signup only. No real Supabase, accounts, storage or network calls.
 function fixture({sessionCheck='missing'}={}){
-  let submit, message, signups=0;
+  let submit, message, signups=0,sessionReads=0;
   const local=new Map([
     ['kinfolk_stay_logged_in_v1','1'],
     ['kinfolk_stay_logged_in','1']
@@ -38,12 +38,13 @@ function fixture({sessionCheck='missing'}={}){
     addEventListener:(type,fn)=>{if(type==='submit')submit=fn}
   };
   const auth={
-    signUp:async()=>{signups++;return {data:{session:{user:{id:'signup-user'}}},error:null}}
+    signUp:async()=>{signups++;return {data:{user:{id:'signup-user',email:'synthetic@example.invalid'},session:{user:{id:'signup-user',email:'synthetic@example.invalid'}}},error:null}}
   };
   if(sessionCheck!=='missing'){
     auth.getSession=async()=>{
+      if(sessionReads++===0)return {data:{session:null},error:null};
       if(sessionCheck==='error')return {data:null,error:Error('Synthetic session check failure')};
-      return {data:{session:{user:{id:sessionCheck==='matching'?'signup-user':'other-user'}}},error:null};
+      return {data:{session:{user:{id:sessionCheck==='matching'?'signup-user':'other-user',email:'synthetic@example.invalid'}}},error:null};
     };
   }
   vm.runInNewContext(source,{
@@ -62,11 +63,11 @@ function fixture({sessionCheck='missing'}={}){
   };
 }
 
-test('signup refuses to save login preference when getSession is unavailable',async()=>{
+test('signup refuses to start without getSession verification',async()=>{
   const f=fixture();
   const message=await f.submit();
-  assert.match(message,/could not verify|sign in again/i);
-  assert.equal(f.signups,1);
+  assert.match(message,/cannot verify|could not verify|sign in again/i);
+  assert.equal(f.signups,0);
   assert.equal(f.local.get('kinfolk_stay_logged_in_v1'),'1');
   assert.equal(f.local.get('kinfolk_stay_logged_in'),'1');
   assert.equal(f.tab.has('kinfolk_session_tab'),false);

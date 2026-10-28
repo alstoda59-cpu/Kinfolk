@@ -6,7 +6,7 @@ const vm=require('node:vm');
 const source=fs.readFileSync('kinfolk-social/kinfolk-phase95.js','utf8');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 function harness(){
-  let title='Welcome Back',connected=true,finishAdoption,activated=0,loginSuccess=0,restoreWrites=0;
+  let title='Welcome Back',connected=true,finishAdoption,activated=0,loginSuccess=0,restoreWrites=0,session=null;
   const fields={
     '.kf73Title':{get textContent(){return title}},
     '#kf73Email':{value:'test@example.invalid',focus(){}},
@@ -27,8 +27,8 @@ function harness(){
     createElement(){return {style:{}}}
   };
   const sb={auth:{
-    getSession:async()=>({data:{session:{user:{id:'account-1'}}},error:null}),
-    setSession:()=>new Promise(resolve=>{finishAdoption=()=>resolve({data:{session:{user:{id:'account-1'}}},error:null})})
+    getSession:async()=>({data:{session},error:null}),
+    setSession:()=>new Promise(resolve=>{finishAdoption=()=>{session={user:{id:'account-1',email:'test@example.invalid'}};resolve({data:{session},error:null})}})
   }};
   const window={kf129ActivateSession:async()=>{activated++}};
   const storage=new Map();
@@ -40,7 +40,7 @@ function harness(){
   const timers=[];
   vm.runInNewContext(source,{
     window,document,sb,console,AbortController,
-    fetch:async()=>({ok:true,json:async()=>({access_token:'synthetic',refresh_token:'synthetic',user:{id:'account-1'}})}),
+    fetch:async()=>({ok:true,json:async()=>({access_token:'synthetic',refresh_token:'synthetic',user:{id:'account-1',email:'test@example.invalid'}})}),
     localStorage,
     sessionStorage:{getItem(){return null},setItem(){},removeItem(){}},
     MutationObserver:class{observe(){}},

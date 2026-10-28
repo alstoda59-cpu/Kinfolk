@@ -11,7 +11,7 @@ function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {
 function fixture(stage='token'){
  const hold=deferred(),prefs=new Map(),tab=new Map(),timers=[];
  let session=null,tokenCalls=0,signouts=0,activations=0,adoptions=0;
- const user={id:'qa-user'};
+ const user={id:'qa-user',email:'first@example.test'};
  const store=map=>({
    getItem:k=>map.get(k)??null,
    setItem:(k,v)=>map.set(k,String(v)),
@@ -39,6 +39,7 @@ function fixture(stage='token'){
    async setSession(){
      adoptions++;
      if(stage==='adopt'&&adoptions===1)await hold.promise;
+     user.email=fields['#kf73Email'].value;
      session={user,access_token:'fake',refresh_token:'fake'};
      return {data:{session},error:null};
    },
@@ -50,7 +51,7 @@ function fixture(stage='token'){
    if((stage==='token'||stage==='token-error')&&tokenCalls===1)await hold.promise;
    if(stage==='token-error'&&tokenCalls===1)
      return {ok:false,status:400,json:async()=>({error_description:'Invalid login credentials'})};
-   return {ok:true,status:200,json:async()=>({access_token:'fake',refresh_token:'fake',user})};
+   return {ok:true,status:200,json:async()=>({access_token:'fake',refresh_token:'fake',user:{id:user.id,email:fields['#kf73Email'].value}})};
  };
  class AbortControllerStub{constructor(){this.signal={aborted:false}}abort(){this.signal.aborted=true}}
  const ctx={window,document,sb:{auth},fetch,localStorage:store(prefs),sessionStorage:store(tab),
