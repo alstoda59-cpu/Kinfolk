@@ -385,7 +385,33 @@ function remixKinfolkVideo(id){const v=state.videos.find(x=>x.id===id);if(!v)ret
 function savedKinfolkVideoIds(){try{return JSON.parse(localStorage.getItem('kinfolk_saved_videos_'+state.user?.id)||'[]')}catch{return []}}
 function videoExtraControls(v){const saved=savedKinfolkVideoIds().includes(v.id);return `<div class="kfVideoExtras" style="display:flex;gap:8px;flex-wrap:wrap;padding:4px 0 10px"><button type="button" class="btn small" onclick="saveKinfolkVideo('${esc(v.id)}')" aria-pressed="${saved}">${saved?'✓ Saved':'🔖 Save'}</button><button type="button" class="btn small" onclick="downloadKinfolkVideo('${esc(v.id)}')">⬇ Download</button></div>`}
 function saveKinfolkVideo(id){if(!state.user?.id)return toast('Log in to save videos','danger');if(!state.videos.some(v=>v.id===id))return;try{const ids=new Set(savedKinfolkVideoIds());if(ids.has(id))ids.delete(id);else ids.add(id);localStorage.setItem('kinfolk_saved_videos_'+state.user.id,JSON.stringify([...ids]));document.querySelectorAll('.kfVideoExtras').forEach(el=>{const b=el.querySelector('button');if(b?.getAttribute('onclick')===`saveKinfolkVideo('${id}')`){const saved=ids.has(id);b.textContent=saved?'✓ Saved':'🔖 Save';b.setAttribute('aria-pressed',String(saved))}});document.dispatchEvent(new CustomEvent('kinfolk:video-saved',{detail:{id,saved:ids.has(id)}}));toast(ids.has(id)?'Saved on this device':'Removed from saved videos','good')}catch{toast('Could not save video on this device','danger')}}
-async function downloadKinfolkVideo(id){const v=state.videos.find(x=>x.id===id);if(!v)return toast('Video unavailable','danger');if(v.visibility&&v.visibility!=='public'&&v.creator_id!==state.user?.id)return toast('Download not available for this video','danger');if(v.source_type!=='upload'||!v.storage_path)return toast('Only uploaded Kinfolk videos can be downloaded','danger');const url=await signed('kinfolk-video',v.storage_path);if(!url)return toast('Could not access video','danger');try{const response=await fetch(url);if(!response.ok)throw Error('Download failed');const blob=await response.blob();const objectUrl=URL.createObjectURL(blob);const a=document.createElement('a');a.href=objectUrl;a.download='kinfolk-video-'+id+'.mp4';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(objectUrl),30000)}catch{toast('Download blocked by browser or storage permissions','danger')}}
+async function downloadKinfolkVideo(id){
+ const userId=state.user?.id??null,sessionEpoch=kf129Epoch;
+ const stillCurrent=()=>kf129Epoch===sessionEpoch&&(state.user?.id??null)===userId;
+ const v=state.videos.find(x=>x.id===id);
+ if(!v)return toast('Video unavailable','danger');
+ if(v.visibility&&v.visibility!=='public'&&v.creator_id!==userId)return toast('Download not available for this video','danger');
+ if(v.source_type!=='upload'||!v.storage_path)return toast('Only uploaded Kinfolk videos can be downloaded','danger');
+ try{
+  const url=await signed('kinfolk-video',v.storage_path);
+  if(!stillCurrent())return;
+  if(!url)return toast('Could not access video','danger');
+  const response=await fetch(url);
+  if(!stillCurrent())return;
+  if(!response.ok)throw Error('Download failed');
+  const blob=await response.blob();
+  // Never trigger a private-media download after logout or account switching,
+  // including a logout/login cycle for the same user ID.
+  if(!stillCurrent())return;
+  const objectUrl=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=objectUrl;a.download='kinfolk-video-'+id+'.mp4';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(objectUrl),30000);
+ }catch{
+  if(stillCurrent())toast('Download blocked by browser or storage permissions','danger');
+ }
+}
 window.saveKinfolkVideo=saveKinfolkVideo;window.downloadKinfolkVideo=downloadKinfolkVideo;
 window.shareKinfolkVideo=shareKinfolkVideo;window.remixKinfolkVideo=remixKinfolkVideo;
 async function renderVideoGrid(root,arr){if(!arr.length){root.innerHTML='<div class="card"><div class="empty">No videos yet.</div></div>';return}await loadVideoReactions();let h='';for(const v of arr){const p=state.profiles.get(v.creator_id);const u=v.source_type==='upload'&&v.storage_path?await signed('kinfolk-video',v.storage_path):v.video_url;h+=`<div class="videoCard"><div class="videoThumb">${u?videoEmbed(u,v.source_type):'<span class="muted">No preview</span>'}</div><div class="videoMeta"><b>${esc(v.title)}</b><div class="muted" style="font-size:12px">${esc(p?.display_name||p?.username||'Creator')} · ${fmt(v.created_at)}</div>${videoReactionControls(v)}</div></div>`}root.innerHTML=h}
