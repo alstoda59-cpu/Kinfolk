@@ -25,7 +25,7 @@ if(emailCallback){
   assert.ok(html.includes('window.KINFOLK_EMAIL_REDIRECT_URL='+JSON.stringify(emailCallback)),
     'native package must embed the configured HTTPS verification callback');
 }else{
-  assert.doesNotMatch(html,/window\\.KINFOLK_EMAIL_REDIRECT_URL\\s*=/,
+  assert.doesNotMatch(html,/window\.KINFOLK_EMAIL_REDIRECT_URL\s*=/,
     'native package must not silently retain an unconfigured email callback');
 }
 assert.doesNotMatch(html,/navigator\.serviceWorker\.register\('/,'Capacitor should not register a stale web service worker');
