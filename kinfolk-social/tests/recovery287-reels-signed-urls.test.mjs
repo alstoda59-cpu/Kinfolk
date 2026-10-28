@@ -10,7 +10,7 @@ const source=readFileSync(path.join(root,'kinfolk-reels159.js'),'utf8');
 const start=source.indexOf('async function kf287ResolveReelUrls(');
 const end=source.indexOf('window.kf159RenderReels=async',start);
 assert.ok(start>=0&&end>start,'private video URL helper found in actual Reels source');
-const resolveUrls=vm.runInNewContext(source.slice(start,end)+';kf287ResolveReelUrls',{});
+const resolveUrls=vm.runInNewContext(source.slice(start,end)+';kf287ResolveReelUrls',{setTimeout,clearTimeout});
 const video=(id,upload=true)=>({id,source_type:upload?'upload':'external',storage_path:upload?'synthetic/'+id:null,video_url:'https://media.example/'+id});
 
 test('empty feed does not contact storage',async()=>{
@@ -53,4 +53,26 @@ test('Reels renderer uses resolved URLs and checks navigation before rendering',
   assert.match(source,/const urls=await kf287ResolveReelUrls\(reels,signed,isCurrent\);\s*if\(!isCurrent\(\)\)return;/);
   assert.match(source,/const rawUrl=urls\[i\]/);
   assert.doesNotMatch(source,/const rawUrl=v\.source_type==='upload'&&v\.storage_path\?await signed/);
+});
+
+test('hung signature times out and does not prevent later private Reels from loading',async()=>{
+  const result=await resolveUrls([video('hung'),video('next'),video('last')],(_bucket,p)=>
+    p==='synthetic/hung'?new Promise(()=>{}):Promise.resolve('https://signed.example/'+p),
+    ()=>true,1,15);
+  assert.deepEqual(Array.from(result),['','https://signed.example/synthetic/next','https://signed.example/synthetic/last']);
+});
+
+test('timeout respects navigation cancellation and does not schedule more signatures',async()=>{
+  let current=true,calls=0;
+  const pending=resolveUrls([video('hung'),video('never')],()=>{
+    calls++;current=false;return new Promise(()=>{});
+  },()=>current,1,15);
+  assert.deepEqual(Array.from(await pending),['','']);
+  assert.equal(calls,1);
+});
+
+test('invalid signed media results cannot become executable video URLs',async()=>{
+  const result=await resolveUrls([video('null'),video('object')],(_bucket,p)=>
+    p.endsWith('null')?null:{url:'javascript:alert(1)'},()=>true);
+  assert.deepEqual(Array.from(result),['','']);
 });
