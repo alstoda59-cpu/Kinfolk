@@ -301,11 +301,24 @@
   // build through KINFOLK_EMAIL_REDIRECT_URL after backend allowlist approval.
   function emailRedirect(){
     const custom=window.KINFOLK_EMAIL_REDIRECT_URL;
+    // Capacitor uses capacitor://localhost (iOS) or a local WebView origin
+    // (Android). Falling back to Supabase's default Site URL can send an
+    // alpha confirmation link to the wrong app/environment.
+    const native=(typeof window.Capacitor?.isNativePlatform==='function'&&window.Capacitor.isNativePlatform())||
+      /^(?:capacitor|ionic):$/.test(location.protocol||'')||
+      (location.protocol==='http:'&&['localhost','127.0.0.1'].includes(location.hostname));
+    let redirect=null;
     try{
       const target=new URL(custom||location.origin);
-      if(target.protocol!=='https:'||target.username||target.password||['localhost','127.0.0.1','0.0.0.0'].includes(target.hostname))return null;
-      return custom?target.href:target.origin;
-    }catch{return null}
+      if(target.protocol==='https:'&&!target.username&&!target.password&&
+         !['localhost','127.0.0.1','0.0.0.0'].includes(target.hostname)){
+        redirect=custom?target.href:target.origin;
+      }
+    }catch{}
+    if(native&&(!custom||!redirect)){
+      throw new Error('Native Kinfolk signup needs an approved HTTPS email verification callback. Configure KINFOLK_EMAIL_REDIRECT_URL before creating accounts.');
+    }
+    return redirect;
   }
 
   // Recovery221: retain only the submitted email in memory, never credentials.
