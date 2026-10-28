@@ -73,7 +73,7 @@ test('hung reactions query is bounded rather than blocking video playback foreve
 test('reactions helper reports success and failure without swallowing navigation checks',async()=>{
   assert.equal(await reactionHelper(async()=>{})(20),true);
   assert.equal(await reactionHelper(async()=>{throw Error('offline')})(20),false);
-  assert.match(source,/const \[reactionsReady,urls\]=await Promise\.all\(\[\s*kf289LoadReactions\(\),\s*kf287ResolveReelUrls\(reels,signed,isCurrent\)\s*\]\);\s*if\(!isCurrent\(\)\)return;/);
+  assert.match(source,/const \[reactionsReady,urls\]=await Promise\.all\(\[\s*kf289LoadReactions\(\),\s*kf287ResolveReelUrls\(visibleReels,signed,isCurrent\)\s*\]\);\s*if\(!isCurrent\(\)\)return;/);
   assert.match(source,/const rows=reactionsReady\?videoReactionState\.rows\.filter/);
   assert.match(source,/const disabled=reactionsReady&&videoReactionState\.available/);
 });
