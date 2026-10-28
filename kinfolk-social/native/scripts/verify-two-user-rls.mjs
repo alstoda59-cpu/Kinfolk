@@ -10,6 +10,7 @@ export function jwtSubject(token){
   try{payload=JSON.parse(Buffer.from(token.split('.')[1],'base64url').toString('utf8'))}
   catch{throw Error('Synthetic JWT payload is malformed')}
   if(!UUID.test(payload?.sub||'')||payload.role!=='authenticated')throw Error('Expected an authenticated synthetic JWT');
+  if(!Number.isSafeInteger(payload.exp)||payload.exp<=Math.floor(Date.now()/1000))throw Error('Synthetic JWT must have a valid future expiry');
   return payload.sub.toLowerCase();
 }
 export async function verifyTwoUserRls(config,{tokenA,tokenB,idA,idB,fetchImpl=globalThis.fetch,tables=PRIVATE_TABLES,timeoutMs=8000}={}){
