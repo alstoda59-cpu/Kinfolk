@@ -20,7 +20,10 @@ for(const [field,changed] of Object.entries({email:'other@example.test',password
 }
 test('guard is checked after signup response and after asynchronous session verification',()=>{
   assert.equal(source.split('!signupInputsUnchanged(form,signupSnapshot)').length-1,3);
-  assert.ok(source.indexOf('const result=await Promise.race(')<source.indexOf('!signupInputsUnchanged(form,signupSnapshot)'));
+  const preflight=source.indexOf('!signupInputsUnchanged(form,signupSnapshot)');
+  const request=source.indexOf('const result=await Promise.race(');
+  const afterRequest=source.indexOf('!signupInputsUnchanged(form,signupSnapshot)',request);
+  assert.ok(preflight>=0&&preflight<request&&afterRequest>request,'guard runs before and after the network request');
   assert.ok(source.lastIndexOf('!signupInputsUnchanged(form,signupSnapshot)')>source.indexOf('const verifiedSignupSession=await signupSessionIsCurrent(data.session,email)'));
 });
 
