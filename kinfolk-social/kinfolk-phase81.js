@@ -184,6 +184,7 @@
     }finally{ensureBusy=false}
   }
 
+  window.kf81MountAppearance=mountAppearance;
   window.kf81EnsureProfileMusic=ensureMusic;
   window.kf81StopProfileMusic=stopMusic;
   let timer;
