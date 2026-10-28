@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery290 (2026-10-28)
+
+Latest isolated checkpoint: [RECOVERY290.md](RECOVERY290.md). Bounded stalled private Reels signing so a hung media URL request cannot block the entire mobile feed; added regression coverage and repaired outdated synthetic mobile fixtures. A previous source CI run identified 9 fixture failures; replacement CI must be verified separately. Nonproduction preview READY does not establish real video playback. Real isolated-backend auth/RLS and physical Android/iPhone QA remain unverified. Production, shared live Supabase, Kinfolksworld and app stores untouched.
+
 # Kinfolk Social | Recovery289 (2026-10-28)
 
 Latest isolated checkpoint: [RECOVERY289.md](RECOVERY289.md). Reels now continues loading private video slides when reaction counts fail or stall; unavailable reaction controls are disabled without displaying stale counts. **4/4 focused synthetic V8 checks passed** against exact committed source, and the integration commit has a READY nonproduction Vercel preview. Full GitHub CI, real backend auth/RLS, functional Android/iOS builds and physical-device QA remain unverified. Production, shared live Supabase, Kinfolksworld and app stores untouched.
