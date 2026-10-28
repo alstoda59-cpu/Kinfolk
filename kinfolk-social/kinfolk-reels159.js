@@ -75,15 +75,25 @@
    ]);
   }finally{if(timer!==undefined)clearTimeout(timer)}
  }
- async function kf287ResolveReelUrls(reels,signMedia,isCurrent,maxConcurrent=4){
+ async function kf287ResolveReelUrls(reels,signMedia,isCurrent,maxConcurrent=4,signTimeoutMs=3500){
   const urls=new Array(reels.length).fill('');
   let next=0;
+  // One stalled storage signature must not hold every subsequent mobile reel.
+  // Limit each request, including custom test timeouts, to a bounded wait.
+  const timeout=Math.max(1,Math.min(10000,Number(signTimeoutMs)||3500));
   const worker=async()=>{
    while(isCurrent()&&next<reels.length){
     const i=next++,video=reels[i];
     if(video.source_type!=='upload'||!video.storage_path){urls[i]=video.video_url;continue}
-    try{urls[i]=await signMedia('kinfolk-video',video.storage_path)}
-    catch{urls[i]=''}
+    let timer;
+    try{
+     const result=await Promise.race([
+      Promise.resolve().then(()=>signMedia('kinfolk-video',video.storage_path)),
+      new Promise(resolve=>{timer=setTimeout(()=>resolve(''),timeout)})
+     ]);
+     urls[i]=typeof result==='string'?result:'';
+    }catch{urls[i]=''}
+    finally{if(timer!==undefined)clearTimeout(timer)}
    }
   };
   const count=Math.min(reels.length,Math.max(1,Math.min(4,Math.floor(maxConcurrent)||1)));
