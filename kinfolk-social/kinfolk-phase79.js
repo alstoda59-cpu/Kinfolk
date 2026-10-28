@@ -299,7 +299,7 @@
     const custom=window.KINFOLK_EMAIL_REDIRECT_URL;
     try{
       const target=new URL(custom||location.origin);
-      if(target.protocol!=='https:'||['localhost','127.0.0.1','0.0.0.0'].includes(target.hostname))return null;
+      if(target.protocol!=='https:'||target.username||target.password||['localhost','127.0.0.1','0.0.0.0'].includes(target.hostname))return null;
       return custom?target.href:target.origin;
     }catch{return null}
   }
