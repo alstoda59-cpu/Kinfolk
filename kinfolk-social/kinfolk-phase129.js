@@ -14,7 +14,8 @@
     const form=e.target;
     if(form?.id!=='authForm'||form.dataset.kf73!=='1')return;
     const title=(form.querySelector('.kf73Title')?.textContent||'').toLowerCase();
-    if(!title.includes('create your kinfolk'))return;
+    // Both Phase76 signup headings must be protected before legacy submit handlers run.
+    if(!title.includes('create your kinfolk')&&!title.includes('create account'))return;
     const years=age(form.querySelector('#kf79Birthdate')?.value||'');
     if(years!==null&&years>=13&&years<=99)return;
     e.preventDefault();e.stopImmediatePropagation();
