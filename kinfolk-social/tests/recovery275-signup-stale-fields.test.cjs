@@ -15,11 +15,15 @@ function form(values){
   return {querySelector(selector){const key=fields[selector];return !key?null:key==='stay'||key==='privateProfile'?{checked:values[key]}:{value:values[key]};},querySelectorAll(){return values.interests.map(value=>({value}));}};
 }
 test('unchanged signup identity is accepted',()=>assert.equal(unchanged(form(baseline),baseline),true));
-for(const [field,changed] of Object.entries({email:'other@example.test',password:'changed_password_123',birthdate:'2000-01-01',stay:false,privateProfile:false,username:'different_teen',display_name:'Different Member',preferredLanguage:'fr',interests:['music']})){
+for(const [field,changed] of Object.entries({email:'other@example.test',password:'changed_password_123',birthdate:'2000-01-01',stay:false,privateProfile:false,username:'different_teen',display_name:'Different Member',preferredLanguage:'fr',interests:['music'],confirmPassword:'different_password_123',bio:'changed bio',gender:'Female'})){
   test('signup identity rejects changed '+field,()=>assert.equal(unchanged(form({...baseline,[field]:changed}),baseline),false));
 }
 test('guard is checked after signup response and after asynchronous session verification',()=>{
   assert.equal(source.split('!signupInputsUnchanged(form,signupSnapshot)').length-1,2);
   assert.ok(source.indexOf('const result=await Promise.race(')<source.indexOf('!signupInputsUnchanged(form,signupSnapshot)'));
   assert.ok(source.lastIndexOf('!signupInputsUnchanged(form,signupSnapshot)')>source.indexOf('const verifiedSignupSession=await signupSessionIsCurrent(data.session)'));
+});
+
+test('email case-only changes retain the same signup identity',()=>{
+  assert.equal(unchanged(form({...baseline,email:'SYNTHETIC@EXAMPLE.TEST'}),baseline),true);
 });
