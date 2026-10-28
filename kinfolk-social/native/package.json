@@ -21,7 +21,7 @@
     "alpha:startup:test": "node --test tests/alpha-startup-scripts.test.mjs",
     "alpha:auth:source:test": "node --test ../tests/recovery276-signup-redirect.test.mjs ../tests/recovery277-signup-session-email.test.mjs ../tests/recovery278-signup-active-session.test.mjs ../tests/recovery279-native-email-callback.test.mjs ../tests/recovery282-signup-age-guard.test.cjs ../tests/recovery285-login-activation-result.test.mjs ../tests/recovery286-signout-event-race.test.mjs",
     "alpha:profile:source:test": "node --test ../tests/recovery283-profile-save-input-lock.test.mjs ../tests/recovery284-profile-save-cross-form.test.mjs ../tests/recovery295-gold-star-single-badge.test.mjs ../tests/recovery297-settings-hub-account.test.mjs",
-    "alpha:reels:source:test": "node --test ../tests/recovery287-reels-signed-urls.test.mjs ../tests/recovery288-reels-account-switch.test.mjs ../tests/recovery289-reels-reaction-resilience.test.mjs ../tests/recovery294-video-download-session.test.mjs ../tests/recovery295-reels-immersive.test.mjs ../tests/recovery296-reels-subscriptions.test.mjs"
+    "alpha:reels:source:test": "node --test ../tests/recovery287-reels-signed-urls.test.mjs ../tests/recovery288-reels-account-switch.test.mjs ../tests/recovery289-reels-reaction-resilience.test.mjs ../tests/recovery294-video-download-session.test.mjs ../tests/recovery295-reels-immersive.test.mjs ../tests/recovery296-reels-subscriptions.test.mjs ../tests/recovery298-overlapping-content-renders.test.mjs"
   },
   "dependencies": {
     "@capacitor/core": "7.6.9",
