@@ -50,7 +50,7 @@ test('navigating away stops scheduling further signed URL requests',async()=>{
   assert.equal(result.filter(Boolean).length,1);
 });
 test('Reels renderer uses resolved URLs and checks navigation before rendering',()=>{
-  assert.match(source,/const urls=await kf287ResolveReelUrls\(reels,signed,isCurrent\);\s*if\(!isCurrent\(\)\)return;/);
+  assert.match(source,/const \[reactionsReady,urls\]=await Promise\.all\(\[\s*kf289LoadReactions\(\),\s*kf287ResolveReelUrls\(reels,signed,isCurrent\)\s*\]\);\s*if\(!isCurrent\(\)\)return;/);
   assert.match(source,/const rawUrl=urls\[i\]/);
   assert.doesNotMatch(source,/const rawUrl=v\.source_type==='upload'&&v\.storage_path\?await signed/);
 });
