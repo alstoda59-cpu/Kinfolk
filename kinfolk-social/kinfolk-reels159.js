@@ -61,6 +61,24 @@
      }
    }
  });
+ // Signed URLs are independent network requests. Resolve a bounded number in
+ // parallel so a long Reels feed does not wait for every previous URL to finish.
+ // A failed media signature affects only that reel, not the whole feed.
+ async function kf287ResolveReelUrls(reels,signMedia,isCurrent,maxConcurrent=4){
+  const urls=new Array(reels.length).fill('');
+  let next=0;
+  const worker=async()=>{
+   while(isCurrent()&&next<reels.length){
+    const i=next++,video=reels[i];
+    if(video.source_type!=='upload'||!video.storage_path){urls[i]=video.video_url;continue}
+    try{urls[i]=await signMedia('kinfolk-video',video.storage_path)}
+    catch{urls[i]=''}
+   }
+  };
+  const count=Math.min(reels.length,Math.max(1,Math.min(4,Math.floor(maxConcurrent)||1)));
+  await Promise.all(Array.from({length:count},()=>worker()));
+  return urls;
+ }
  window.kf159RenderReels=async function(main,reels){
   teardown();
   const generation=active.generation;
@@ -69,10 +87,13 @@
   if(!reels.length){main.innerHTML='<div class="card"><div class="empty">No reels yet.</div></div>';return}
   await loadVideoReactions();
   if(!isCurrent())return;
+  const urls=await kf287ResolveReelUrls(reels,signed,isCurrent);
+  if(!isCurrent())return;
   const cards=[];
-  for(const v of reels){
+  for(let i=0;i<reels.length;i++){
+   const v=reels[i];
    const p=state.profiles.get(v.creator_id);
-   const rawUrl=v.source_type==='upload'&&v.storage_path?await signed('kinfolk-video',v.storage_path):v.video_url;
+   const rawUrl=urls[i];
    // External media and storage URLs must be navigable web URLs, never executable schemes.
    const url=typeof rawUrl==='string'&&/^https?:\/\//i.test(rawUrl)?rawUrl:'';
    if(!isCurrent())return;
