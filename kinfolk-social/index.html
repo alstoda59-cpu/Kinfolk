@@ -318,7 +318,38 @@ async function createStory(e){
  }
 }
 async function viewStory(id){const s=state.stories.find(x=>x.id===id);if(!s)return;const p=state.profiles.get(s.owner_id),u=s.media_url?await signed('kinfolk-media',s.media_url):null;modal(p?.display_name||'Story',`${u?`<img src="${esc(u)}" style="width:100%;max-height:70vh;object-fit:contain;background:#0b0a0d;border-radius:14px">`:''}<div style="padding:12px 2px;font-size:17px">${esc(s.body)}</div><div class="muted">${fmt(s.created_at)} · expires in 24h</div>`)}
-async function renderReels(main){const reels=state.videos.filter(v=>['reel','short'].includes(v.kind));main.innerHTML=`<div class="card"><div class="cardpad"><div class="sectionTitle">Reels & Shorts</div><div class="chips"><button class="chip active">For you</button><button class="chip" onclick="setView('channels')">Subscriptions</button><button class="btn small primary" style="margin-left:auto" onclick="openVideoModal()">＋ Upload</button></div></div></div><div class="videoGrid" id="reelGrid"></div>`;if(window.kf159RenderReels)await window.kf159RenderReels(main,reels);else await renderVideoGrid($('#reelGrid'),reels)}
+// Recovery295: never silently fall back to the old grid when the immersive player is missing.
+let kf295ReelsLoadPromise=null;
+function kf295EnsureReelsRenderer(){
+ if(typeof window.kf159RenderReels==='function')return Promise.resolve(true);
+ if(kf295ReelsLoadPromise)return kf295ReelsLoadPromise;
+ kf295ReelsLoadPromise=new Promise(resolve=>{
+  const script=document.createElement('script');
+  script.src='/kinfolk-reels159.js';script.async=true;
+  let settled=false;
+  const finish=ok=>{if(settled)return;settled=true;clearTimeout(timer);script.onload=null;script.onerror=null;resolve(ok&&typeof window.kf159RenderReels==='function')};
+  const timer=setTimeout(()=>finish(false),6000);
+  script.onload=()=>finish(true);script.onerror=()=>finish(false);
+  document.head.appendChild(script);
+ }).finally(()=>{kf295ReelsLoadPromise=null});
+ return kf295ReelsLoadPromise;
+}
+async function renderReels(main){
+ const reels=state.videos.filter(v=>['reel','short'].includes(v.kind));
+ const uid=state.user?.id??null,epoch=kf129Epoch;
+ const stillCurrent=()=>main.isConnected&&state.view==='reels'&&(state.user?.id??null)===uid&&kf129Epoch===epoch;
+ main.innerHTML='<div class="card"><div class="cardpad" role="status">Loading Reels &amp; Shorts…</div></div>';
+ try{
+  const ready=await kf295EnsureReelsRenderer();
+  if(!stillCurrent())return;
+  if(!ready)throw Error('Immersive Reels module unavailable');
+  await window.kf159RenderReels(main,reels);
+ }catch(error){
+  if(!stillCurrent())return;
+  console.warn('Reels could not start',error);
+  main.innerHTML='<div class="card"><div class="cardpad" role="alert"><h2>Reels could not load</h2><p>Check your connection and try again.</p><button type="button" class="btn primary" onclick="setView(\'reels\')">Retry Reels</button></div></div>';
+ }
+}
 const videoReactionState={rows:[],available:false};
 // A slow reactions request must never replace a newer account's counters.
 let videoReactionRequest=0;
