@@ -37,7 +37,7 @@ function fixture({existing=false,stage='token'}={}){
     createElement:()=>({style:{},textContent:''})
   };
   const context={
-    window:{kf129ActivateSession:async()=>{activations++}},document,sb:{auth},
+    window:{kf129ActivateSession:async()=>{activations++;return true}},document,sb:{auth},
     fetch:async()=>{
       tokenCalls++;
       if(stage==='token')await hold.promise;
