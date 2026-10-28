@@ -41,7 +41,7 @@ function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionEr
     }
   }};
   const window={};
-  if(!missingActivation)window.kf129ActivateSession=async()=>{activated++;if(holdActivation)await new Promise(resolve=>{releaseActivation=resolve});if(disconnectOnActivation)form.isConnected=false;if(activationError)throw activationError};
+  if(!missingActivation)window.kf129ActivateSession=async()=>{activated++;if(holdActivation)await new Promise(resolve=>{releaseActivation=resolve});if(disconnectOnActivation)form.isConnected=false;if(activationError)throw activationError;return true};
   const timers=[];
   vm.runInNewContext(source,{
     window,document,sb,console,AbortController,
