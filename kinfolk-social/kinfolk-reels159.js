@@ -64,6 +64,17 @@
  // Signed URLs are independent network requests. Resolve a bounded number in
  // parallel so a long Reels feed does not wait for every previous URL to finish.
  // A failed media signature affects only that reel, not the whole feed.
+// Reaction counters are optional to playback. Do not strand the entire mobile
+ // Reels feed when a reactions query rejects or never settles.
+ async function kf289LoadReactions(waitMs=3500){
+  let timer;
+  try{
+   return await Promise.race([
+    Promise.resolve().then(()=>loadVideoReactions()).then(()=>true,()=>false),
+    new Promise(resolve=>{timer=setTimeout(()=>resolve(false),waitMs)})
+   ]);
+  }finally{if(timer!==undefined)clearTimeout(timer)}
+ }
  async function kf287ResolveReelUrls(reels,signMedia,isCurrent,maxConcurrent=4){
   const urls=new Array(reels.length).fill('');
   let next=0;
@@ -88,7 +99,7 @@
   const isCurrent=()=>generation===active.generation&&main.isConnected&&state.view==='reels'&&(state.user?.id??null)===renderUserId;
   active.pausedByUser.clear();
   if(!reels.length){main.innerHTML='<div class="card"><div class="empty">No reels yet.</div></div>';return}
-  await loadVideoReactions();
+  const reactionsReady=await kf289LoadReactions();
   if(!isCurrent())return;
   const urls=await kf287ResolveReelUrls(reels,signed,isCurrent);
   if(!isCurrent())return;
@@ -101,10 +112,10 @@
    const url=typeof rawUrl==='string'&&/^https?:\/\//i.test(rawUrl)?rawUrl:'';
    if(!isCurrent())return;
    const isNative=!!url&&(v.source_type==='upload'||(!url.includes('youtube.com')&&!url.includes('youtu.be')&&['.mp4','.webm','.ogg'].some(ext=>url.split('?')[0].toLowerCase().endsWith(ext))));
-   const rows=videoReactionState.rows.filter(r=>r.video_id===v.id);
+   const rows=reactionsReady?videoReactionState.rows.filter(r=>r.video_id===v.id):[];
    const likes=rows.filter(r=>r.reaction==='like').length,dislikes=rows.filter(r=>r.reaction==='dislike').length;
    const mine=rows.find(r=>r.user_id===state.user?.id)?.reaction;
-   const disabled=videoReactionState.available?'':' disabled title="Reactions require backend activation"';
+   const disabled=reactionsReady&&videoReactionState.available?'':' disabled title="Reactions require backend activation"';
    const id=esc(v.id);
    // Encode arguments as JavaScript strings, then HTML-escape the entire handler attribute.
    const jsCall=(fn,...args)=>esc(fn+'('+args.map(x=>JSON.stringify(String(x))).join(',')+')');
