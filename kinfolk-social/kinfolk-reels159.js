@@ -38,10 +38,13 @@
  @media(prefers-reduced-motion:reduce){.kf159-feed{scroll-behavior:auto}}
  `;
  document.head.appendChild(style);
- const active={observer:null,root:null,pausedByUser:new Set(),generation:0,scrollHandler:null,resizeController:null,feedMode:'for_you',feedUserId:null};
+ const active={observer:null,root:null,pausedByUser:new Set(),generation:0,scrollHandler:null,resizeController:null,fitViewport:null,feedMode:'for_you',feedUserId:null};
  window.kf161ToggleSound=function(id){const v=document.getElementById('kf159-video-'+id);if(!v)return;v.muted=!v.muted;const slide=v.closest('.kf159-slide');const b=[...slide.querySelectorAll('.kf159-actions button')].find(x=>x.textContent.includes('Sound')||x.textContent.includes('Mute'));if(b)b.innerHTML=v.muted?'<span>🔇</span>Sound':'<span>🔊</span>Mute'};
- function teardown(){active.resizeController?.abort();active.resizeController=null;active.generation++;if(active.root&&active.scrollHandler)active.root.removeEventListener('scroll',active.scrollHandler);active.scrollHandler=null;active.observer?.disconnect();active.root?.querySelectorAll('video').forEach(v=>v.pause());active.observer=null;active.root=null;active.pausedByUser.clear()}
+ function teardown(){active.resizeController?.abort();active.resizeController=null;active.fitViewport=null;active.generation++;if(active.root&&active.scrollHandler)active.root.removeEventListener('scroll',active.scrollHandler);active.scrollHandler=null;active.observer?.disconnect();active.root?.querySelectorAll('video').forEach(v=>v.pause());active.observer=null;active.root=null;active.pausedByUser.clear()}
  window.kf159StopReels=teardown;
+ // Phase82 inserts its safety filter after the async Reels render completes.
+ // Refit only the current immersive feed once that extra header is in the DOM.
+ window.kf159FitViewport=()=>active.fitViewport?.();
  // Channel subscriptions are separate from paid Gold Star subscriptions.
  // Filter only the already safety-permitted reel set supplied by phase82.
  function subscribedReels(reels,channels,subscriptions,userId){
@@ -192,6 +195,7 @@
    const height=Math.max(120,Math.floor(bottom-top));
    feed.style.setProperty('--kf159-viewport-height',height+'px');
   };
+  active.fitViewport=fitViewport;
   fitViewport();
   window.addEventListener('resize',fitViewport,{signal:active.resizeController.signal});
   window.visualViewport?.addEventListener('resize',fitViewport,{signal:active.resizeController.signal});
