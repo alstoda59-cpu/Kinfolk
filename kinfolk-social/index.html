@@ -340,7 +340,44 @@ async function loadVideoReactions(){
 }
 function videoReactionControls(v){const rows=videoReactionState.rows.filter(r=>r.video_id===v.id),mine=rows.find(r=>r.user_id===state.user?.id)?.reaction;const likes=rows.filter(r=>r.reaction==='like').length,dislikes=rows.filter(r=>r.reaction==='dislike').length;const disabled=videoReactionState.available?'':' disabled title="Video reactions are not enabled on this server"';return `<div class="kfVideoReactions" data-video-id="${esc(v.id)}" style="display:flex;gap:8px;flex-wrap:wrap;padding:8px 0"><button type="button" class="btn small" aria-pressed="${mine==='like'}" onclick="toggleVideoReaction('${esc(v.id)}','like')"${disabled}>👍 Like · ${likes}</button><button type="button" class="btn small" aria-pressed="${mine==='dislike'}" onclick="toggleVideoReaction('${esc(v.id)}','dislike')"${disabled}>👎 Dislike · ${dislikes}</button><button type="button" class="btn small" onclick="shareKinfolkVideo('${esc(v.id)}')">↗ Share</button><button type="button" class="btn small" onclick="remixKinfolkVideo('${esc(v.id)}')">🎬 Remix</button></div>`}
 const pendingVideoReactionIds=new Set();
-async function toggleVideoReaction(id,reaction){if(pendingVideoReactionIds.has(id))return;if(!state.user?.id)return toast('Log in to react to videos','danger');if(!videoReactionState.available)return toast('Video reactions are not enabled yet','danger');if(!state.videos.some(v=>v.id===id)||!['like','dislike'].includes(reaction))return;const current=videoReactionState.rows.find(r=>r.video_id===id&&r.user_id===state.user.id);const controls=[...document.querySelectorAll('.kfVideoReactions')].filter(el=>el.dataset.videoId===id);const reelButtons=[...document.querySelectorAll('.kf159-slide')].filter(el=>el.dataset.id===id).flatMap(el=>[...el.querySelectorAll('.kf159-actions button')].slice(0,2));pendingVideoReactionIds.add(id);controls.forEach(el=>el.querySelectorAll('button').forEach(b=>b.disabled=true));reelButtons.forEach(b=>b.disabled=true);try{const query=sb.from('kinfolk_video_reactions');const result=current?.reaction===reaction?await query.delete().eq('video_id',id).eq('user_id',state.user.id):await query.upsert({video_id:id,user_id:state.user.id,reaction},{onConflict:'video_id,user_id'});if(result.error)throw result.error;await loadVideoReactions();controls.forEach(el=>{el.outerHTML=videoReactionControls({id})});document.dispatchEvent(new CustomEvent('kinfolk:video-reaction',{detail:{id}}));reelButtons.forEach(b=>b.disabled=false)}catch(e){toast(e.message||'Could not save reaction','danger');controls.forEach(el=>el.querySelectorAll('button').forEach(b=>b.disabled=false));reelButtons.forEach(b=>b.disabled=false)}finally{pendingVideoReactionIds.delete(id)}}
+async function toggleVideoReaction(id,reaction){
+ const userId=state.user?.id;
+ if(!userId)return toast('Log in to react to videos','danger');
+ const sessionEpoch=kf129Epoch;
+ const pendingKey=sessionEpoch+':'+userId+':'+id;
+ if(pendingVideoReactionIds.has(pendingKey))return;
+ if(!videoReactionState.available)return toast('Video reactions are not enabled yet','danger');
+ if(!state.videos.some(v=>v.id===id)||!['like','dislike'].includes(reaction))return;
+ // The mutation and its UI completion must belong to the initiating session.
+ // A different account must not inherit a pending request or its results.
+ const stillCurrent=()=>state.user?.id===userId&&kf129Epoch===sessionEpoch;
+ const current=videoReactionState.rows.find(r=>r.video_id===id&&r.user_id===userId);
+ const controls=[...document.querySelectorAll('.kfVideoReactions')].filter(el=>el.dataset.videoId===id);
+ const reelButtons=[...document.querySelectorAll('.kf159-slide')].filter(el=>el.dataset.id===id).flatMap(el=>[...el.querySelectorAll('.kf159-actions button')].slice(0,2));
+ pendingVideoReactionIds.add(pendingKey);
+ controls.forEach(el=>el.querySelectorAll('button').forEach(b=>b.disabled=true));
+ reelButtons.forEach(b=>b.disabled=true);
+ try{
+  const query=sb.from('kinfolk_video_reactions');
+  const result=current?.reaction===reaction
+   ?await query.delete().eq('video_id',id).eq('user_id',userId)
+   :await query.upsert({video_id:id,user_id:userId,reaction},{onConflict:'video_id,user_id'});
+  if(!stillCurrent())return;
+  if(result.error)throw result.error;
+  await loadVideoReactions();
+  if(!stillCurrent())return;
+  controls.forEach(el=>{el.outerHTML=videoReactionControls({id})});
+  document.dispatchEvent(new CustomEvent('kinfolk:video-reaction',{detail:{id}}));
+  reelButtons.forEach(b=>b.disabled=false);
+ }catch(e){
+  if(!stillCurrent())return;
+  toast(e.message||'Could not save reaction','danger');
+  controls.forEach(el=>el.querySelectorAll('button').forEach(b=>b.disabled=false));
+  reelButtons.forEach(b=>b.disabled=false);
+ }finally{
+  pendingVideoReactionIds.delete(pendingKey);
+ }
+}
 window.toggleVideoReaction=toggleVideoReaction;
 function kinfolkVideoLink(id){const u=new URL(location.href);u.searchParams.set('video',id);u.hash='';return u.href}
 async function shareKinfolkVideo(id){const v=state.videos.find(x=>x.id===id);if(!v)return toast('Video unavailable','danger');if(v.visibility&&v.visibility!=='public')return toast('Only public videos can be shared','danger');const url=kinfolkVideoLink(id);try{if(navigator.share)await navigator.share({title:v.title||'Kinfolk video',url});else if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(url);toast('Link copied','good')}else window.prompt('Copy link',url)}catch(e){if(e?.name!=='AbortError')toast('Sharing failed','danger')}}
