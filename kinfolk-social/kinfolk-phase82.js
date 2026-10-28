@@ -62,8 +62,8 @@
     const adult=safetyCache.known&&safetyCache.adult&&!native;
     return `<div class="card kf82filter" data-kf82-filter><div class="cardpad"><div class="sectionTitle">Content filter</div><div class="kf82lanes"><button class="kf82lane ${lane==='general'?'on':''}" type="button" onclick="kf82Lane('general')">General</button>${adult?`<button class="kf82lane xxx ${lane==='xxx'?'on':''}" type="button" onclick="kf82Lane('xxx')">XXX · 18+</button>`:''}</div>${lane==='xxx'?`<div class="kf82note">${safetyCache.allow?'Viewing the separate XXX 18+ feed.':'Adult content is off until you enable it.'}</div>`:''}</div></div>`;
   }
-  function addBar(main,expectedView){if(!main?.isConnected||state.view!==expectedView)return;main.querySelector('[data-kf82-filter]')?.remove();main.insertAdjacentHTML('afterbegin',barHTML())}
-  function updateBars(){document.querySelectorAll('[data-kf82-filter]').forEach(old=>{const wrap=document.createElement('div');wrap.innerHTML=barHTML();old.replaceWith(wrap.firstElementChild)})}
+  function addBar(main,expectedView){if(!main?.isConnected||state.view!==expectedView)return;main.querySelector('[data-kf82-filter]')?.remove();main.insertAdjacentHTML('afterbegin',barHTML());if(expectedView==='reels')window.kf159FitViewport?.()}
+  function updateBars(){document.querySelectorAll('[data-kf82-filter]').forEach(old=>{const wrap=document.createElement('div');wrap.innerHTML=barHTML();old.replaceWith(wrap.firstElementChild)});if(state.view==='reels')window.kf159FitViewport?.()}
 
   function generalOnly(x){return (x?.content_rating||'general')==='general'}
   function chosen(x){return (x?.content_rating||'general')===lane}
