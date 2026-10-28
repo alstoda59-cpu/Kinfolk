@@ -16,6 +16,9 @@
  .kf159-playicon{position:absolute;z-index:2;top:50%;left:50%;transform:translate(-50%,-50%);font-size:56px;text-shadow:0 2px 8px black;pointer-events:none}
  .kf159-actions{z-index:3}.kf159-info{z-index:2;pointer-events:none}
  .kf159-top{padding:10px;display:flex;gap:10px;align-items:center;justify-content:space-between}
+ .kf159-tabs{display:flex;gap:7px;align-items:center;margin-left:auto}
+ .kf159-tabs button{border:1px solid #ffffff44;border-radius:999px;background:#26212d;color:#fff;padding:9px 11px;font:inherit;font-size:12px;min-height:40px}
+ .kf159-tabs button[aria-current="page"]{background:var(--accent,#e85a9b);border-color:transparent;color:#fff;font-weight:800}
  @media(max-width:600px){
  .kf159-top{padding:8px 12px;background:#08080b;color:#fff}
  .kf159-feed{height:var(--kf159-viewport-height,calc(100dvh - 152px - env(safe-area-inset-bottom,0px)));min-height:120px;border-radius:0;background:#000;scroll-snap-type:y mandatory}
@@ -101,6 +104,8 @@
   return urls;
  }
  window.kf159RenderReels=async function(main,reels){
+  // Only one media experience may own audio when entering the vertical feed.
+  window.kf81StopProfileMusic?.();
   teardown();
   const generation=active.generation;
   // A pending media signature must never render a previous member's private feed
@@ -147,7 +152,7 @@
    cards.push(`<section class="kf159-slide" data-id="${id}" aria-label="Reel: ${esc(v.title||'Untitled')}">${media}<div class="kf159-overlay"><div class="kf159-info"><b>${esc(p?.display_name||p?.username||'Creator')}</b><p>${esc(v.title||'')}</p></div><div class="kf159-actions">${actions}</div></div></section>`);
   }
   if(!isCurrent())return;
-  main.innerHTML=`<div class="kf159-top"><b>Reels & Shorts</b><button class="btn small" onclick="openVideoModal()">＋ Upload</button></div><div class="kf159-feed" id="kf159-feed" aria-label="Swipe up or down for reels">${cards.join('')}</div>`;
+  main.innerHTML=`<div class="kf159-top"><b>Reels & Shorts</b><div class="kf159-tabs" role="group" aria-label="Reels feed"><button type="button" aria-current="page">For You</button><button type="button" onclick="setView('channels')" aria-label="Subscriptions videos in Channels">Subscriptions</button></div><button class="btn small" onclick="openVideoModal()">＋ Upload</button></div><div class="kf159-feed" id="kf159-feed" aria-label="Swipe up or down for reels">${cards.join('')}</div>`;
   active.resizeController=new AbortController();
   const feed=main.querySelector('#kf159-feed');active.root=feed;
   // Size to the actual space above the app's bottom navigation rather than guessing header height.
