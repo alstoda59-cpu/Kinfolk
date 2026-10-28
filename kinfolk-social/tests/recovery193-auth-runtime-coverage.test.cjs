@@ -53,7 +53,7 @@ function fixture(kind){
     })};
   };
   const timers=[];
-  const window={kf129ActivateSession:async()=>{activated++}};
+  const window={kf129ActivateSession:async()=>{activated++;return true}};
   vm.runInNewContext(source,{
     window,document,sb,fetch,localStorage,sessionStorage,console,AbortController,
     MutationObserver:class{observe(){}},
