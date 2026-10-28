@@ -121,8 +121,8 @@ test('reused auth form cannot receive old signup success after login-to-signup r
   assert.equal(f.local.size,0,'stale signup must not persist a previous account login setting');
   assert.equal(f.tab.size,0);
   await f.submit();
-  assert.equal(f.signupCalls,2,'new signup can proceed after old operation finishes');
-  assert.match(f.message,/Account created/);
+  assert.equal(f.signupCalls,1,'an existing signup session must block a second account creation');
+  assert.match(f.message,/already signed in/i);
 });
 
 test('reused auth form cannot receive old signup error after login-to-signup roundtrip',async()=>{
