@@ -61,7 +61,7 @@ async function eventCase({stay=true,tab=false,stale=false,event='SIGNED_IN'}={})
     {getItem:k=>stored[k]??null,setItem:(k,v)=>{stored[k]=v},removeItem:k=>{delete stored[k]}},
     console,setTimeout,Date
   );
-  const syntheticTokens={access_token:'synthetic',refresh_token:'synthetic',user:{id:'synthetic-A'}};
+  const syntheticTokens={access_token:'synthetic',refresh_token:'synthetic',user:{id:'synthetic-A',email:'synthetic@example.test'}};
   functions.saveStay(false);await functions.adopt(syntheticTokens);
   assert.equal(seen[0].kinfolk_stay_logged_in_v1,'0','nonpersistent preference exists at setSession');
   assert.equal(seen[0].kinfolk_session_tab,'1','original-tab marker exists at setSession');
