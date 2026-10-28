@@ -20,7 +20,10 @@
  .kf159-tabs button{border:1px solid #ffffff44;border-radius:999px;background:#26212d;color:#fff;padding:9px 11px;font:inherit;font-size:12px;min-height:40px}
  .kf159-tabs button[aria-current="page"]{background:var(--accent,#e85a9b);border-color:transparent;color:#fff;font-weight:800}
  @media(max-width:600px){
- .kf159-top{padding:8px 12px;background:#08080b;color:#fff}
+ .kf159-top{padding:8px 12px;background:#08080b;color:#fff;flex-wrap:wrap}
+ .kf159-top>b{flex:1 1 120px}
+ .kf159-tabs{order:3;width:100%;margin-left:0;justify-content:center}
+ .kf159-tabs button{flex:1;max-width:190px}
  .kf159-feed{height:var(--kf159-viewport-height,calc(100dvh - 152px - env(safe-area-inset-bottom,0px)));min-height:120px;border-radius:0;background:#000;scroll-snap-type:y mandatory}
  .kf159-slide{height:100%;min-height:0;background:#000}
  .kf159-slide video{width:100%;height:100%;object-fit:cover;background:#000}
