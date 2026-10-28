@@ -17,7 +17,7 @@ function harness({loadVideoReactions=async()=>{},signed=async()=>''}={}){
     querySelectorAll(){return []}
   };
   const window={addEventListener(){},innerHeight:800};
-  vm.runInNewContext(source,{window,document,state,loadVideoReactions,signed});
+  vm.runInNewContext(source,{window,document,state,loadVideoReactions,signed,setTimeout,clearTimeout});
   const main={isConnected:true,innerHTML:'unchanged-private-feed'};
   const reels=[{
     id:'synthetic-video',creator_id:'synthetic-account-a',
