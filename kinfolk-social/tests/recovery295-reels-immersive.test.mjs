@@ -80,8 +80,8 @@ test('renderer failure shows retry rather than a legacy grid',async()=>{
 
 test('immersive Reels retains both feed tabs and stops profile audio',()=>{
  assert.match(reels,/window\.kf81StopProfileMusic\?\.\(\)/);
- assert.match(reels,/aria-current="page">For You/);
- assert.match(reels,/Subscriptions videos in Channels/);
+ assert.match(reels,/kf296SelectReelMode\(\x27for_you\x27\)/);
+ assert.match(reels,/kf296SelectReelMode\(\x27subscriptions\x27\)/);
  assert.match(reels,/kf159-feed/);
  new vm.Script(reels);
 });
