@@ -398,6 +398,16 @@
       && (form.querySelector('#kf219Private')?.checked===true)===expected.privateProfile
       && (form.querySelector('#kf73Stay')?.checked!==false)===expected.stay;
   }
+  // Never start signup over an authenticated account. Supabase signUp can
+  // change the active session, so a stale signup screen must not switch users.
+  async function requireNoActiveSignupAccount(){
+    if(typeof sb==='undefined'||typeof sb?.auth?.getSession!=='function')throw new Error('Kinfolk cannot verify the current account. Try again in a moment.');
+    const {data,error}=await sb.auth.getSession();
+    if(error)throw error;
+    if(!data||!Object.prototype.hasOwnProperty.call(data,'session'))throw new Error('Kinfolk cannot verify the current account. Try again in a moment.');
+    if(data.session)throw new Error('A Kinfolk account is already signed in. Log out before creating another account.');
+    return true;
+  }
   async function handleSignup(e){
     const form=e.target;
     if(form?.id!=='authForm'||form.dataset.kf73!=='1')return;
@@ -451,6 +461,11 @@
     let signupTimeoutId=null;
     try{
       if(typeof sb==='undefined'||!sb?.auth?.signUp)throw new Error('Kinfolk signup is not ready. Try again in a moment.');
+      await requireNoActiveSignupAccount();
+      // The preflight getSession is asynchronous. Never send credentials from
+      // a replaced or edited signup form after waiting for that check.
+      if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!isSignupTitle(signupTitle?.textContent))return;
+      if(!signupInputsUnchanged(form,signupSnapshot))throw new Error('Signup details changed while checking the current account. Please review them and try again.');
       const redirect=emailRedirect();
       // A mobile connection can leave signUp unresolved forever. Limit the UI
       // wait without claiming failure: the server may have created the account.
