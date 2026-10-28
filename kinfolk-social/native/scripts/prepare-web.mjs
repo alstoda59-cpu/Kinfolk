@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { build } from 'esbuild';
 import { alphaBackendConfig, isolateNativeAsset, LIVE_REF, LIVE_KEY } from './alpha-backend-config.mjs';
+import { alphaEmailCallback } from './native-email-callback.mjs';
 
 const nativeRoot=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const source=path.resolve(nativeRoot,'..');
@@ -31,8 +32,14 @@ const remote='<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
 if(!inputHTML.includes(remote))throw new Error('Native SDK packaging anchor missing: review how the main app loads Supabase');
 const swRegistration="if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));";
 if(!inputHTML.includes(swRegistration))throw new Error('Native service-worker registration anchor changed: review packaged cache behavior');
+const emailCallback=alphaEmailCallback(process.env.KINFOLK_ALPHA_EMAIL_REDIRECT_URL);
+const callbackScript=emailCallback
+  ? '<script>window.KINFOLK_EMAIL_REDIRECT_URL='+JSON.stringify(emailCallback).replace(/</g,'\\u003c')+';</script>'
+  : '';
+if(callbackScript&&!inputHTML.includes('</head>'))throw new Error('Native alpha email callback injection anchor missing');
 const nativeHTML=inputHTML.replace(remote,'<script src="/kinfolk-supabase-sdk.js"></script>')
-  .replace(swRegistration,'/* Native alpha: Capacitor manages bundled assets, not a web service worker. */');
+  .replace(swRegistration,'/* Native alpha: Capacitor manages bundled assets, not a web service worker. */')
+  .replace('</head>',callbackScript+'</head>');
 if(nativeHTML.includes(remote))throw new Error('Unpinned Supabase CDN must not remain in the native entry HTML');
 await writeFile(path.join(destination,'index.html'),nativeHTML);
 
