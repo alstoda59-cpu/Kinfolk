@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery299 (2026-10-28)
+
+Latest isolated checkpoint: [RECOVERY299.md](RECOVERY299.md). Repaired a mobile Reels layout race: the immersive player now recalculates its height when the age/content filter is inserted or updated after asynchronous video rendering. Existing account/teardown guards prevent stale viewport updates. Focused source-backed synthetic V8 checks passed; current Node/GitHub CI, real isolated Supabase auth/RLS and physical-device QA remain unverified. Nonproduction only, no shared live backend or store changes.
+
 # Kinfolk Social | Recovery290 (2026-10-28)
 
 Latest isolated checkpoint: [RECOVERY290.md](RECOVERY290.md). Bounded stalled private Reels signing so a hung media URL request cannot block the entire mobile feed; added regression coverage and repaired outdated synthetic mobile fixtures. A previous source CI run identified 9 fixture failures; replacement CI must be verified separately. Nonproduction preview READY does not establish real video playback. Real isolated-backend auth/RLS and physical Android/iPhone QA remain unverified. Production, shared live Supabase, Kinfolksworld and app stores untouched.
