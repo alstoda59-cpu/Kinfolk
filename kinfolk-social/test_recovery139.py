@@ -12,8 +12,8 @@ exec(compile(fixture,str(P/'test_recovery129.py'),'exec'),ns)
 def html(restored=False, blocked=False):
     source=ns['test_html']()
     if restored:
-        before="let session=null;const listeners=[]"
-        after="let session={user,access_token:'fake',refresh_token:'fake'};const listeners=[]"
+        before="let session=null,authEmail=user.email;const listeners=[]"
+        after="let session={user,access_token:'fake',refresh_token:'fake'},authEmail=user.email;const listeners=[]"
         assert before in source
         source=source.replace(before,after,1)
     if blocked:
@@ -43,8 +43,8 @@ with sync_playwright() as p:
     # Intercept the underlying SDK call, not just Phase79's input. The legacy
     # Phase76 wrapper must not reinsert a localhost/native redirect.
     source=ns['test_html']()
-    before="signUp:async()=>{signupCalls++;"
-    after="signUp:async options=>{window.__underlyingSignupOptions=options;signupCalls++;"
+    before="signUp:async args=>{signupCalls++;"
+    after="signUp:async args=>{window.__underlyingSignupOptions=args;signupCalls++;"
     assert before in source
     source=source.replace(before,after,1)
     page=browser.new_page(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
