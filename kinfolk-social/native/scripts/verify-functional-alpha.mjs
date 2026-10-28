@@ -2,8 +2,10 @@
 // This does NOT prove real signup, email delivery, RLS or device functionality.
 import { requireFunctionalAlphaBackend } from './alpha-backend-config.mjs';
 import { verifyIsolatedAuthReachability } from './verify-isolated-auth.mjs';
+import { alphaEmailCallback } from './native-email-callback.mjs';
 
 const config=requireFunctionalAlphaBackend();
+alphaEmailCallback(process.env.KINFOLK_ALPHA_EMAIL_REDIRECT_URL,{required:true});
 await import('./verify-alpha-package.mjs');
 await verifyIsolatedAuthReachability(config,{requireEmailSignupReady:true});
 console.log('PASS functional native package and isolated Auth email-signup readiness for project '+config.projectRef+'; signup, email, RLS and device E2E remain unverified');
