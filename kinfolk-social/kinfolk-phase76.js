@@ -1104,20 +1104,55 @@ setTimeout(harden,0);setTimeout(harden,700);setInterval(unlockStuck,1200);
   }
 
   const goldCss=document.createElement('style');
-  goldCss.textContent='.kf75Gold{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:999px;background:rgba(255,195,45,.13);border:1px solid rgba(255,195,45,.32);font-weight:900;font-size:12px;margin-left:7px}.kf75Grant{border:0;border-radius:12px;padding:10px 13px;font-weight:900;background:#dca928;color:#17120a;margin:8px 0 0}.kf75Grant:disabled{opacity:.6}';
+  goldCss.textContent='.kf75Gold{display:inline-flex;align-items:center;padding:0 3px;border:0;background:none;color:#f7c94b;font-weight:900;font-size:18px;margin-left:5px}.kf75Grant{border:0;border-radius:12px;padding:10px 13px;font-weight:900;background:#dca928;color:#17120a;margin:8px 0 0}.kf75Grant:disabled{opacity:.6}';
   document.head.appendChild(goldCss);
-  async function goldStatus(uid){try{if(typeof sb==='undefined'||!sb?.rpc)return false;const {data,error}=await sb.rpc('has_gold_star',{target_user:uid});if(error)throw error;return !!data}catch{return false}}
+  async function goldStatus(uid){
+    try{
+      if(typeof sb==='undefined'||!sb?.rpc)return false;
+      const {data,error}=await sb.rpc('has_gold_star',{target_user:uid});
+      if(error)throw error;
+      return data===true;
+    }catch{return false}
+  }
   async function mountGold(){
     try{
-      const st=window.state;if(!st?.user)return;
-      const uid=st.profileViewId||(st.view==='profile'?st.user.id:null);if(!uid)return;
+      const st=window.state;if(!st?.user||st.view!=='profile')return;
+      const viewerId=st.user.id,uid=st.profileViewId||viewerId;
       const hero=document.querySelector('.profileHero');if(!hero)return;
-      let badge=hero.querySelector('.kf75Gold');const gold=await goldStatus(uid);
-      if(gold&&!badge){badge=document.createElement('span');badge.className='kf75Gold';badge.textContent='★ Gold Star';const name=hero.querySelector('h1,h2,.name,.profileName');(name||hero).appendChild(badge)}else if(!gold&&badge)badge.remove();
+      const current=()=>window.state?.user?.id===viewerId&&window.state.view==='profile'&&(window.state.profileViewId||viewerId)===uid&&document.querySelector('.profileHero')===hero;
+      const gold=await goldStatus(uid);
+      if(!current())return;
+      // Read badges AFTER the async status lookup: concurrent polling must not add duplicates.
+      const badges=[...hero.querySelectorAll('.kf75Gold')];
+      let badge=badges.shift()||null;
+      badges.forEach(extra=>extra.remove());
+      if(gold){
+        if(!badge){badge=document.createElement('span');badge.className='kf75Gold'}
+        badge.textContent='★';
+        badge.title='Gold Star';
+        badge.setAttribute('aria-label','Gold Star subscriber');
+        const name=hero.querySelector('h1,h2,.name,.profileName');
+        if(badge.parentElement!==(name||hero))(name||hero).appendChild(badge);
+      }else badge?.remove();
       const can=!!st.user.app_metadata?.can_grant_gold||st.user.app_metadata?.kinfolk_role==='owner';
       let btn=hero.parentElement?.querySelector('.kf75Grant');
-      if(!can||uid===st.user.id||gold){btn?.remove();return}
-      if(!btn){btn=document.createElement('button');btn.type='button';btn.className='kf75Grant';btn.textContent='★ Give Gold Star';btn.onclick=async()=>{btn.disabled=true;const {error}=await sb.rpc('grant_gold_star',{target_user:uid,grant_note:'Free Gold Star awarded in Kinfolk'});if(error){window.toast?.(error.message||'Could not grant Gold Star.','danger');btn.disabled=false;return}window.toast?.('Gold Star granted.','good');btn.remove();mountGold()};(hero.parentElement||hero).appendChild(btn)}
+      if(!can||uid===viewerId||gold){btn?.remove();return}
+      if(!btn){
+        btn=document.createElement('button');btn.type='button';btn.className='kf75Grant';btn.textContent='★ Give Gold Star';
+        btn.onclick=async()=>{
+          if(btn.disabled||!current())return;
+          btn.disabled=true;
+          try{
+            const {error}=await sb.rpc('grant_gold_star',{target_user:uid,grant_note:'Free Gold Star awarded in Kinfolk'});
+            if(error)throw error;
+            if(!current())return;
+            window.toast?.('Gold Star granted.','good');btn.remove();mountGold();
+          }catch(error){
+            if(current())window.toast?.(error?.message||'Could not grant Gold Star.','danger');
+          }finally{btn.disabled=false}
+        };
+        (hero.parentElement||hero).appendChild(btn);
+      }
     }catch(e){console.warn('Kinfolk Gold Star mount',e)}
   }
 
