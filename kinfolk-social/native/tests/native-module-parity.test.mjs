@@ -31,3 +31,10 @@ test('does not count a fake data-src module as a real script',()=>{
   const source=html(names)+'<script data-src="/kinfolk-fake.js"></script>';
   assert.equal(assertNativeModuleParity(source,html(names)),23);
 });
+
+test('rejects query-string Kinfolk module in source instead of silently dropping it',()=>{
+  assert.throws(()=>assertNativeModuleParity(html([...names,'/kinfolk-extra.js?v=1']),html(names)),/invalid Kinfolk app module script path/);
+});
+test('rejects malformed Kinfolk module in packaged startup scripts',()=>{
+  assert.throws(()=>assertNativeModuleParity(html(names),html([...names,'/kinfolk-extra.mjs'])),/invalid Kinfolk app module script path/);
+});
