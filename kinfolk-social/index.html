@@ -97,6 +97,25 @@ function loadingCard(txt='Loading…'){return `<div class="card"><div class="emp
 let kf129Epoch=0,kf129ReadyUid=null,kf129InFlight=null;
 function kf129Error(message){const app=$('#app');if(!app)return;app.innerHTML=`<div class="authWrap"><div class="authCard" role="alert"><div class="authLogo">Kinfolk</div><h2>We couldn't finish loading your account</h2><p class="muted" style="overflow-wrap:anywhere">${esc(message||'Please check your connection and try again.')}</p><button class="btn primary full" type="button" onclick="kf129Retry()">Try again</button><button class="btn full" style="margin-top:10px" type="button" onclick="logout()">Log out</button></div></div>`}
 function kf129Timeout(task,ms,label){let timer;return Promise.race([Promise.resolve(task),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' took too long. Check your connection and try again.')),ms)})]).finally(()=>clearTimeout(timer))}
+// Recovery316: a different authenticated account must never inherit the old
+// member's cached feed, private media URLs, messages, overlays or playback.
+// Clear synchronously before the first awaited hydration/database request.
+function kf316ClearPreviousAccount(){
+  try{window.closeKinfolkSettings?.()}catch{}
+  document.getElementById('kf78-overlay')?.remove();
+  document.getElementById('kf115-delete-overlay')?.remove();
+  document.getElementById('modalRoot')?.replaceChildren();
+  document.body.style.overflow='';
+  try{window.kf159StopReels?.()}catch{}
+  try{window.kf81StopProfileMusic?.()}catch{}
+  state.profile=null;state.extras=null;state.feed=[];state.videos=[];state.stories=[];
+  state.notifications=[];state.channels=[];state.friendRequests=[];
+  state.likes.clear();state.comments.clear();state.subscriptions.clear();
+  state.profiles.clear();state.signed.clear();
+  state.view='home';state.profileViewId=null;state.profileTab='posts';
+  state.channelViewId=null;state.channelTab='videos';state.busy=false;
+  window._kinfolkSuggestionHidden=new Set();
+}
 async function kf129ActivateSession(session){
   const uid=session?.user?.id||null;
   if(!uid){++kf129Epoch;kf129ReadyUid=null;kf129InFlight=null;try{window.closeKinfolkSettings?.()}catch{}document.getElementById('kf78-overlay')?.remove();document.getElementById('kf115-delete-overlay')?.remove();document.getElementById('modalRoot')?.replaceChildren();document.body.style.overflow='';try{window.kf159StopReels?.()}catch{}try{window.kf81StopProfileMusic?.()}catch{}
@@ -108,7 +127,7 @@ async function kf129ActivateSession(session){
   if(kf129ReadyUid===uid&&state.user?.id===uid&&state.profile&&document.querySelector('#main'))return true;
   if(kf129InFlight?.uid===uid)return kf129InFlight.promise;
   const epoch=++kf129Epoch;
-  if(state.user?.id!==uid){state.profile=null;state.extras=null;state.profiles.clear();state.signed.clear()}
+  if(state.user?.id!==uid){kf129ReadyUid=null;kf316ClearPreviousAccount()}
   state.user=session.user;
   $('#app').innerHTML='<div class="authWrap"><div class="muted" role="status">Opening your Kinfolk account…</div></div>';
   const task=(async()=>{try{
