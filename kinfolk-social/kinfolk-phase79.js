@@ -311,12 +311,12 @@
     let redirect=null;
     try{
       const target=new URL(custom||location.origin);
-      const host=target.hostname.toLowerCase().replace(/\\.$/,'').replace(/^\\[|\\]$/g,'');
+      const host=target.hostname.toLowerCase().replace(/\.$/,'').replace(/^\[|\]$/g,'');
       // Reject the same unusable callback classes as the native packager.
       const blocked=!host||host==='localhost'||host.endsWith('.localhost')||
         host==='vercel.app'||host.endsWith('.vercel.app')||
         host==='supabase.co'||host.endsWith('.supabase.co')||
-        host.endsWith('.local')||/^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(host)||
+        host.endsWith('.local')||/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)||
         host.includes(':');
       if(target.protocol==='https:'&&!target.username&&!target.password&&
          !target.hash&&!target.port&&!blocked){
