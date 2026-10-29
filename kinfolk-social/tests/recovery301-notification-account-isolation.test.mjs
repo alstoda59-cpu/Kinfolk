@@ -80,7 +80,7 @@ test('mark-read only writes current recipient IDs and never includes foreign row
  assert.equal(h.writes[0].recipient,'A');
  assert.deepEqual(Array.from(h.writes[0].ids),['own']);
  h.writes[0].resolve({error:null});
- await Promise.resolve();
+ await new Promise(resolve=>setImmediate(resolve));
  assert.equal(h.reads.length,1);
  h.reads[0].resolve({data:[{...note('A','own'),read_at:'now'}]});
  await p;
@@ -100,7 +100,7 @@ test('duplicate mark-read clicks are suppressed while a write is pending',async(
  const a=h.markAllRead(),b=h.markAllRead();
  assert.equal(h.writes.length,1);
  await b;
- h.writes[0].resolve({error:null});await Promise.resolve();
+ h.writes[0].resolve({error:null});await new Promise(resolve=>setImmediate(resolve));
  h.reads[0].resolve({data:[]});await a;
 });
 test('failed mark-read preserves unread state and surfaces an error',async()=>{
@@ -114,6 +114,6 @@ test('failed mark-read preserves unread state and surfaces an error',async()=>{
 test('mark-read completion never navigates back to notifications',async()=>{
  const h=harness();h.state.notifications=[note('A')];
  const p=h.markAllRead();h.state.view='home';h.writes[0].resolve({error:null});
- await Promise.resolve();h.reads[0].resolve({data:[]});await p;
+ await new Promise(resolve=>setImmediate(resolve));h.reads[0].resolve({data:[]});await p;
  assert.equal(h.renders.length,0);
 });
