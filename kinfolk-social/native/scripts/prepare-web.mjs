@@ -42,9 +42,8 @@ const callbackScript='<script>window.KINFOLK_NATIVE_ALPHA=true;'+
   (passwordResetCallback?'window.KINFOLK_PASSWORD_RESET_REDIRECT_URL='+JSON.stringify(passwordResetCallback).replace(/</g,'\\u003c')+';':'')+
   '</script>';
 if(!inputHTML.includes('</head>'))throw new Error('Native alpha marker injection anchor missing');
-const nativeHTML=inputHTML.replace(remote,'<script src="/kinfolk-supabase-sdk.js"></script>')
-  .replace(swRegistration,'/* Native alpha: Capacitor manages bundled assets, not a web service worker. */')
-  .replace('</head>',callbackScript+'</head>');
+const nativeHTML=inputHTML.replace(remote,callbackScript+'<script src="/kinfolk-supabase-sdk.js"></script>')
+  .replace(swRegistration,'/* Native alpha: Capacitor manages bundled assets, not a web service worker. */');
 if(nativeHTML.includes(remote))throw new Error('Unpinned Supabase CDN must not remain in the native entry HTML');
 await writeFile(path.join(destination,'index.html'),nativeHTML);
 
