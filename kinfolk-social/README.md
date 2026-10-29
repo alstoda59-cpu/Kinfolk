@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery303 (2026-10-28)
+
+Latest isolated checkpoint: [RECOVERY303.md](RECOVERY303.md). Corrected post/story orphan upload cleanup on database failure and protected already-inserted video media from deletion when feed refresh fails. Added post/story and video regressions and repaired timing-sensitive Recovery302 Node fixtures. Draft PR #6 targets Recovery302 only, not production. Real isolated Supabase auth/RLS, missing tables, current Android/iPhone builds and device QA remain blockers.
+
 # Kinfolk Social | Recovery301 (2026-10-28)
 
 Latest isolated checkpoint: [RECOVERY301.md](RECOVERY301.md). Fixed cross-account notification reads and Mark All Read writes: explicitly recipient-scoped queries, defensive response filtering, stale-request rejection, duplicate-write suppression and navigation-safe completion. Nine synthetic V8 checks passed against exact committed handlers; committed Node tests and full CI remain unverified. Recovery301 preview is blocked by Vercel build-rate limit. Real isolated Supabase auth/RLS, current Android/iPhone builds and physical-device QA remain outstanding. No shared live backend, production or store changes.
