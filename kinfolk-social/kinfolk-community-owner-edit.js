@@ -16,7 +16,8 @@
       for(const card of main.querySelectorAll('#kfOwnedCommunities article[data-community-id]')){
         const id=card.dataset.communityId;
         if(!uuid.test(id||'')||card.dataset.ownerId!==uid)continue;
-        if(card.querySelector('[data-kf-owner-edit]'))continue;
+        const existing=card.querySelector('[data-kf-owner-edit]');
+        if(existing){existing.disabled=pending.has(uid+':'+id);continue;}
         const edit=document.createElement('button');
         edit.type='button';edit.className='btn';edit.textContent='Edit community';
         edit.setAttribute('data-kf-owner-edit','');
@@ -81,6 +82,7 @@
               console.warn('Kinfolk community owner edit',error);
             }finally{
               pending.delete(key);
+              decorate();
               if(form.isConnected&&current(uid,n,main)){
                 save.disabled=false;cancel.disabled=false;edit.disabled=false;
               }
