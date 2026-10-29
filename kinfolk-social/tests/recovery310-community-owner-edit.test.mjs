@@ -81,3 +81,14 @@ test('directory search rehydrates edit button after cards are replaced',async()=
  const h=harness();await h.render();h.setupCard();h.search.listeners.input();
  assert.equal(h.card.querySelector('[data-kf-owner-edit]').textContent,'Edit community');
 });
+
+test('pending save survives search rebuild and restored edit button unlocks after failure',async()=>{
+ const h=harness({deferWrite:true});await h.render();const f=h.open();
+ const first=f.listeners.submit({preventDefault(){}});
+ h.setupCard();h.search.listeners.input();
+ const rebuilt=h.card.querySelector('[data-kf-owner-edit]');
+ assert.equal(rebuilt.disabled,true);
+ h.pending.resolve({data:[],error:null});await first;
+ assert.equal(rebuilt.disabled,false);
+ assert.equal(h.renderCount,1);
+});
