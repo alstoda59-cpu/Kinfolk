@@ -578,6 +578,7 @@ async function saveChannel(e,id){
   const button=form.querySelector('button[type="submit"],button:not([type])');
   if(button)button.disabled=true;
   const uploadedPaths=[];
+  let confirmed=false;
   try{
     const obj={title,slug,description,updated_at:new Date().toISOString()};
     for(const [file,key,folder] of [[avatar,'avatar_url','channels/avatar'],[banner,'banner_url','channels/banner']]){
@@ -599,6 +600,7 @@ async function saveChannel(e,id){
     if(!current())return false;
     if(error)throw error;
     if(!data?.id||data.owner_id!==uid||(id&&data.id!==id))throw new Error('Channel change was not confirmed. Please retry.');
+    confirmed=true;
     await loadChannels();
     if(!current())return false;
     closeModal();
@@ -609,11 +611,13 @@ async function saveChannel(e,id){
   }catch(error){
     // Never perform cleanup under a different member's session.
     if(current()){
-      for(const mediaPath of uploadedPaths){
-        try{await sb.storage.from('kinfolk-media').remove([mediaPath])}catch{}
-        if(!current())break;
+      if(!confirmed){
+        for(const mediaPath of uploadedPaths){
+          try{await sb.storage.from('kinfolk-media').remove([mediaPath])}catch{}
+          if(!current())break;
+        }
       }
-      if(current())toast(error?.message||'Channel could not be saved.','danger');
+      if(current())toast(confirmed?'Channel saved, but the screen could not refresh. Please retry.':(error?.message||'Channel could not be saved.'),'danger');
     }
     return false;
   }finally{
