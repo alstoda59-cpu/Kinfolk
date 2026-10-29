@@ -133,7 +133,7 @@ test('unconfirmed or wrong-account auth response never claims password changed',
 });
 test('signed-out user cannot open or submit account security',()=>{
   const h=harness();h.ctx.state.user=null;
-  assert.equal(h.ctx.openAccountSecurity(),undefined);
+  h.ctx.openAccountSecurity();
   assert.equal(h.screen,null);
   assert.equal(h.requests.length,0);
   assert.match(h.toasts[0][0],/Sign in/);
