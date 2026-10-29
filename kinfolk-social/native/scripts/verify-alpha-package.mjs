@@ -46,6 +46,7 @@ assert.ok(modules.includes('/kinfolk-reels159.js'),'shorts and reels must be pac
 assert.ok(modules.includes('/kinfolk-communities.js'),'Communities must be packaged in Android/iOS alpha');
 assert.ok(modules.includes('/kinfolk-community-membership.js'),'Community membership controls must be packaged in Android/iOS alpha');
 assert.ok(modules.includes('/kinfolk-community-owner-edit.js'),'Community owner editing must be packaged in Android/iOS alpha');
+assert.ok(modules.includes('/kinfolk-phase108.js'),'Reporting and moderation safety controls must be packaged in Android/iOS alpha');
 for(const name of modules){
   const bytes=await readFile(path.join(output,name.slice(1)));
   assert.ok(bytes.length>0,name+' was empty');
