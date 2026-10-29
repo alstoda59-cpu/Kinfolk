@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery309 (2026-10-28)
+
+Latest isolated checkpoint: [RECOVERY309.md](RECOVERY309.md). Community Join/Leave controls now survive search-triggered card rebuilding, including in-flight membership writes, without cross-account state leakage. Three additional synthetic Node regression cases; no real isolated backend community tables, native builds, or physical-device QA verified. Draft PR #9 targets Recovery308, not production.
+
 # Kinfolk Social | Recovery308 (2026-10-28)
 
 Latest isolated checkpoint: [RECOVERY308.md](RECOVERY308.md). Added public Community Join/Leave controls with account-safe async behavior and missing-backend fallback, native package parity and synthetic regressions. Added review-only community/membership RLS SQL; **not applied**. Real isolated community backend, full CI, native packages and physical-device QA remain unverified. Draft PR #8 targets Recovery307 only; no production release.

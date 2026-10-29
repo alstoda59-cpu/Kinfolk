@@ -29,41 +29,57 @@
       console.warn('Kinfolk community membership read',error);
       return;
     }
-    for(const card of cards){
-      const id=card.dataset.communityId;
-      const button=document.createElement('button');
-      button.type='button';button.className='btn';
-      const refresh=()=>{button.textContent=memberships.has(id)?'Leave community':'Join community';button.setAttribute('aria-label',button.textContent)};
-      refresh();
-      button.addEventListener('click',async()=>{
-        if(!current(uid,n,main)||!button.isConnected)return;
-        const key=uid+':'+id;
-        if(pending.has(key))return;
-        const joining=!memberships.has(id);
-        pending.add(key);button.disabled=true;button.textContent=joining?'Joining…':'Leaving…';
-        try{
-          const query=joining
-            ?sb.from('kinfolk_community_members').insert({community_id:id,user_id:uid})
-            :sb.from('kinfolk_community_members').delete().eq('community_id',id).eq('user_id',uid);
-          const {error}=await query;
-          if(!current(uid,n,main)||!button.isConnected)return;
-          if(error)throw error;
-          if(joining)memberships.add(id);else memberships.delete(id);
-          refresh();
-        }catch(error){
-          if(current(uid,n,main)&&button.isConnected){
-            refresh();
-            const note=document.createElement('span');note.className='muted';note.setAttribute('role','status');
-            note.textContent=' Membership change failed. Check permissions and retry.';
-            button.after(note);
-          }
-          console.warn('Kinfolk community membership write',error);
-        }finally{
-          pending.delete(key);
-          if(current(uid,n,main)&&button.isConnected)button.disabled=false;
+    // Search re-renders directory cards via innerHTML. Rehydrate membership controls
+    // from the account-scoped snapshot without another backend request.
+    const controls=new WeakMap();
+    const decorate=()=>{
+      if(!current(uid,n,main))return;
+      for(const card of main.querySelectorAll('#kfCommunityResults article[data-community-id]')){
+        const id=card.dataset.communityId;
+        if(!uuid.test(id||'')||!ids.includes(id)||card.dataset.ownerId===uid)continue;
+        let button=controls.get(card);
+        if(!button){
+          button=document.createElement('button');
+          button.type='button';button.className='btn';
+          controls.set(card,button);
+          button.addEventListener('click',async()=>{
+            if(!current(uid,n,main)||!button.isConnected)return;
+            const key=uid+':'+id;
+            if(pending.has(key))return;
+            const joining=!memberships.has(id);
+            pending.add(key);decorate();
+            try{
+              const query=joining
+                ?sb.from('kinfolk_community_members').insert({community_id:id,user_id:uid})
+                :sb.from('kinfolk_community_members').delete().eq('community_id',id).eq('user_id',uid);
+              const {error}=await query;
+              if(!current(uid,n,main))return;
+              if(error)throw error;
+              if(joining)memberships.add(id);else memberships.delete(id);
+            }catch(error){
+              if(current(uid,n,main)){
+                const note=document.createElement('span');note.className='muted';note.setAttribute('role','status');
+                note.textContent=' Membership change failed. Check permissions and retry.';
+                if(button.isConnected)button.after(note);
+                else main.querySelector('#kfCommunityResults')?.append(note);
+              }
+              console.warn('Kinfolk community membership write',error);
+            }finally{
+              pending.delete(key);
+              decorate();
+            }
+          });
+          card.append(button);
         }
-      });
-      card.append(button);
-    }
+        const busy=pending.has(uid+':'+id);
+        button.disabled=busy;
+        button.textContent=busy?(memberships.has(id)?'Leaving…':'Joining…'):(memberships.has(id)?'Leave community':'Join community');
+        button.setAttribute('aria-label',button.textContent);
+      }
+    };
+    decorate();
+    // Base directory's input handler runs first and replaces cards; this handler
+    // restores buttons after every search/filter change.
+    main.querySelector('#kfCommunitySearch')?.addEventListener('input',decorate);
   };
 })();
