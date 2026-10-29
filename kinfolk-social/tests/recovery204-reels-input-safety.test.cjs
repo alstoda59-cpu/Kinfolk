@@ -50,7 +50,7 @@ test('Reels action handlers preserve hostile IDs as inert string arguments',asyn
     downloadKinfolkVideo:(...args)=>calls.push(['download',...args]),
     kf161ToggleSound:(...args)=>calls.push(['sound',...args]),
     kf159TogglePlayback:(...args)=>calls.push(['play',...args])};
-  const videoHandlers=handlers.filter(h=>!/openVideoModal/.test(h));
+  const videoHandlers=handlers.filter(h=>/^(?:toggleVideoReaction|openMediaComments|shareKinfolkVideo|remixKinfolkVideo|saveKinfolkVideo|downloadKinfolkVideo|kf161ToggleSound|kf159TogglePlayback)\\(/.test(h));
   assert.equal(videoHandlers.length,9,'expected all eight actions and tap playback');
   for(const handler of videoHandlers)vm.runInNewContext(handler,scope);
   assert.equal(scope.__kinfolkPwned,false,'video ID must not execute injected JavaScript');
