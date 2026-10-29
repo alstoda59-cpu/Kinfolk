@@ -975,7 +975,54 @@ setTimeout(harden,0);setTimeout(harden,700);setInterval(unlockStuck,1200);
     if(mode==='login'){
       form.innerHTML=`<div class="kf73Title">Welcome back</div><div class="kf73Text">Log in to Kinfolk with the email and password already connected to your account.</div><label for="kf73Email">Email</label><input id="kf73Email" type="email" required autocomplete="email" inputmode="email" placeholder="Email address"><label for="kf73Password">Password</label><div class="kf73Password"><input id="kf73Password" type="password" required autocomplete="current-password" placeholder="Password"><button class="kf73Show" type="button">Show</button></div><div class="kf73Meta"><label><input id="kf73Stay" type="checkbox"> Stay logged in</label><button type="button" class="kf73Forgot">Forgot password?</button></div><button type="submit" class="kf73Primary">Log in</button><div class="kf73Divider">or</div><button type="button" class="kf73Switch">Need an account? Join Kinfolk</button><div class="kf73Msg"></div><div class="kf73Help">Use the same email and password you used when you created your account.</div>`;
       form.querySelector('.kf73Switch').onclick=()=>render('signup');
-      const forgot=form.querySelector('.kf73Forgot');forgot.onclick=async()=>{if(forgot.disabled)return;const email=form.querySelector('#kf73Email').value.trim();if(!email){msg(form,'Enter your email first.');form.querySelector('#kf73Email').focus();return}forgot.disabled=true;try{const {error}=await sb.auth.resetPasswordForEmail(email,passwordResetRedirectOptions());if(error)throw error;msg(form,'Password reset email sent.',true)}catch(e){msg(form,e.message||'Could not send reset email.')}finally{forgot.disabled=false}};
+      const forgot=form.querySelector('.kf73Forgot');
+      forgot.onclick=async()=>{
+        if(forgot.disabled)return;
+        const emailField=form.querySelector('#kf73Email');
+        const email=String(emailField?.value||'').trim();
+        if(!email){msg(form,'Enter your email first.');emailField?.focus();return}
+        // Recovery323: a delayed reset must never display results on a
+        // different login form, email address or signed-in account.
+        const title=form.querySelector('.kf73Title');
+        const accountId=window.state?.user?.id||null;
+        const request=Symbol('kinfolk-password-reset');
+        form.__kf323PasswordReset=request;
+        const sameControl=()=>form.isConnected&&forgot.isConnected&&mode==='login'&&
+          form.querySelector('.kf73Forgot')===forgot&&form.querySelector('.kf73Title')===title;
+        const current=()=>sameControl()&&form.__kf323PasswordReset===request&&
+          form.querySelector('#kf73Email')===emailField&&
+          String(emailField.value||'').trim().toLowerCase()===email.toLowerCase()&&
+          (window.state?.user?.id||null)===accountId;
+        const invalidate=()=>{if(form.__kf323PasswordReset===request)delete form.__kf323PasswordReset};
+        emailField.addEventListener('input',invalidate,{once:true});
+        forgot.disabled=true;
+        let timeoutId=null;
+        try{
+          const options=passwordResetRedirectOptions();
+          if(!current())return;
+          // A request can outlive a mobile network connection. Keep the
+          // previous email scoped to this attempt and avoid duplicate taps.
+          const timedOut=Symbol('kinfolk-password-reset-timeout');
+          const response=await Promise.race([
+            sb.auth.resetPasswordForEmail(email,options),
+            new Promise(resolve=>{timeoutId=setTimeout(()=>resolve(timedOut),20000)})
+          ]);
+          if(response===timedOut){
+            if(current())msg(form,'The reset request is taking too long. It may still arrive; check your inbox before retrying.');
+            return;
+          }
+          if(!response||typeof response!=='object')throw new Error('Password reset returned no result.');
+          if(response.error)throw response.error;
+          if(current())msg(form,'If this email has an account, a password reset link has been requested.',true);
+        }catch(error){
+          if(current())msg(form,error?.message||'Could not request a password reset email.');
+        }finally{
+          if(timeoutId!==null)clearTimeout(timeoutId);
+          emailField.removeEventListener('input',invalidate);
+          if(form.__kf323PasswordReset===request)delete form.__kf323PasswordReset;
+          if(sameControl())forgot.disabled=false;
+        }
+      };
     }else{
       form.innerHTML=`<div class="kf73Steps"><i class="on"></i><i class="on"></i><i></i></div><div class="kf73Title">Create your Kinfolk</div><div class="kf73Text">Start with your display name, email and a new password. You can finish customizing your profile after signup.</div><label for="kf73Name">Display name</label><input id="kf73Name" type="text" required maxlength="40" autocomplete="name" placeholder="Your display name"><label for="kf73Email">Email</label><input id="kf73Email" type="email" required autocomplete="email" inputmode="email" placeholder="Email address"><label for="kf73Password">New password</label><div class="kf73Password"><input id="kf73Password" type="password" required minlength="12" maxlength="128" autocomplete="new-password" placeholder="Create a password (12–128 characters)"><button class="kf73Show" type="button">Show</button></div><div class="kf73Meta"><label><input id="kf73Stay" type="checkbox"> Stay logged in</label></div><button type="submit" class="kf73Primary">Create account</button><div class="kf73Divider">or</div><button type="button" class="kf73Switch">Already have an account? Log in</button><div class="kf73Msg"></div><div class="kf73Help">By creating an account, you agree to Kinfolk’s community rules and privacy terms.</div>`;
       form.querySelector('.kf73Switch').onclick=()=>render('login');

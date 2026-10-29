@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery323 (2026-10-29)
+
+Continued from [Recovery322](RECOVERY322.md) on an isolated draft branch. [RECOVERY323.md](RECOVERY323.md) fixes the existing mobile login **Forgot Password** lifecycle: delayed reset responses cannot display on another email, replaced form, login mode or account; input edits invalidate the old attempt, duplicate taps are blocked, and a 20-second timeout reports uncertainty rather than falsely claiming delivery. Seven synthetic regressions are included in native `alpha:verify`, and offline-only Android/iOS compilation is requested. Source CI, native compilation, real isolated email/RLS and physical-device QA are separate gates. No production, shared live backend, Kinfolksworld, paid infrastructure or stores changed.
+
 # Kinfolk Social | Recovery322 (2026-10-29)
 
 Continued from [Recovery321](RECOVERY321.md) on an isolated branch. [RECOVERY322.md](RECOVERY322.md) fixes the native email verification **resend** path: before Capacitor's bridge initializes, the packaged native marker now forces an approved HTTPS email callback or fails closed before the Supabase resend request. Phase79 also rejects blocked Vercel previews, Supabase API hosts, local/IP callbacks, fragments, credentials and ports while retaining valid web behavior. Six synthetic regressions are included in native `alpha:verify`. Current CI, real isolated backend auth/RLS and physical-device QA remain separate gates. No production, shared live Supabase, Kinfolksworld, paid resources or store changes.
