@@ -33,6 +33,7 @@ function fixture({ deferred = false } = {}) {
       };
       return {};
     },
+    querySelectorAll(selector) { return selector === '.kf51Music audio' ? [] : []; },
     querySelector(selector) {
       if (selector === '.profileHero') return hero;
       if (selector === '.kf51Music') return host;
