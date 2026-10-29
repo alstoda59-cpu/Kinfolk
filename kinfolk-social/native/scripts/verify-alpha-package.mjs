@@ -35,7 +35,7 @@ if(passwordResetCallback){
   assert.ok(html.includes('window.KINFOLK_PASSWORD_RESET_REDIRECT_URL='+JSON.stringify(passwordResetCallback)),
     'native package must embed the configured HTTPS password recovery callback');
 }else{
-  assert.doesNotMatch(html,/window\\.KINFOLK_PASSWORD_RESET_REDIRECT_URL\\s*=/,
+  assert.doesNotMatch(html,/window\.KINFOLK_PASSWORD_RESET_REDIRECT_URL\s*=/,
     'native package must not retain an unconfigured password recovery callback');
 }
 assert.doesNotMatch(html,/navigator\.serviceWorker\.register\('/,'Capacitor should not register a stale web service worker');
