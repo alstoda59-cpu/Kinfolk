@@ -1,3 +1,7 @@
+# Recovery326 | Blocked-account session isolation (2026-10-29)
+
+Latest isolated continuation: [RECOVERY326.md](RECOVERY326.md). The full main Kinfolk Social app now pins blocked-account list reads and Unblock actions to the opening account, auth activation and exact screen. Eight new synthetic Node regression cases protect against stale responses, account switches and duplicate unblocks. Offline Android/iOS native compilation is configured on the isolated Recovery326 branch. **Real Supabase signup/RLS, physical-device QA and launch readiness remain unverified.** Do not merge, deploy production, change shared live Supabase or touch Kinfolksworld without explicit owner approval.
+
 # Kinfolk Social | Recovery325 (2026-10-29)
 
 Continued directly from [Recovery324](RECOVERY324.md) on an isolated draft branch. [RECOVERY325.md](RECOVERY325.md) fixes the Account security password-change lifecycle: account/activation/form ownership, duplicate-submit suppression, stale completion isolation, and confirmation of the returned user before success. Nine synthetic regressions are wired into native alpha safety verification. Offline Android/iOS compilation and source CI are distinct from real Supabase authentication, RLS, email callbacks, or physical-device testing. No shared live backend, production, Kinfolksworld, paid infrastructure or store changes.
