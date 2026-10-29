@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery319 (2026-10-29)
+
+Continued from [Recovery318](RECOVERY318.md) on an isolated branch. [RECOVERY319.md](RECOVERY319.md) documents a Community creation fix for same-account logout/login while an earlier INSERT is still pending: epoch-scoped pending tokens prevent the old request from blocking or unlocking the new session, and success notices cannot leak into later sessions. Three synthetic VM runtime regressions are included in native alpha verification. Real isolated backend/email/RLS and current physical Android/iPhone QA remain unverified. No production, shared live backend, Kinfolksworld, paid resources or app stores changed.
+
 # Kinfolk Social | Recovery317 (2026-10-29)
 
 Latest isolated checkpoint: [RECOVERY317.md](RECOVERY317.md). Vercel previews still contain the shared live Supabase URL/key, so the web app now **fails closed on *.vercel.app** before the SDK loads: a preview-only CSP blocks cross-origin backend/media requests, an accessible dark overlay explains the restriction, and capture-phase form submissions are suppressed. Production custom domains and Capacitor localhost are unaffected. Seven synthetic Node tests plus a Chromium/WebKit browser regression are integrated into source/native alpha verification; full CI and real backend/device tests remain separate gates. A READY preview is **not** a usable signup environment. Draft PR #17 targets Recovery316, not main/production. No shared live backend, Kinfolksworld, store or production changes.
