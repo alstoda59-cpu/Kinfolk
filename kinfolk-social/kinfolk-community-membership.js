@@ -49,12 +49,17 @@
             const joining=!memberships.has(id);
             pending.add(key);decorate();
             try{
+              // A DELETE can return no error when RLS matched zero rows.
+              // Require the backend to return the exact row affected before
+              // changing the membership button's displayed state.
               const query=joining
-                ?sb.from('kinfolk_community_members').insert({community_id:id,user_id:uid})
-                :sb.from('kinfolk_community_members').delete().eq('community_id',id).eq('user_id',uid);
-              const {error}=await query;
+                ?sb.from('kinfolk_community_members').insert({community_id:id,user_id:uid}).select('community_id,user_id')
+                :sb.from('kinfolk_community_members').delete().eq('community_id',id).eq('user_id',uid).select('community_id,user_id');
+              const {data,error}=await query;
               if(!current(uid,n,main))return;
               if(error)throw error;
+              if(!Array.isArray(data)||data.length!==1||data[0].community_id!==id||data[0].user_id!==uid)
+                throw Error('Membership write was not confirmed by the backend.');
               if(joining)memberships.add(id);else memberships.delete(id);
             }catch(error){
               if(current(uid,n,main)){

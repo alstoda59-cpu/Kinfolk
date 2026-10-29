@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const source=readFileSync(new URL('../kinfolk-community-membership.js',import.meta.url),'utf8');
 const ID='123e4567-e89b-42d3-a456-426614174000';
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {resolve,promise}};
-function harness({readError=null,readPending=false,writePending=false,writeError=null}={}){
+function harness({readError=null,readPending=false,writePending=false,writeError=null,writeRows=null,initialMembership=false}={}){
   const state={user:{id:'A'},view:'communities'},calls=[],warnings=[];
   let card,listing;
   const element=()=>({isConnected:true,disabled:false,textContent:'',attrs:{},listeners:{},
@@ -20,9 +20,9 @@ function harness({readError=null,readPending=false,writePending=false,writeError
     return {
       select(){return {eq(k,v){assert.equal(k,'user_id');assert.equal(v,state.user.id);return this},
         in(k,ids){assert.equal(k,'community_id');assert.deepEqual(Array.from(ids),[ID]);calls.push('read');
-          return readPending?read.promise:Promise.resolve({data:[],error:readError})}}},
-      insert(row){calls.push(['join',row]);return writePending?write.promise:Promise.resolve({error:writeError})},
-      delete(){return {eq(){return this},then(ok){calls.push('leave');return Promise.resolve({error:writeError}).then(ok)}}}
+          return readPending?read.promise:Promise.resolve({data:initialMembership?[{community_id:ID}]:[],error:readError})}}},
+      insert(row){calls.push(['join',row]);return {select(columns){assert.equal(columns,'community_id,user_id');return writePending?write.promise:Promise.resolve({data:writeRows??[row],error:writeError})}}},
+      delete(){const filters=[];return {eq(k,v){filters.push([k,v]);return this},select(columns){assert.equal(columns,'community_id,user_id');assert.deepEqual(filters,[['community_id',ID],['user_id','A']]);calls.push('leave');return writePending?write.promise:Promise.resolve({data:writeRows??[{community_id:ID,user_id:'A'}],error:writeError})}}}
     };
   }};
   const window={kfRenderCommunities:async()=>{}};
@@ -52,7 +52,7 @@ test('duplicate pending join and account switch do not display stale membership 
  const h=harness({writePending:true});await h.render();const b=h.card.children[0];
  const first=b.listeners.click();const second=b.listeners.click();
  assert.equal(h.calls.filter(c=>Array.isArray(c)&&c[0]==='join').length,1);
- h.state.user={id:'B'};h.write.resolve({error:null});await Promise.all([first,second]);
+ h.state.user={id:'B'};h.write.resolve({data:[{community_id:ID,user_id:'A'}],error:null});await Promise.all([first,second]);
  assert.notEqual(b.textContent,'Leave community');
 });
 test('write errors do not claim membership success',async()=>{
@@ -87,7 +87,7 @@ test('search during pending join keeps new button disabled and preserves result'
  assert.equal(rebuilt.textContent,'Joining…');
  await rebuilt.listeners.click();
  assert.equal(h.calls.filter(x=>Array.isArray(x)&&x[0]==='join').length,1);
- h.write.resolve({error:null});await first;
+ h.write.resolve({data:[{community_id:ID,user_id:'A'}],error:null});await first;
  assert.equal(rebuilt.disabled,false);
  assert.equal(rebuilt.textContent,'Leave community');
 });
@@ -96,4 +96,22 @@ test('search after account switch never rehydrates old account membership',async
  const search=h.listing;
  h.state.user={id:'B'};h.reset();search.listeners.input();
  assert.equal(h.card.children?.length,undefined);
+});
+
+test('zero-row join response does not falsely claim membership',async()=>{
+ const h=harness({writeRows:[]});await h.render();const b=h.card.children[0];
+ await b.listeners.click();assert.equal(b.textContent,'Join community');
+ assert.match(b.afterNodes[0].textContent,/failed/);
+});
+test('zero-row leave response retains existing membership',async()=>{
+ const h=harness({initialMembership:true,writeRows:[]});await h.render();const b=h.card.children[0];
+ assert.equal(b.textContent,'Leave community');
+ await b.listeners.click();assert.equal(b.textContent,'Leave community');
+ assert.match(b.afterNodes[0].textContent,/failed/);
+ assert.equal(h.calls.includes('leave'),true);
+});
+test('wrong-account write confirmation cannot change membership state',async()=>{
+ const h=harness({writeRows:[{community_id:ID,user_id:'B'}]});await h.render();const b=h.card.children[0];
+ await b.listeners.click();assert.equal(b.textContent,'Join community');
+ assert.match(b.afterNodes[0].textContent,/failed/);
 });
