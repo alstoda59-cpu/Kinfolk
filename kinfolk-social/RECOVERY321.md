@@ -14,6 +14,10 @@ Date: 2026-10-29. Scope: FULL MAIN Kinfolk Social (`kinfolk-social/`) only. Base
 - `af36a38`: package verification checks marker presence and startup order.
 - `5ee1e5c`, `a01264e`: seven synthetic runtime regression cases for valid/absent/blocked callbacks, override, native marker before bridge startup, and unchanged web behavior.
 - `fdf0eeb`, `ad8669d`: integrate regression tests into existing native `alpha:verify` and callback packager test.
+- `1b601d5`, `ead496a`: native password recovery now fails closed without a separately approved HTTPS recovery callback, rather than sending a reset email to an unrelated backend Site URL. Existing web behavior is retained.
+- `b69d6e3`: optionally inject `KINFOLK_ALPHA_PASSWORD_RESET_REDIRECT_URL` after the same HTTPS safety validation; never inject a local or preview URL.
+- `f9d8022`, `43fc9c4`: native package verifier checks the configured recovery callback or proves it is absent.
+- `bed973f`, `50e0952`: four additional synthetic password recovery regressions. `a54f1cf`, `98d1d09` include them in native alpha verification and static callback tests.
 - `d1beaf4`: add this isolated branch to the existing offline-only Android/iOS native build workflow.
 
 ## Verification boundaries
