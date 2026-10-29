@@ -11,7 +11,7 @@
     await baseRender(main);
     if(!uid||!current(uid,n,main))return;
     const cards=Array.from(main.querySelectorAll('#kfCommunityResults article[data-community-id]'))
-      .filter(card=>uuid.test(card.dataset.communityId||''));
+      .filter(card=>uuid.test(card.dataset.communityId||'')&&card.dataset.ownerId!==uid);
     if(!cards.length)return;
     const ids=cards.map(card=>card.dataset.communityId);
     let memberships;
