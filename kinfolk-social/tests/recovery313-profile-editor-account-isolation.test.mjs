@@ -38,7 +38,7 @@ function harness(options={}){
       }
     },
     closeModal(){calls.closed++;form.isConnected=false},
-    async hydrateUser(){calls.hydrated++;return true},
+    async hydrateUser(){calls.hydrated++;return options.hydrate??true},
     async loadCore(){calls.loaded++},
     async renderApp(){calls.rendered++},
     toast(...args){calls.toasts.push(args)}
@@ -86,5 +86,14 @@ test('replaced profile editor cannot complete a stale save',async()=>{
   const task=h.save(h.event);await waitFor(()=>h.calls.uploads.length===1);
   h.ctx.form=null;h.form.isConnected=false;gate.resolve({error:null});await task;
   assert.equal(h.calls.writes.length,0);
+  assert.equal(h.calls.toasts.length,0);
+});
+
+test('account switch while hydration finishes cannot close a newer editor',async()=>{
+  const gate=defer(),h=harness({hydrate:gate.promise});
+  const task=h.save(h.event);await waitFor(()=>h.calls.hydrated===1);
+  h.switchUser();gate.resolve(true);await task;
+  assert.equal(h.calls.closed,0);
+  assert.equal(h.calls.loaded,0);
   assert.equal(h.calls.toasts.length,0);
 });
