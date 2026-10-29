@@ -22,6 +22,8 @@ on:
       - kinfolk-social/recovery324-password-reset-overlap-ci-20261029
       # Recovery325: compile offline packages with session-isolated account password changes.
       - kinfolk-social/recovery325-password-change-session-guard-20261029
+      # Recovery326: compile offline packages with session-isolated blocked-account management.
+      - kinfolk-social/recovery326-blocked-account-session-guard-20261029
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
