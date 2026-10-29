@@ -113,7 +113,66 @@ window.openAccountSecurity=function(){
     }
   };
 };
-window.openNotificationDetails=async function(){const n=await one('notification_preferences')||{};sub('Notification settings',`<p class="kfsNote">Choose exactly which activity can reach your email.</p><form id="kfsNotifDetailForm"><label class="kfsCheck"><span>Friend requests</span><input id="ndFriend" type="checkbox" ${n.email_friend_requests!==false?'checked':''}></label><label class="kfsCheck"><span>Direct messages</span><input id="ndMessages" type="checkbox" ${n.email_messages?'checked':''}></label><label class="kfsCheck"><span>Group activity</span><input id="ndGroups" type="checkbox" ${n.email_group_activity?'checked':''}></label><label class="kfsCheck"><span>Post activity</span><input id="ndPosts" type="checkbox" ${n.email_post_activity?'checked':''}></label><label class="kfsCheck"><span>Kinfolk updates & marketing</span><input id="ndMarketing" type="checkbox" ${n.marketing_email?'checked':''}></label><button class="kfsAction" style="width:100%;margin-top:18px" type="submit">Save notifications</button></form>`);$('#kfsNotifDetailForm').onsubmit=async e=>{e.preventDefault();const {error}=await sb.from('notification_preferences').upsert({user_id:state.user.id,email_friend_requests:$('#ndFriend').checked,email_messages:$('#ndMessages').checked,email_group_activity:$('#ndGroups').checked,email_post_activity:$('#ndPosts').checked,marketing_email:$('#ndMarketing').checked},{onConflict:'user_id'});if(error)return toast(error.message,'danger');toast('Notification settings saved','good');closeKfsSub()}};
+// Recovery327: pin notification settings reads and writes to the opening account and screen.
+window.openNotificationDetails=async function(){
+  const accountId=state.user?.id;
+  if(!accountId)return toast('Sign in to manage notifications.','danger');
+  const epoch=typeof kf129Epoch==='number'?kf129Epoch:null;
+  const screen=sub('Notification settings','<div id="kfsNotifDetailBody"><p class="kfsNote">Loading notification preferences…</p></div>');
+  const body=screen?.querySelector('#kfsNotifDetailBody');
+  const current=()=>!!body?.isConnected&&screen.isConnected&&document.getElementById('kfsSubScreen')===screen&&
+    state.user?.id===accountId&&(epoch===null||kf129Epoch===epoch);
+  if(!body)return;
+  try{
+    const {data:n,error}=await sb.from('notification_preferences')
+      .select('user_id,email_friend_requests,email_messages,email_group_activity,email_post_activity,marketing_email')
+      .eq('user_id',accountId).maybeSingle();
+    if(!current())return;
+    if(error)throw error;
+    if(n&&n.user_id!==accountId)throw new Error('Notification preferences did not match this account.');
+    const values=n||{};
+    body.innerHTML=`<p class="kfsNote">Choose exactly which activity can reach your email.</p><form id="kfsNotifDetailForm"><label class="kfsCheck"><span>Friend requests</span><input id="ndFriend" type="checkbox" ${values.email_friend_requests!==false?'checked':''}></label><label class="kfsCheck"><span>Direct messages</span><input id="ndMessages" type="checkbox" ${values.email_messages?'checked':''}></label><label class="kfsCheck"><span>Group activity</span><input id="ndGroups" type="checkbox" ${values.email_group_activity?'checked':''}></label><label class="kfsCheck"><span>Post activity</span><input id="ndPosts" type="checkbox" ${values.email_post_activity?'checked':''}></label><label class="kfsCheck"><span>Kinfolk updates & marketing</span><input id="ndMarketing" type="checkbox" ${values.marketing_email?'checked':''}></label><button class="kfsAction" style="width:100%;margin-top:18px" type="submit">Save notifications</button></form>`;
+    const form=body.querySelector('#kfsNotifDetailForm');
+    const button=form?.querySelector('button[type="submit"]');
+    if(!form||!button)return;
+    let pending=false;
+    form.onsubmit=async event=>{
+      event.preventDefault();
+      if(pending||!current()||body.querySelector('#kfsNotifDetailForm')!==form)return;
+      const fields={email_friend_requests:'ndFriend',email_messages:'ndMessages',email_group_activity:'ndGroups',
+        email_post_activity:'ndPosts',marketing_email:'ndMarketing'};
+      const submitted={user_id:accountId};
+      for(const [key,id] of Object.entries(fields)){
+        const input=form.querySelector('#'+id);
+        if(!input)return toast('Notification form is incomplete. Reopen settings.','danger');
+        submitted[key]=!!input.checked;
+      }
+      pending=true;button.disabled=true;button.textContent='Saving…';
+      try{
+        const {data:saved,error:saveError}=await sb.from('notification_preferences')
+          .upsert(submitted,{onConflict:'user_id'})
+          .select('user_id,email_friend_requests,email_messages,email_group_activity,email_post_activity,marketing_email')
+          .single();
+        if(!current()||body.querySelector('#kfsNotifDetailForm')!==form)return;
+        if(saveError)throw saveError;
+        if(!saved||saved.user_id!==accountId||
+          Object.keys(fields).some(key=>saved[key]!==submitted[key]))
+          throw new Error('Notification settings could not be confirmed. Please retry.');
+        toast('Notification settings saved','good');
+        closeKfsSub();
+      }catch(saveError){
+        if(current()&&body.querySelector('#kfsNotifDetailForm')===form)
+          toast(saveError?.message||'Could not save notification settings.','danger');
+      }finally{
+        if(current()&&body.querySelector('#kfsNotifDetailForm')===form){
+          pending=false;button.disabled=false;button.textContent='Save notifications';
+        }
+      }
+    };
+  }catch(error){
+    if(current())body.textContent=error?.message||'Could not load notification preferences.';
+  }
+};
 window.openKinfolkHelp=function(){sub('Help & support',`<p class="kfsNote">Tell us what went wrong. This sends a diagnostic report tied to your account so the issue can be investigated.</p><form id="kfsProblemForm"><textarea id="kfsProblemText" class="kfsText" rows="7" maxlength="500" placeholder="Describe the problem…"></textarea><button class="kfsAction" style="width:100%;margin-top:14px" type="submit">Report a problem</button></form>`);$('#kfsProblemForm').onsubmit=async e=>{e.preventDefault();const msg=$('#kfsProblemText').value.trim();if(msg.length<5)return toast('Please add a little more detail','danger');const platform=/android/i.test(navigator.userAgent)?'android':/iphone|ipad/i.test(navigator.userAgent)?'ios':'web';const {error}=await sb.from('client_diagnostics').insert({user_id:state.user.id,app_version:'phase39',platform,area:'user_report',code:'USER_REPORT',message:msg,context:{path:location.pathname,user_agent:navigator.userAgent.slice(0,300)}});if(error)return toast(error.message,'danger');toast('Problem report sent','good');closeKfsSub()}};
 window.openKinfolkGuidelines=function(){sub('Community Guidelines',`<div class="kfsLegal"><p>Kinfolk is for real people, creative profiles, conversation and community. These preview guidelines are being wired into the app before launch.</p><h3>Be respectful</h3><p>No harassment, threats, hateful conduct, impersonation or targeted abuse.</p><h3>Keep people safe</h3><p>No sexual exploitation, non-consensual intimate content, dangerous challenges, or attempts to sexualize minors.</p><h3>Post what you have the right to share</h3><p>Do not post private information or copyrighted material you do not have permission to use.</p><h3>Use reporting and blocking</h3><p>Kinfolk includes reporting and blocking tools to help users control their experience.</p></div>`)};
 window.openKinfolkTerms=function(){sub('Terms & privacy',`<div class="kfsLegal"><p><b>Pre-launch draft.</b> This screen is not the final legal text.</p><p>Kinfolk will explain account rules, acceptable use, content ownership, privacy choices, moderation, deletion, and applicable service terms before launch.</p><p class="kfsDanger">Final Terms of Service and Privacy Policy still require a launch-ready legal review before production release.</p></div>`)};
