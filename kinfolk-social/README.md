@@ -1,3 +1,7 @@
+# Recovery327 | Notification preferences account isolation (2026-10-29)
+
+Continued from [Recovery326](RECOVERY326.md) on an isolated draft branch. [RECOVERY327.md](RECOVERY327.md) pins notification detail reads and saves to the opening account, auth activation and exact settings screen; prevents stale account-switch responses and duplicate saves; and requires a backend-confirmed matching preference row before showing success. Twelve synthetic regressions are integrated into native alpha verification. Offline Android/iOS compilation is not real backend, email, RLS or physical-device QA. No production, shared live Supabase, Kinfolksworld, paid resources or store changes.
+
 # Recovery326 | Blocked-account session isolation (2026-10-29)
 
 Latest isolated continuation: [RECOVERY326.md](RECOVERY326.md). The full main Kinfolk Social app now pins blocked-account list reads and Unblock actions to the opening account, auth activation and exact screen. Eight new synthetic Node regression cases protect against stale responses, account switches and duplicate unblocks. Offline Android/iOS native compilation is configured on the isolated Recovery326 branch. **Real Supabase signup/RLS, physical-device QA and launch readiness remain unverified.** Do not merge, deploy production, change shared live Supabase or touch Kinfolksworld without explicit owner approval.
