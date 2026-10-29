@@ -1,1 +1,11 @@
-const fs=require('node:fs'),assert=require('node:assert/strict');const html=fs.readFileSync(__dirname+'/index.html','utf8');const fn=html.slice(html.indexOf('async function toggleVideoReaction('),html.indexOf('window.toggleVideoReaction='));assert.ok(fn.includes('const reelButtons='));assert.ok(fn.includes('if(pendingVideoReactionIds.has(id))return'));assert.ok(fn.includes('reelButtons.forEach(b=>b.disabled=true)'));assert.ok((fn.match(/reelButtons\.forEach\(b=>b\.disabled=false\)/g)||[]).length===2);console.log('Recovery166 reaction pending-state source checks passed');
+const fs=require('node:fs'),assert=require('node:assert/strict');
+const html=fs.readFileSync(__dirname+'/index.html','utf8');
+const fn=html.slice(html.indexOf('async function toggleVideoReaction('),html.indexOf('window.toggleVideoReaction='));
+assert.ok(fn.includes('const reelButtons='));
+assert.ok(fn.includes("const pendingKey=sessionEpoch+':'+userId+':'+id"),'reaction lock is scoped to initiating account and auth epoch');
+assert.ok(fn.includes('if(pendingVideoReactionIds.has(pendingKey))return'));
+assert.ok(fn.includes('const stillCurrent=()=>state.user?.id===userId&&kf129Epoch===sessionEpoch'));
+assert.ok(fn.includes('reelButtons.forEach(b=>b.disabled=true)'));
+assert.equal((fn.match(/reelButtons\\.forEach\\(b=>b\\.disabled=false\\)/g)||[]).length,2);
+assert.ok(fn.includes('pendingVideoReactionIds.delete(pendingKey)'),'pending lock always released');
+console.log('Recovery166 reaction pending-state and account isolation source checks passed');
