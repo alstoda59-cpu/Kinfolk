@@ -26,3 +26,20 @@ test('native packager injects configured callback and functional verifier requir
   assert.match(gate,/alphaEmailCallback\(process\.env\.KINFOLK_ALPHA_EMAIL_REDIRECT_URL,\{required:true\}\)/);
   assert.match(verify,/native package must embed the configured HTTPS verification callback/);
 });
+
+test('rejects blocked Vercel previews and Supabase API callback hosts',()=>{
+  for(const url of [
+    'https://kinfolk-social-demo-2e1fglj1u-alstoda59-9779.vercel.app/auth/callback',
+    'https://vercel.app/auth',
+    'https://preview.vercel.app./auth',
+    'https://viantpfagtbgyyzavmtv.supabase.co/auth/v1/callback',
+    'https://supabase.co/auth'
+  ])assert.throws(()=>alphaEmailCallback(url),/callback/);
+});
+test('rejects private, literal-IP and nonstandard-port native callback hosts',()=>{
+  for(const url of [
+    'https://foo.local/cb','https://alpha.localhost/cb',
+    'https://192.168.1.20/cb','https://[::1]/cb',
+    'https://alpha.example:8443/cb'
+  ])assert.throws(()=>alphaEmailCallback(url),/callback/);
+});
