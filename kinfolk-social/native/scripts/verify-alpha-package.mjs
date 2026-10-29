@@ -30,6 +30,14 @@ if(emailCallback){
   assert.doesNotMatch(html,/window\.KINFOLK_EMAIL_REDIRECT_URL\s*=/,
     'native package must not silently retain an unconfigured email callback');
 }
+const passwordResetCallback=alphaEmailCallback(process.env.KINFOLK_ALPHA_PASSWORD_RESET_REDIRECT_URL);
+if(passwordResetCallback){
+  assert.ok(html.includes('window.KINFOLK_PASSWORD_RESET_REDIRECT_URL='+JSON.stringify(passwordResetCallback)),
+    'native package must embed the configured HTTPS password recovery callback');
+}else{
+  assert.doesNotMatch(html,/window\\.KINFOLK_PASSWORD_RESET_REDIRECT_URL\\s*=/,
+    'native package must not retain an unconfigured password recovery callback');
+}
 assert.doesNotMatch(html,/navigator\.serviceWorker\.register\('/,'Capacitor should not register a stale web service worker');
 
 // Check every startup script, not just scripts matching kinfolk-*.js.
