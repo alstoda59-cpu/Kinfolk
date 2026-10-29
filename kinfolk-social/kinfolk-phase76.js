@@ -954,11 +954,11 @@ setTimeout(harden,0);setTimeout(harden,700);setInterval(unlockStuck,1200);
     if(native&&!configured)throw new Error(message);
     try{
       const target=new URL(configured||location.origin);
-      const host=target.hostname.toLowerCase().replace(/\\.$/,'');
+      const host=target.hostname.toLowerCase().replace(/\.$/,'');
       const blocked=host==='localhost'||host.endsWith('.localhost')||
         host==='vercel.app'||host.endsWith('.vercel.app')||
         host==='supabase.co'||host.endsWith('.supabase.co')||
-        host.endsWith('.local')||/^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(host)||host.startsWith('[');
+        host.endsWith('.local')||/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)||host.startsWith('[');
       if(target.protocol!=='https:'||target.username||target.password||target.hash||target.port||blocked){
         if(native)throw new Error(message);
         return {};
