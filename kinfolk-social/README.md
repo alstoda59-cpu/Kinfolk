@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery320 (2026-10-29)
+
+Continued from [Recovery319](RECOVERY319.md) on an isolated branch. [RECOVERY320.md](RECOVERY320.md) strengthens native email callback validation to reject unusable fail-closed Vercel previews, Supabase API hosts, local/IP destinations and nonstandard ports; valid public HTTPS callbacks remain supported. The existing offline-only Android APK and iOS Simulator build workflow now runs for Recovery320, with CI placeholder backend only. This is native compilation and synthetic validation, not real signup/email, RLS, signed iPhone installation or device QA. Production, shared live backend, Kinfolksworld and stores remain unchanged.
+
 # Kinfolk Social | Recovery319 (2026-10-29)
 
 Continued from [Recovery318](RECOVERY318.md) on an isolated branch. [RECOVERY319.md](RECOVERY319.md) documents a Community creation fix for same-account logout/login while an earlier INSERT is still pending: epoch-scoped pending tokens prevent the old request from blocking or unlocking the new session, and success notices cannot leak into later sessions. Three synthetic VM runtime regressions are included in native alpha verification. Real isolated backend/email/RLS and current physical Android/iPhone QA remain unverified. No production, shared live backend, Kinfolksworld, paid resources or app stores changed.
