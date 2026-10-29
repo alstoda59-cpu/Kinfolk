@@ -1,0 +1,78 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+
+const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+function extract(start,end){
+ const a=html.indexOf(start),b=html.indexOf(end,a);
+ assert.ok(a>=0&&b>a,'Expected committed '+start+' handler');
+ return html.slice(a,b);
+}
+const handlers=extract('async function createPost(e){','function openStoryModal()')+'\n'+extract('async function createStory(e){','async function viewStory(id)');
+function deferred(){let resolve;const promise=new Promise(r=>{resolve=r});return {resolve,promise}}
+function harness(kind,{file=true,failInsert=false,failRefresh=false,deferUpload=false}={}){
+ const isPost=kind==='post',id=isPost?'postForm':'storyForm',table=isPost?'posts':'kinfolk_stories';
+ const uploads=[],removals=[],inserts=[],toasts=[];
+ const state={user:{id:'A'}};
+ const submitButton={disabled:false},progress={textContent:''};
+ const fields=isPost?{
+  '#postBody':{value:'hello'},'#postFile':{files:file?[{name:'image.png'}]:[]},'#postProgress':progress
+ }:{
+  '#storyBody':{value:'hello'},'#storyFile':{files:file?[{name:'image.png'}]:[]}
+ };
+ const form={dataset:{},isConnected:true,querySelector:s=>s.startsWith('button')?submitButton:fields[s]||null};
+ let closed=0,refreshed=0,rendered=0;
+ const ctx={
+  state,kf129Epoch:1,
+  document:{getElementById:key=>key===id?form:null},
+  kfAlphaLoadCurrent:(epoch,uid)=>epoch===ctx.kf129Epoch&&uid===state.user?.id,
+  kfAlphaComposerCurrent:(epoch,uid,f,key)=>epoch===ctx.kf129Epoch&&uid===state.user?.id&&f.isConnected!==false&&ctx.document.getElementById(key)===f,
+  crypto:{randomUUID:()=> 'uuid'},safeName:n=>n,
+  toast:(...a)=>toasts.push(a),closeModal:()=>{closed++},
+  loadFeed:async()=>{refreshed++;if(failRefresh)throw new Error('feed unavailable')},
+  loadStories:async()=>{refreshed++;if(failRefresh)throw new Error('feed unavailable')},
+  renderApp:async()=>{rendered++},
+  sb:{
+   storage:{from:bucket=>{assert.equal(bucket,'kinfolk-media');return {
+    upload:(path,blob,opts)=>{uploads.push({path,blob,opts});if(deferUpload){const d=deferred();uploads.at(-1).deferred=d;return d.promise}return Promise.resolve({error:null})},
+    remove:paths=>{removals.push([...paths]);return Promise.resolve({error:null})}
+   }}},
+   from:name=>{assert.equal(name,table);return {insert:payload=>{inserts.push(payload);return Promise.resolve({error:failInsert?new Error('write rejected'):null})}}}
+  }
+ };
+ vm.createContext(ctx);
+ vm.runInContext(handlers+'\nthis.createPost=createPost;this.createStory=createStory;',ctx,{timeout:1000});
+ return {ctx,uploads,removals,inserts,toasts,form,submitButton,
+  get closed(){return closed},get refreshed(){return refreshed},get rendered(){return rendered},
+  submit:()=>ctx[isPost?'createPost':'createStory']({preventDefault(){},currentTarget:form}),
+  switchAccount:()=>{state.user={id:'B'};ctx.kf129Epoch++}
+ };
+}
+for(const kind of ['post','story']){
+ test(kind+': failed database insert removes uploaded orphan media',async()=>{
+  const h=harness(kind,{failInsert:true});await h.submit();
+  assert.equal(h.uploads.length,1);assert.equal(h.inserts.length,1);
+  assert.deepEqual(h.removals,[[h.uploads[0].path]]);
+  assert.equal(h.closed,0);assert.equal(h.submitButton.disabled,false);
+  assert.match(h.toasts[0][0],/write rejected/);
+ });
+ test(kind+': successful insert never deletes media if subsequent refresh fails',async()=>{
+  const h=harness(kind,{failRefresh:true});await h.submit();
+  assert.equal(h.inserts.length,1);assert.deepEqual(h.removals,[]);
+  assert.equal(h.closed,1);assert.equal(h.refreshed,1);
+  assert.match(h.toasts[0][0],/feed unavailable/);
+ });
+ test(kind+': account switch during upload never inserts for another account',async()=>{
+  const h=harness(kind,{deferUpload:true}),pending=h.submit();
+  assert.equal(h.uploads.length,1);
+  h.switchAccount();h.uploads[0].deferred.resolve({error:null});await pending;
+  assert.equal(h.inserts.length,0);assert.equal(h.toasts.length,0);
+  assert.deepEqual(h.removals,[]);
+ });
+ test(kind+': text-only posts do not invoke storage cleanup',async()=>{
+  const h=harness(kind,{file:false,failInsert:true});await h.submit();
+  assert.equal(h.uploads.length,0);assert.equal(h.inserts.length,1);
+  assert.deepEqual(h.removals,[]);
+ });
+}
