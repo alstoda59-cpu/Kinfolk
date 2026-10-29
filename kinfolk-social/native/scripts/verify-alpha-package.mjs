@@ -44,6 +44,7 @@ assertNativeModuleParity(original,html);
 assert.ok(modules.length>=20,'complete Kinfolk modules must be present');
 assert.ok(modules.includes('/kinfolk-reels159.js'),'shorts and reels must be packaged');
 assert.ok(modules.includes('/kinfolk-communities.js'),'Communities must be packaged in Android/iOS alpha');
+assert.ok(modules.includes('/kinfolk-community-membership.js'),'Community membership controls must be packaged in Android/iOS alpha');
 for(const name of modules){
   const bytes=await readFile(path.join(output,name.slice(1)));
   assert.ok(bytes.length>0,name+' was empty');
