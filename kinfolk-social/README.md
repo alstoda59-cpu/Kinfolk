@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery321 (2026-10-29)
+
+Continued from [Recovery320](RECOVERY320.md) on an isolated branch. [RECOVERY321.md](RECOVERY321.md) fixes legacy signup in Android/iOS native packaging: every native signup path now requires the packaged approved HTTPS verification callback and cannot silently fall back to the backend Site URL. A native marker is injected before SDK startup so the protection remains active before Capacitor's bridge initializes. Seven synthetic runtime regressions and package verification are integrated into the native alpha checks. Offline CI packages remain nonfunctional for login; real email, isolated backend RLS and physical-device QA are not verified. No production, shared live Supabase, Kinfolksworld, paid infrastructure or app-store changes.
+
 # Kinfolk Social | Recovery320 (2026-10-29)
 
 Continued from [Recovery319](RECOVERY319.md) on an isolated branch. [RECOVERY320.md](RECOVERY320.md) strengthens native email callback validation to reject unusable fail-closed Vercel previews, Supabase API hosts, local/IP destinations and nonstandard ports; valid public HTTPS callbacks remain supported. The existing offline-only Android APK and iOS Simulator build workflow now runs for Recovery320, with CI placeholder backend only. This is native compilation and synthetic validation, not real signup/email, RLS, signed iPhone installation or device QA. Production, shared live backend, Kinfolksworld and stores remain unchanged.
