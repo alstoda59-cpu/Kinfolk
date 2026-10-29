@@ -593,7 +593,60 @@ async function renderProfile(main,id){const epoch=kf129Epoch,uid=state.user?.id;
 async function profileTab(t,id){state.profileTab=t;await renderProfile($('#main'),id)}
 async function renderProfileContent(root,tab,p,ex,posts,friends,videos){if(tab==='posts')return renderFeed(root,posts);if(tab==='videos'){root.innerHTML='<div class="videoGrid" id="pvids"></div>';return renderVideoGrid($('#pvids'),videos)}if(tab==='about'){root.innerHTML=`<div class="card"><div class="cardpad"><div class="sectionTitle">About</div><div class="aboutGrid"><b>Bio</b><div>${esc(p.bio||'Not added')}</div><b>Location</b><div>${esc(ex?.location_text||'Not added')}</div><b>Website</b><div>${ex?.website_url?`<a target="_blank" rel="noopener" href="${esc(ex.website_url)}">${esc(ex.website_url)}</a>`:'Not added'}</div><b>Relationship</b><div>${esc(ex?.relationship_status||'Not added')}</div><b>Gender</b><div>${esc(ex?.gender||'Not added')}</div><b>Preference</b><div>${esc(ex?.orientation||'Not added')}</div><b>Profile music</b><div>${ex?.music_url?`<a target="_blank" rel="noopener" href="${esc(ex.music_url)}">Open music link ↗</a>`:'Not added'}</div></div></div></div>`;return}if(tab==='friends'){const ids=friends.map(r=>r.sender_id===p.id?r.receiver_id:r.sender_id);await loadProfiles(ids);return renderPeopleList(root,ids.map(id=>state.profiles.get(id)).filter(Boolean))}if(tab==='photos'){const {data:albums}=await sb.from('photo_albums').select('*').eq('owner_id',p.id).order('created_at',{ascending:false});root.innerHTML=`<div class="card"><div class="cardpad"><div class="row"><div class="sectionTitle grow">Photo albums</div>${p.id===state.user.id?'<button class="btn primary small" onclick="openAlbumModal()">＋ New album</button>':''}</div>${(albums||[]).map(a=>`<button class="sideitem" onclick="viewAlbum('${a.id}')"><span>▧</span><span><b>${esc(a.title)}</b><div class="muted">${esc(a.description||'')} · ${esc(a.visibility)}</div></span></button>`).join('')||'<div class="empty">No albums yet.</div>'}</div></div>`}}
 function openEditProfile(){const p=state.profile,ex=state.extras||{};modal('Edit profile',`<form id="profileForm"><div class="formRow"><div><div class="label">Display name</div><input class="field" id="editDisplay" maxlength="50" value="${esc(p.display_name||'')}"></div><div><div class="label">Username</div><input class="field" id="editUsername" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" value="${esc(p.username||'')}"></div></div><div class="label">Bio</div><textarea class="textarea" id="editBio" maxlength="500">${esc(p.bio||'')}</textarea><div class="formRow"><div><div class="label">Profile photo</div><input class="field" id="editAvatar" type="file" accept="image/*"></div><div><div class="label">Wallpaper</div><input class="field" id="editWallpaper" type="file" accept="image/*,.gif"></div></div><div class="formRow"><div><div class="label">Location</div><input class="field" id="editLocation" value="${esc(ex.location_text||'')}"></div><div><div class="label">Website</div><input class="field" id="editWebsite" type="url" value="${esc(ex.website_url||'')}"></div></div><div class="label">Profile music URL</div><input class="field" id="editMusic" type="url" placeholder="YouTube or music link" value="${esc(ex.music_url||'')}"><div class="formRow"><div><div class="label">Gender</div><input class="field" id="editGender" value="${esc(ex.gender||'')}"></div><div><div class="label">Sexual preference / orientation</div><input class="field" id="editOrientation" value="${esc(ex.orientation||'')}"></div></div><div class="formRow"><div><div class="label">Relationship status</div><input class="field" id="editRelationship" value="${esc(ex.relationship_status||'')}"></div><div><div class="label">Birthday</div><input class="field" id="editBirthday" type="date" value="${esc(ex.birthday||'')}"></div></div><button class="btn primary full" style="margin-top:16px">Save profile</button></form>`);$('#profileForm').onsubmit=saveProfile}
-async function saveProfile(e){e.preventDefault();try{const po={display_name:$('#editDisplay').value.trim(),username:$('#editUsername').value.trim(),bio:$('#editBio').value.trim()};for(const [sel,key,folder] of [['#editAvatar','avatar_url','avatars'],['#editWallpaper','wallpaper_url','wallpapers']]){const f=$(sel).files[0];if(f){const path=`${state.user.id}/${folder}/${crypto.randomUUID()}-${safeName(f.name)}`;const {error}=await sb.storage.from('kinfolk-media').upload(path,f);if(error)throw error;po[key]=path}}const ex={user_id:state.user.id,location_text:$('#editLocation').value.trim()||null,website_url:$('#editWebsite').value.trim()||null,music_url:$('#editMusic').value.trim()||null,gender:$('#editGender').value.trim()||null,orientation:$('#editOrientation').value.trim()||null,relationship_status:$('#editRelationship').value.trim()||null,birthday:$('#editBirthday').value||null,updated_at:new Date().toISOString()};const [{error:e1},{error:e2}]=await Promise.all([sb.from('profiles').update(po).eq('id',state.user.id),sb.from('kinfolk_profile_extras').upsert(ex,{onConflict:'user_id'})]);if(e1)throw e1;if(e2)throw e2;closeModal();await hydrateUser();state.profiles.set(state.user.id,state.profile);await loadCore();await renderApp();toast('Profile updated','good')}catch(err){toast(err.message,'danger')}}
+// Snapshot the editing account and form before any upload. A delayed upload
+// must never write profile fields to a different account after a switch.
+async function saveProfile(e){
+  e.preventDefault();
+  const form=e.currentTarget||e.target;
+  const uid=state.user?.id,epoch=kf129Epoch;
+  if(!uid||!form?.isConnected||form.dataset.kf313Saving==='1')return;
+  const sameAccount=()=>state.user?.id===uid&&kf129Epoch===epoch;
+  const active=()=>sameAccount()&&form.isConnected&&document.getElementById('profileForm')===form;
+  const value=selector=>String(form.querySelector(selector)?.value||'').trim();
+  const button=form.querySelector('button[type="submit"],button.btn.primary');
+  form.dataset.kf313Saving='1';
+  if(button)button.disabled=true;
+  try{
+    const profile={display_name:value('#editDisplay'),username:value('#editUsername'),bio:value('#editBio')};
+    const extras={user_id:uid,location_text:value('#editLocation')||null,website_url:value('#editWebsite')||null,
+      music_url:value('#editMusic')||null,gender:value('#editGender')||null,orientation:value('#editOrientation')||null,
+      relationship_status:value('#editRelationship')||null,birthday:value('#editBirthday')||null,updated_at:new Date().toISOString()};
+    const files=[['#editAvatar','avatar_url','avatars'],['#editWallpaper','wallpaper_url','wallpapers']]
+      .map(([selector,key,folder])=>({file:form.querySelector(selector)?.files?.[0],key,folder}));
+    for(const {file,key,folder} of files){
+      if(!active())return;
+      if(!file)continue;
+      const path=uid+'/'+folder+'/'+crypto.randomUUID()+'-'+safeName(file.name);
+      const {error}=await sb.storage.from('kinfolk-media').upload(path,file);
+      if(!active())return;
+      if(error)throw error;
+      profile[key]=path;
+    }
+    if(!active())return;
+    const [savedProfile,savedExtras]=await Promise.all([
+      sb.from('profiles').update(profile).eq('id',uid),
+      sb.from('kinfolk_profile_extras').upsert(extras,{onConflict:'user_id'})
+    ]);
+    if(!active())return;
+    if(savedProfile.error)throw savedProfile.error;
+    if(savedExtras.error)throw savedExtras.error;
+    closeModal();
+    const hydrated=await hydrateUser();
+    if(!hydrated||!sameAccount())return;
+    state.profiles.set(uid,state.profile);
+    await loadCore();
+    if(!sameAccount())return;
+    await renderApp();
+    if(sameAccount())toast('Profile updated','good');
+  }catch(error){
+    if(active())toast(error.message||'Could not save profile.','danger');
+  }finally{
+    if(form.isConnected){
+      delete form.dataset.kf313Saving;
+      if(button)button.disabled=false;
+    }
+  }
+}
 function openCreateMenu(){modal('Create on Kinfolk',`<div style="display:grid;gap:10px"><button class="btn" onclick="closeModal();openPostModal()">✎ Create post</button><button class="btn" onclick="closeModal();openStoryModal()">◫ Create story</button><button class="btn" onclick="closeModal();openVideoModal()">▶ Upload reel/video</button><button class="btn" onclick="closeModal();openChannelModal()">▣ Create channel</button><button class="btn" onclick="closeModal();openAlbumModal()">▧ Create album</button><button class="btn" onclick="closeModal();openGroups()">☻ Group chats</button></div>`)}
 function openSearch(){modal('Search Kinfolk',`<input class="field" id="globalSearch" placeholder="People or channels…" autofocus><div id="searchResults" style="margin-top:12px"></div>`);$('#globalSearch').oninput=async e=>{const q=e.target.value.trim().toLowerCase(),r=$('#searchResults');if(q.length<2){r.innerHTML='';return}const people=[...state.profiles.values()].filter(p=>(p.display_name+' '+p.username).toLowerCase().includes(q)).slice(0,8),channels=state.channels.filter(c=>(c.title+' '+(c.slug||'')).toLowerCase().includes(q)).slice(0,8);r.innerHTML=`${people.map(p=>`<button class="sideitem" onclick="closeModal();openProfile('${p.id}')">☺ <b>${esc(p.display_name||p.username)}</b><span class="muted">@${esc(p.username)}</span></button>`).join('')}${channels.map(c=>`<button class="sideitem" onclick="closeModal();openChannel('${c.id}')">▣ <b>${esc(c.title)}</b><span class="muted">${c.slug?'@'+esc(c.slug):''}</span></button>`).join('')||'<div class="muted">No matches</div>'}`}}
 // Recovery300: scope message requests, modal lifecycle, and sends to the initiating account.
