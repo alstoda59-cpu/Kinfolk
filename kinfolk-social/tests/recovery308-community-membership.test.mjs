@@ -60,3 +60,9 @@ test('write errors do not claim membership success',async()=>{
  await b.listeners.click();assert.equal(b.textContent,'Join community');
  assert.match(b.afterNodes[0].textContent,/failed/);
 });
+
+test('community owner is not shown a self-join button',async()=>{
+ const h=harness();h.card.dataset.ownerId='A';await h.render();
+ assert.equal(h.card.children?.length,undefined);
+ assert.deepEqual(h.calls,[]);
+});
