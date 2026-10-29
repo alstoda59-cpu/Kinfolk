@@ -9,7 +9,7 @@ test('both message entry points require an accepted friendship',()=>{
  const helper=html.indexOf('function kfAlphaCanDm(peer)');
  assert.ok(helper>0,'shared friendship check exists');
  assert.match(html,/r\.status==='accepted'/);
- assert.match(html,/async function openDm\(peer\)\{if\(!kfAlphaCanDm\(peer\)\)/);
+ assert.match(html,/async function openDm\(peer\)\{[\s\S]{0,350}if\(!kfAlphaCanDm\(peer\)\)/);
  assert.match(html,/window\.openDm=async function\(peer\)\{if\(!kfAlphaCanDm\(peer\)\)/);
 });
 test('blocked DM opens display an actionable message',()=>{

@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery301 (2026-10-28)
+
+Latest isolated checkpoint: [RECOVERY301.md](RECOVERY301.md). Fixed cross-account notification reads and Mark All Read writes: explicitly recipient-scoped queries, defensive response filtering, stale-request rejection, duplicate-write suppression and navigation-safe completion. Nine synthetic V8 checks passed against exact committed handlers; committed Node tests and full CI remain unverified. Recovery301 preview is blocked by Vercel build-rate limit. Real isolated Supabase auth/RLS, current Android/iPhone builds and physical-device QA remain outstanding. No shared live backend, production or store changes.
+
 # Kinfolk Social | Recovery300 (2026-10-28)
 
 Latest isolated checkpoint: [RECOVERY300.md](RECOVERY300.md). Fixed cross-account direct-message races: delayed inbox/DM responses cannot reopen or overwrite another account's modal, and stale send forms cannot write as a newly signed-in member. Added eight Node regressions to the native alpha verification command; nine source-backed synthetic V8 scenarios passed, while Node CI and device/backend end-to-end tests remain unverified. Read-only isolated Supabase inspection confirms RLS-enabled messaging tables but also identifies 13 public tables referenced by the main app that are not yet present in the isolated alpha database. Nonproduction only; no shared live Supabase or app-store changes.
