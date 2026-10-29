@@ -4,7 +4,7 @@
 // Native Capacitor localhost and the production custom domain are unchanged.
 (()=>{
   const host=String(window.location?.hostname||'').toLowerCase();
-  if(!/(^|\.)vercel\.app$/.test(host))return;
+  if(!/(^|\.)vercel\.app$/.test(host)||window.__kinfolkPreviewBackendBlocked)return;
   window.__kinfolkPreviewBackendBlocked=true;
 
   // A Vercel preview currently ships source configured for the shared live
