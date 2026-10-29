@@ -8,7 +8,7 @@
   let notice=null;
   const active=(uid,request,main)=>state.user?.id===uid&&state.view==='communities'&&directoryRequest===request&&main?.isConnected;
   const rowsHTML=(rows,empty)=>rows.length?rows.map(c=>
-    '<article class="card" data-community-id="'+esc(c.id||'')+'" style="padding:14px;margin-top:10px"><b>'+esc(c.name)+'</b>'+
+    '<article class="card" data-community-id="'+esc(c.id||'')+'" data-owner-id="'+esc(c.owner_id||'')+'" style="padding:14px;margin-top:10px"><b>'+esc(c.name)+'</b>'+
     (c.visibility==='private'?'<span class="muted" style="margin-left:8px">Private</span>':'')+
     '<p class="muted">'+esc(c.description||'A Kinfolk community')+'</p></article>'
   ).join(''):'<p class="muted">'+esc(empty)+'</p>';
