@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery325 (2026-10-29)
+
+Continued directly from [Recovery324](RECOVERY324.md) on an isolated draft branch. [RECOVERY325.md](RECOVERY325.md) fixes the Account security password-change lifecycle: account/activation/form ownership, duplicate-submit suppression, stale completion isolation, and confirmation of the returned user before success. Nine synthetic regressions are wired into native alpha safety verification. Offline Android/iOS compilation and source CI are distinct from real Supabase authentication, RLS, email callbacks, or physical-device testing. No shared live backend, production, Kinfolksworld, paid infrastructure or store changes.
+
 # Kinfolk Social | Recovery324 (2026-10-29)
 
 Continued from [Recovery323](RECOVERY323.md) on an isolated draft branch. [RECOVERY324.md](RECOVERY324.md) fixes a real password-reset retry race: editing the email immediately unlocks retry, while an older request can no longer unlock the newer pending request. Added overlapping-request regression and repaired the legacy Chromium fixture whose stale expectation caused Recovery323 **full source CI to fail**. Current source/native CI must be checked at the exact Recovery324 head; Android/iOS offline compilation is not live backend or physical-device verification. No shared live Supabase, Kinfolksworld, production, paid infrastructure or stores changed.
