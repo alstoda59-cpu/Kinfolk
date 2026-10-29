@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery312 (2026-10-29)
+
+Latest isolated checkpoint: [RECOVERY312.md](RECOVERY312.md). Community creation now requires exactly one backend-confirmed owner-matched UUID row and matching submitted fields before displaying success; added synthetic regressions for zero-row, wrong-owner, mismatched/multiple rows and empty descriptions. Draft PR #12 targets Recovery311 only. Isolated community tables, real RLS/auth, current Android/iOS builds and physical-device QA remain blocked. No production release.
+
 # Kinfolk Social | Recovery311 (2026-10-29)
 
 Latest isolated checkpoint: [RECOVERY311.md](RECOVERY311.md). Public Community Join/Leave now requires exactly one backend-confirmed matching membership row, preventing false success on zero-row or mismatched writes. Updated synthetic regressions and draft PR #11 target Recovery310 only. Isolated backend community tables, real RLS, current native builds and device QA remain launch blockers. No production release.
