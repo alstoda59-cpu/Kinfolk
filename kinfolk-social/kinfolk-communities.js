@@ -40,7 +40,7 @@
       if(error)throw error;
       const row=Array.isArray(data)&&data.length===1?data[0]:null;
       if(!row||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(row.id||'')||
-         row.owner_id!==uid||row.name!==name||row.visibility!==visibility||row.description!==description)
+         row.owner_id!==uid||row.name!==name||row.visibility!==visibility||String(row.description??'')!==description)
         throw Error('Community creation was not confirmed by the backend.');
       notice={uid,message:'Community created. You can find it under My communities.'};
       const main=document.getElementById('main');
