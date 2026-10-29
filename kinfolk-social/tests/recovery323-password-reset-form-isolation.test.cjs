@@ -29,8 +29,11 @@ function harness({callbackError=false}={}){
   const messages=[];
   let resolveRequest,rejectRequest,calls=0,receivedEmail=null,receivedOptions=null;
   const pending=new Promise((resolve,reject)=>{resolveRequest=resolve;rejectRequest=reject});
+  const pendingRequests=[];
   const sb={auth:{resetPasswordForEmail(email,options){
-    calls++;receivedEmail=email;receivedOptions=options;return pending;
+    calls++;receivedEmail=email;receivedOptions=options;
+    if(calls===1)return pending;
+    return new Promise((resolve,reject)=>pendingRequests.push({resolve,reject,email,options}));
   }}};
   const timers=new Map();
   let timerId=0;
@@ -41,7 +44,7 @@ function harness({callbackError=false}={}){
     (_form,message,good)=>messages.push({message,good:!!good}),setTimeout,clearTimeout);
   return {
     form,window,button,title,elements,emailField,messages,timers,
-    resolveRequest,rejectRequest,
+    resolveRequest,rejectRequest,pendingRequests,
     get calls(){return calls},
     get receivedEmail(){return receivedEmail},
     get receivedOptions(){return receivedOptions}
@@ -115,4 +118,28 @@ test('bounded mobile timeout reports uncertainty rather than claiming delivery',
   assert.equal(h.calls,1);
   assert.match(h.messages[0].message,/may still arrive/);
   assert.equal(h.button.disabled,false);
+});
+
+// Recovery324: an email edit invalidates the first request immediately.
+// Its eventual completion must not release a newer pending reset.
+test('email edit allows immediate retry and stale completion cannot unlock newer request',async()=>{
+  const h=harness();
+  const stale=h.button.onclick();
+  assert.equal(h.button.disabled,true);
+  h.emailField.change('beta@example.test');
+  assert.equal(h.button.disabled,false,'email edit should allow an immediate retry');
+  const current=h.button.onclick();
+  assert.equal(h.calls,2);
+  assert.equal(h.receivedEmail,'beta@example.test');
+  assert.equal(h.button.disabled,true);
+  h.resolveRequest({error:null});
+  await stale;
+  assert.equal(h.button.disabled,true,'stale completion must not unlock a newer request');
+  assert.deepEqual(h.messages,[],'stale success must not be displayed');
+  assert.equal(h.pendingRequests.length,1);
+  h.pendingRequests[0].resolve({error:null});
+  await current;
+  assert.equal(h.button.disabled,false);
+  assert.equal(h.messages.length,1);
+  assert.match(h.messages[0].message,/reset link has been requested/);
 });
