@@ -555,7 +555,76 @@ async function renderChannels(main){const mine=state.channels.filter(c=>c.owner_
 async function channelFilter(kind,btn){const root=$('#channelBody');document.querySelectorAll('.chips .chip').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');if(kind==='mine')return renderChannelList(root,window.__channelSets.mine);if(kind==='subscriptions'){root.innerHTML='<div class="card"><div class="cardpad"><div class="sectionTitle">Subscription feed</div><div id="subVideos" class="videoGrid"></div></div></div>';return renderVideoGrid($('#subVideos'),window.__channelSets.subVideos)}await renderChannelList(root,state.channels)}
 async function renderChannelList(root,arr){if(!arr.length){root.innerHTML='<div class="card"><div class="empty">No channels here yet.</div></div>';return}let h='<div class="card">';for(const c of arr){const p=state.profiles.get(c.owner_id),av=c.avatar_url?await signed('kinfolk-media',c.avatar_url):null,subs=state.subscriptions.get(c.id)||[],isSub=subs.some(s=>s.user_id===state.user.id);h+=`<div class="channelCard"><div>${av?`<img class="avatar" src="${esc(av)}">`:`<div class="avatar">${esc((c.title||'?')[0])}</div>`}</div><div class="clickable" onclick="openChannel('${c.id}')"><b>${esc(c.title)}</b><div class="muted">${subs.length} subscriber${subs.length===1?'':'s'} · ${esc(c.category||'creator')}</div><div class="muted" style="font-size:12px">${esc(c.description||'')}</div></div>${c.owner_id===state.user.id?`<button class="btn small" onclick="openChannel('${c.id}')">Manage</button>`:`<button class="btn small ${isSub?'ghost':'primary'}" onclick="toggleSubscribe('${c.id}')">${isSub?'Subscribed':'Subscribe'}</button>`}</div>`}h+='</div>';root.innerHTML=h}
 function openChannelModal(id=null){const c=id?state.channels.find(x=>x.id===id):null;modal(c?'Edit channel':'Create channel',`<form id="channelForm"><div class="label">Channel name</div><input class="field" id="channelTitle" value="${esc(c?.title||'')}" maxlength="80" required><div class="label">Channel handle</div><input class="field" id="channelSlug" value="${esc(c?.slug||'')}" placeholder="my_channel" pattern="[A-Za-z0-9_]{3,30}" maxlength="30"><div class="label">About</div><textarea class="textarea" id="channelDesc" maxlength="600">${esc(c?.description||'')}</textarea><div class="formRow"><div><div class="label">Avatar</div><input class="field" id="channelAvatar" type="file" accept="image/*"></div><div><div class="label">Banner</div><input class="field" id="channelBanner" type="file" accept="image/*"></div></div><button class="btn primary full">${c?'Save channel':'Create channel'}</button></form>`);$('#channelForm').onsubmit=e=>saveChannel(e,id)}
-async function saveChannel(e,id){e.preventDefault();try{const title=$('#channelTitle').value.trim(),slug=$('#channelSlug').value.trim()||null,description=$('#channelDesc').value.trim(),obj={owner_id:state.user.id,title,slug,description,updated_at:new Date().toISOString()};for(const [input,key,folder] of [['#channelAvatar','avatar_url','channels/avatar'],['#channelBanner','banner_url','channels/banner']]){const f=$(input).files[0];if(f){const path=`${state.user.id}/${folder}/${crypto.randomUUID()}-${safeName(f.name)}`;const {error}=await sb.storage.from('kinfolk-media').upload(path,f);if(error)throw error;obj[key]=path}}const q=id?sb.from('kinfolk_pages').update(obj).eq('id',id):sb.from('kinfolk_pages').insert(obj);const {error}=await q;if(error)throw error;closeModal();await loadChannels();await renderApp();toast(id?'Channel updated':'Channel created','good')}catch(err){toast(err.message,'danger')}}
+// Recovery314: keep channel creation and edits bound to the initiating account and modal.
+function kf314ChannelEditorCurrent(epoch,uid,form){
+  return kfAlphaLoadCurrent(epoch,uid)&&!!form&&form.isConnected!==false&&document.getElementById('channelForm')===form;
+}
+async function saveChannel(e,id){
+  e.preventDefault();
+  const form=e.currentTarget||e.target,epoch=kf129Epoch,uid=state.user?.id;
+  const current=()=>kf314ChannelEditorCurrent(epoch,uid,form);
+  if(!current()||form.dataset.kfAlphaSending==='1')return false;
+  const owned=id?state.channels.some(c=>c.id===id&&c.owner_id===uid):true;
+  if(!owned){toast('You can only edit your own channel.','danger');return false}
+  const title=String(form.querySelector('#channelTitle')?.value||'').trim();
+  const slug=String(form.querySelector('#channelSlug')?.value||'').trim()||null;
+  const description=String(form.querySelector('#channelDesc')?.value||'').trim();
+  const avatar=form.querySelector('#channelAvatar')?.files?.[0]||null;
+  const banner=form.querySelector('#channelBanner')?.files?.[0]||null;
+  if(!title||title.length>80||(slug&&!/^[A-Za-z0-9_]{3,30}$/.test(slug))||description.length>600){
+    toast('Check the channel name, handle and description.','danger');return false;
+  }
+  form.dataset.kfAlphaSending='1';
+  const button=form.querySelector('button[type="submit"],button:not([type])');
+  if(button)button.disabled=true;
+  const uploadedPaths=[];
+  let confirmed=false;
+  try{
+    const obj={title,slug,description,updated_at:new Date().toISOString()};
+    for(const [file,key,folder] of [[avatar,'avatar_url','channels/avatar'],[banner,'banner_url','channels/banner']]){
+      if(!file)continue;
+      if(!current())return false;
+      const mediaPath=uid+'/'+folder+'/'+crypto.randomUUID()+'-'+safeName(file.name);
+      const {error}=await sb.storage.from('kinfolk-media').upload(mediaPath,file,{upsert:false});
+      if(!current())return false;
+      if(error)throw error;
+      uploadedPaths.push(mediaPath);
+      obj[key]=mediaPath;
+    }
+    if(!current())return false;
+    // Update is additionally owner-scoped even if a forged channel ID reaches this handler.
+    const query=id
+      ?sb.from('kinfolk_pages').update(obj).eq('id',id).eq('owner_id',uid)
+      :sb.from('kinfolk_pages').insert({...obj,owner_id:uid});
+    const {data,error}=await query.select('id,owner_id').maybeSingle();
+    if(!current())return false;
+    if(error)throw error;
+    if(!data?.id||data.owner_id!==uid||(id&&data.id!==id))throw new Error('Channel change was not confirmed. Please retry.');
+    confirmed=true;
+    await loadChannels();
+    if(!current())return false;
+    closeModal();
+    if(!kfAlphaLoadCurrent(epoch,uid))return false;
+    await renderApp();
+    if(kfAlphaLoadCurrent(epoch,uid))toast(id?'Channel updated':'Channel created','good');
+    return true;
+  }catch(error){
+    // Never perform cleanup under a different member's session.
+    if(current()){
+      if(!confirmed){
+        for(const mediaPath of uploadedPaths){
+          try{await sb.storage.from('kinfolk-media').remove([mediaPath])}catch{}
+          if(!current())break;
+        }
+      }
+      if(current())toast(confirmed?'Channel saved, but the screen could not refresh. Please retry.':(error?.message||'Channel could not be saved.'),'danger');
+    }
+    return false;
+  }finally{
+    delete form.dataset.kfAlphaSending;
+    if(button&&form.isConnected!==false)button.disabled=false;
+  }
+}
 async function openChannel(id){state.channelViewId=id;const c=state.channels.find(x=>x.id===id);if(!c)return;state.view='channels';$('#app').innerHTML=layout();const main=$('#main');const banner=c.banner_url?await signed('kinfolk-media',c.banner_url):null,av=c.avatar_url?await signed('kinfolk-media',c.avatar_url):null,subs=state.subscriptions.get(c.id)||[],mineSub=subs.find(s=>s.user_id===state.user.id),isSub=!!mineSub;const vids=state.videos.filter(v=>v.channel_id===id);main.innerHTML=`<div class="card"><div class="channelBanner">${banner?`<img src="${esc(banner)}">`:''}</div><div class="channelHero"><div class="channelAvatar">${av?`<img class="avatar lg" src="${esc(av)}">`:`<div class="avatar lg">${esc((c.title||'?')[0])}</div>`}</div><div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap"><div><h2 style="margin:8px 0 2px">${esc(c.title)}</h2><div class="muted">${c.slug?'@'+esc(c.slug)+' · ':''}${subs.length} subscribers · ${vids.length} videos</div></div><div class="spacer"></div>${c.owner_id===state.user.id?`<button class="btn" onclick="openChannelModal('${c.id}')">Edit channel</button><button class="btn primary" onclick="openVideoModal()">Upload</button>`:`<button class="btn ${isSub?'ghost':'primary'}" onclick="toggleSubscribe('${c.id}')">${isSub?'Subscribed':'Subscribe'}</button>${isSub?`<button class="btn" onclick="openSubscriptionPrefs('${c.id}')">🔔 ${mineSub?.notify_level||'all'}</button>`:''}`}</div><p>${esc(c.description||'')}</p></div><div class="profileTabs"><button id="channelVideosTab" class="active" onclick="showChannelVideos('${id}')">Videos</button><button id="channelPlaylistsTab" onclick="showChannelPlaylists('${id}')">Playlists</button><button onclick="showChannelAbout('${id}')">About</button></div></div><div id="channelPane"></div>`;await showChannelVideos(id)}
 async function toggleSubscribe(cid){const arr=state.subscriptions.get(cid)||[],is=arr.some(s=>s.user_id===state.user.id);const q=is?sb.from('kinfolk_channel_subscriptions').delete().eq('channel_id',cid).eq('user_id',state.user.id):sb.from('kinfolk_channel_subscriptions').insert({channel_id:cid,user_id:state.user.id,notify_level:'all'});const {error}=await q;if(error)return toast(error.message,'danger');await loadChannels();if(state.channelViewId===cid)await openChannel(cid);else await renderApp();toast(is?'Unsubscribed':'Subscribed','good')}
 function openSubscriptionPrefs(cid){const sub=(state.subscriptions.get(cid)||[]).find(s=>s.user_id===state.user.id);if(!sub)return toast('Subscribe first.');modal('Subscription notifications',`<form id="subPrefsForm"><div class="label">Notifications for this channel</div><select class="field" id="subNotify"><option value="all" ${sub.notify_level==='all'?'selected':''}>All uploads</option><option value="personalized" ${sub.notify_level==='personalized'?'selected':''}>Personalized</option><option value="none" ${sub.notify_level==='none'?'selected':''}>None</option></select><button class="btn primary full" style="margin-top:14px">Save</button></form>`);$('#subPrefsForm').onsubmit=async e=>{e.preventDefault();const {error}=await sb.from('kinfolk_channel_subscriptions').update({notify_level:$('#subNotify').value}).eq('channel_id',cid).eq('user_id',state.user.id);if(error)return toast(error.message,'danger');closeModal();await loadChannels();await openChannel(cid);toast('Notification preference saved','good')}}

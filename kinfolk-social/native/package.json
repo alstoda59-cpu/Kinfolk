@@ -9,7 +9,7 @@
     "sync": "npm run prepare:web && npx cap sync",
     "android:open": "npx cap open android",
     "ios:open": "npx cap open ios",
-    "alpha:verify": "node scripts/verify-alpha-package.mjs && node --test tests/profile-music-navigation.test.mjs tests/native-module-parity.test.mjs tests/alpha-startup-scripts.test.mjs tests/alpha-backend-config.test.mjs tests/alpha-signup-password.test.mjs tests/alpha-functional-backend-gate.test.mjs tests/alpha-auth-reachability.test.mjs tests/alpha-auth-signup-readiness.test.mjs tests/alpha-email-callback.test.mjs && npm run alpha:rls:test && npm run alpha:auth:source:test && npm run alpha:profile:source:test && npm run alpha:reels:source:test && npm run alpha:messages:source:test && npm run alpha:notifications:source:test && npm run alpha:media:source:test && npm run alpha:communities:source:test",
+    "alpha:verify": "node scripts/verify-alpha-package.mjs && node --test tests/profile-music-navigation.test.mjs tests/native-module-parity.test.mjs tests/alpha-startup-scripts.test.mjs tests/alpha-backend-config.test.mjs tests/alpha-signup-password.test.mjs tests/alpha-functional-backend-gate.test.mjs tests/alpha-auth-reachability.test.mjs tests/alpha-auth-signup-readiness.test.mjs tests/alpha-email-callback.test.mjs && npm run alpha:rls:test && npm run alpha:auth:source:test && npm run alpha:profile:source:test && npm run alpha:reels:source:test && npm run alpha:messages:source:test && npm run alpha:notifications:source:test && npm run alpha:media:source:test && npm run alpha:communities:source:test && npm run alpha:channels:source:test",
     "alpha:config:test": "node --test tests/alpha-backend-config.test.mjs",
     "alpha:auth:test": "node --test tests/alpha-signup-password.test.mjs",
     "alpha:verify:functional": "node scripts/verify-functional-alpha.mjs",
@@ -25,7 +25,8 @@
     "alpha:messages:source:test": "node --test ../tests/recovery300-dm-account-isolation.test.mjs",
     "alpha:notifications:source:test": "node --test ../tests/recovery301-notification-account-isolation.test.mjs",
     "alpha:media:source:test": "node --test ../tests/recovery302-video-upload-account-isolation.test.mjs ../tests/recovery303-post-story-media-integrity.test.mjs",
-    "alpha:communities:source:test": "node --test ../tests/recovery307-community-ownership.test.mjs ../tests/recovery308-community-membership.test.mjs ../tests/recovery310-community-owner-edit.test.mjs"
+    "alpha:communities:source:test": "node --test ../tests/recovery307-community-ownership.test.mjs ../tests/recovery308-community-membership.test.mjs ../tests/recovery310-community-owner-edit.test.mjs",
+    "alpha:channels:source:test": "node --test ../tests/recovery314-channel-editor-account-isolation.test.mjs"
   },
   "dependencies": {
     "@capacitor/core": "7.6.9",
