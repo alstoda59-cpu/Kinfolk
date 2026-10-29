@@ -946,12 +946,25 @@ setTimeout(harden,0);setTimeout(harden,700);setInterval(unlockStuck,1200);
   // recovery link is allowlisted, let Supabase use its configured Site URL.
   function passwordResetRedirectOptions(){
     const configured=window.KINFOLK_PASSWORD_RESET_REDIRECT_URL;
+    const native=window.KINFOLK_NATIVE_ALPHA===true||
+      (typeof window.Capacitor?.isNativePlatform==='function'&&window.Capacitor.isNativePlatform());
+    const message='Native Kinfolk password reset requires an approved HTTPS recovery callback.';
+    // A missing native callback must not silently send recovery emails to the
+    // Supabase Site URL, which can belong to a different environment.
+    if(native&&!configured)throw new Error(message);
     try{
       const target=new URL(configured||location.origin);
-      const host=target.hostname.toLowerCase();
-      if(target.protocol!=='https:'||host==='localhost'||host.endsWith('.localhost')||['127.0.0.1','0.0.0.0','[::1]'].includes(host))return {};
+      const host=target.hostname.toLowerCase().replace(/\\.$/,'');
+      const blocked=host==='localhost'||host.endsWith('.localhost')||
+        host==='vercel.app'||host.endsWith('.vercel.app')||
+        host==='supabase.co'||host.endsWith('.supabase.co')||
+        host.endsWith('.local')||/^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(host)||host.startsWith('[');
+      if(target.protocol!=='https:'||target.username||target.password||target.hash||target.port||blocked){
+        if(native)throw new Error(message);
+        return {};
+      }
       return {redirectTo:configured?target.href:target.origin};
-    }catch{return {}}
+    }catch(error){if(native)throw new Error(message);return {}}
   }
 
   function render(next='login'){
