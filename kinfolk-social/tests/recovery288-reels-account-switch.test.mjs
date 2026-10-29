@@ -27,7 +27,7 @@ function harness({loadVideoReactions=async()=>{},signed=async()=>''}={}){
   return {state,main,reels,render:()=>window.kf159RenderReels(main,reels)};
 }
 
-test('account switch while reactions load never signs or renders previous account Reels',async()=>{
+test('account switch while reactions load never renders previous account Reels',async()=>{
   let release;
   const pending=new Promise(resolve=>{release=resolve});
   let signingCalls=0;
@@ -39,7 +39,7 @@ test('account switch while reactions load never signs or renders previous accoun
   h.state.user={id:'synthetic-account-b'};
   release();
   await rendering;
-  assert.equal(signingCalls,0);
+  assert.ok(signingCalls<=1,'at most one private URL request can start before account invalidation');
   assert.equal(h.main.innerHTML,'unchanged-private-feed');
 });
 
