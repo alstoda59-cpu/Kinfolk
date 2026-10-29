@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery314 (2026-10-29)
+
+Latest isolated checkpoint: [RECOVERY314.md](RECOVERY314.md). Channel create/edit now pins uploads and database writes to the initiating account, owner-scopes edits, confirms returned database rows and prevents duplicate submissions or stale modal completions. Ten source-backed synthetic tests were added to native alpha verification; PR #14 targets Recovery313 only. GitHub Node regression stage passed; full CI and current native builds are not confirmed. An earlier code commit has a READY nonproduction preview, but the isolated backend still lacks channel/video tables and real auth/RLS/device QA remains blocked. No production release.
+
 # Kinfolk Social | Recovery313 (2026-10-29)
 
 Latest isolated checkpoint: [RECOVERY313.md](RECOVERY313.md). Fixed cross-account races in first-login profile hydration and legacy profile editor uploads/saves; added 15 source-backed synthetic regression cases to native alpha verification and updated four obsolete static fixtures without weakening the new runtime tests. Draft PR #13 targets Recovery312, not main/production. Source CI and preview verification are tracked in the report. Real isolated signup/email/RLS, missing community/video tables, current Android/iPhone builds and device QA remain blockers. No production release.
