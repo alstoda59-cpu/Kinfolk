@@ -27,7 +27,7 @@
     "alpha:media:source:test": "node --test ../tests/recovery302-video-upload-account-isolation.test.mjs ../tests/recovery303-post-story-media-integrity.test.mjs",
     "alpha:communities:source:test": "node --test ../tests/recovery307-community-ownership.test.mjs ../tests/recovery308-community-membership.test.mjs ../tests/recovery310-community-owner-edit.test.mjs ../tests/recovery318-community-session-guards.test.mjs ../tests/recovery319-community-pending-session.test.mjs",
     "alpha:channels:source:test": "node --test ../tests/recovery314-channel-editor-account-isolation.test.mjs",
-    "alpha:safety:source:test": "node --test ../tests/recovery315-report-account-isolation.test.mjs",
+    "alpha:safety:source:test": "node --test ../tests/recovery315-report-account-isolation.test.mjs ../tests/recovery325-password-change-session-guard.test.cjs",
     "alpha:preview:source:test": "node --test ../tests/recovery317-preview-isolation.test.mjs"
   },
   "dependencies": {
