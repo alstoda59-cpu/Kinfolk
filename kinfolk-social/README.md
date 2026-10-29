@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery316 (2026-10-29)
+
+Latest isolated checkpoint: [RECOVERY316.md](RECOVERY316.md). On an authenticated account switch, clear the previous member's feed, private signed media URLs, notifications, videos, stories, channels, cached reactions, profile state, old overlays and profile/Reels playback synchronously before the new account hydrates. Six source-backed synthetic regressions are included in native alpha verification; draft PR #16 targets Recovery315 only. The nonproduction Vercel preview is READY but **still references shared live Supabase and must not be used for signups or test writes**. Real isolated auth/RLS and current physical Android/iPhone QA remain unverified. No production release.
+
 # Kinfolk Social | Recovery315 (2026-10-29)
 
 Latest isolated checkpoint: [RECOVERY315.md](RECOVERY315.md). Moderation reports now require an exact confirmed insert count, preserving insert-only member RLS; report modals and pending submissions are account/target/activation-scoped across rapid navigation, signout/login and duplicate taps. Twelve source-backed synthetic regressions are wired into native alpha verification and the reporting module is required in Capacitor packaging. GitHub Node regression stage passed after fixture repairs; full CI, real isolated report/auth/RLS testing and current Android/iPhone builds are separate gates. Nonproduction READY code preview is **not safe for test signups** because its web source still references the shared live backend. No production release.
