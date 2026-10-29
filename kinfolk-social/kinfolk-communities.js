@@ -4,9 +4,11 @@
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const pendingCreates=new Set();
+  // A logout/login of the same user ID is still a different auth lifecycle.
+  const authEpoch=()=>typeof kf129Epoch==='undefined'?null:kf129Epoch;
   let directoryRequest=0;
   let notice=null;
-  const active=(uid,request,main)=>state.user?.id===uid&&state.view==='communities'&&directoryRequest===request&&main?.isConnected;
+  const active=(uid,request,main,epoch)=>authEpoch()===epoch&&state.user?.id===uid&&state.view==='communities'&&directoryRequest===request&&main?.isConnected;
   const rowsHTML=(rows,empty)=>rows.length?rows.map(c=>
     '<article class="card" data-community-id="'+esc(c.id||'')+'" data-owner-id="'+esc(c.owner_id||'')+'" data-name="'+esc(c.name||'')+'" data-description="'+esc(c.description||'')+'" data-visibility="'+esc(c.visibility||'')+'" style="padding:14px;margin-top:10px"><b>'+esc(c.name)+'</b>'+
     (c.visibility==='private'?'<span class="muted" style="margin-left:8px">Private</span>':'')+
@@ -14,7 +16,7 @@
   ).join(''):'<p class="muted">'+esc(empty)+'</p>';
 
   window.kfCreateCommunity=async form=>{
-    const uid=state.user?.id;
+    const uid=state.user?.id,epoch=authEpoch();
     if(!uid||state.view!=='communities'||!form?.isConnected)return false;
     const status=form.querySelector('[data-community-status]');
     const button=form.querySelector('[type="submit"]');
@@ -36,7 +38,7 @@
       const {data,error}=await sb.from('kinfolk_communities')
         .insert({name,description,visibility,owner_id:uid})
         .select('id,owner_id,name,description,visibility');
-      if(state.user?.id!==uid||state.view!=='communities'||!form.isConnected)return false;
+      if(authEpoch()!==epoch||state.user?.id!==uid||state.view!=='communities'||!form.isConnected)return false;
       if(error)throw error;
       const row=Array.isArray(data)&&data.length===1?data[0]:null;
       if(!row||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(row.id||'')||
@@ -46,7 +48,7 @@
       const main=document.getElementById('main');
       if(main?.isConnected)await window.kfRenderCommunities(main);
     }catch(error){
-      if(state.user?.id===uid&&form.isConnected){
+      if(authEpoch()===epoch&&state.user?.id===uid&&form.isConnected){
         status.textContent=error?.code==='42P01'||error?.code==='PGRST205'
           ?'The community database is not available in this test environment.'
           :'Community creation failed. Please try again after permissions are verified.';
@@ -54,13 +56,13 @@
       console.warn('Kinfolk community creation',error);
     }finally{
       pendingCreates.delete(uid);
-      if(form.isConnected&&state.user?.id===uid)button.disabled=false;
+      if(authEpoch()===epoch&&form.isConnected&&state.user?.id===uid)button.disabled=false;
     }
     return false;
   };
 
   window.kfRenderCommunities=async main=>{
-    const uid=state.user?.id,request=++directoryRequest;
+    const uid=state.user?.id,epoch=authEpoch(),request=++directoryRequest;
     if(!uid||!main?.isConnected)return;
     const feedback=notice?.uid===uid?notice.message:'';
     main.innerHTML='<div class="card"><div class="cardpad">'+
@@ -81,7 +83,7 @@
     form.addEventListener('submit',event=>{event.preventDefault();window.kfCreateCommunity(form)});
     let publicRows=[],ownedRows=[];
     const show=()=>{
-      if(!active(uid,request,main))return;
+      if(!active(uid,request,main,epoch))return;
       const q=search.value.trim().toLocaleLowerCase();
       const matches=c=>(c.name+' '+(c.description||'')).toLocaleLowerCase().includes(q);
       owned.innerHTML=rowsHTML(ownedRows.filter(matches),q?'No matching communities.':'You have not created a community yet.');
@@ -93,14 +95,14 @@
         sb.from('kinfolk_communities').select('id,name,description,visibility,owner_id,created_at').eq('visibility','public').order('created_at',{ascending:false}).limit(50),
         sb.from('kinfolk_communities').select('id,name,description,visibility,owner_id,created_at').eq('owner_id',uid).order('created_at',{ascending:false}).limit(50)
       ]);
-      if(!active(uid,request,main))return;
+      if(!active(uid,request,main,epoch))return;
       publicRows=(publicResult.data||[]).filter(c=>c.visibility==='public');
       ownedRows=(ownedResult.data||[]).filter(c=>c.owner_id===uid);
       show();
       if(publicResult.error)publicList.textContent='Public community discovery is unavailable until the backend is configured.';
       if(ownedResult.error)owned.textContent='Your communities cannot be loaded until account permissions are configured.';
     }catch(error){
-      if(active(uid,request,main)){
+      if(active(uid,request,main,epoch)){
         owned.textContent='Your communities are unavailable in this test environment.';
         publicList.textContent='Community discovery is unavailable in this test environment.';
       }
