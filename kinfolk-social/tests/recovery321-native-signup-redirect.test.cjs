@@ -10,13 +10,13 @@ const end=source.indexOf('const originalSignIn=sb.auth.signInWithPassword.bind(s
 assert.ok(begin>=0&&end>begin,'active signup wrapper exists');
 const install=new Function('sb','window','location',source.slice(begin,end));
 
-function setup({native=true,callback}={}){
+function setup({native=true,callback,bridgeReady=true}={}){
   const calls=[];
   const sb={auth:{signUp:async credentials=>{
     calls.push(credentials);
     return {data:{user:null,session:null},error:null};
   }}};
-  install(sb,{Capacitor:{isNativePlatform:()=>native},KINFOLK_EMAIL_REDIRECT_URL:callback},
+  install(sb,{KINFOLK_NATIVE_ALPHA:native,Capacitor:{isNativePlatform:()=>native&&bridgeReady},KINFOLK_EMAIL_REDIRECT_URL:callback},
     {protocol:'https:',hostname:'localhost'});
   return {sb,calls};
 }
@@ -36,6 +36,17 @@ test('native legacy signup overrides local WebView redirect with packaged HTTPS 
   assert.equal(calls[0].options.emailRedirectTo,callback);
   assert.equal(calls[0].options.data.display_name,'Synthetic Alpha');
   assert.equal(credentials.options.emailRedirectTo,'https://localhost','do not mutate caller');
+});
+test('packaged native marker protects signup before Capacitor bridge is ready',async()=>{
+  const callback='https://alpha.example.test/confirm';
+  const {sb,calls}=setup({native:true,callback,bridgeReady:false});
+  await sb.auth.signUp(input('https://localhost'));
+  assert.equal(calls.length,1);
+  assert.equal(calls[0].options.emailRedirectTo,callback);
+  const blocked=setup({native:true,bridgeReady:false});
+  const response=await blocked.sb.auth.signUp(input('https://localhost'));
+  assert.equal(blocked.calls.length,0);
+  assert.match(response.error?.message||'',/approved HTTPS/);
 });
 test('native signup refuses to call Supabase when app-link callback is absent',async()=>{
   const {sb,calls}=setup({callback:undefined});
