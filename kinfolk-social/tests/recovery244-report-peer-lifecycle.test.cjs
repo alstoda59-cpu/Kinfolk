@@ -70,7 +70,7 @@ function submitHarness(){
  const document={getElementById(id){if(id==='kf108Reason')return {value:'Spam or scam'};if(id==='kf108Details')return {value:'synthetic details'};if(id==='kf108Submit')return activeButton;return null},contains:()=>true};
  const sb={from(table){assert.equal(table,'kinfolk_reports');return {insert(row,options){assert.equal(options.count,'exact');events.push(['insert',row.reporter_id,row.target_type,row.target_id]);return new Promise(resolve=>{settle=resolve})}}}};
  const window={state};
- vm.runInNewContext('let sendingToken=null;let activeReport={type:"profile",id:"peer-B",reporterId:"account-A",token:1};'+source.slice(submitStart,submitEnd),{window,document,sb,TYPES:new Set(['profile','message']),tell108:(...a)=>events.push(['toast',...a]),closeModal:()=>events.push(['close'])});
+ vm.runInNewContext('let sendingToken=null;let activeReport={type:"profile",id:"peer-B",reporterId:"account-A",token:1,activationEpoch:null};'+source.slice(submitStart,submitEnd),{window,document,sb,TYPES:new Set(['profile','message']),tell108:(...a)=>events.push(['toast',...a]),closeModal:()=>events.push(['close'])});
  return {events,state,button,submit:(type,id)=>window.kf108SubmitReport(type,id,1),finish:error=>settle({error:error||null,count:error?null:1}),replaceModal(){activeButton={disabled:false,textContent:'Submit report'}}};
 }
 test('report submission retains originating reporter and suppresses stale account success UI',async()=>{
