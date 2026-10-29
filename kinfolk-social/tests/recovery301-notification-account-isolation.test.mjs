@@ -56,7 +56,7 @@ test('overbroad backend results cannot expose another recipient',async()=>{
  const h=harness(),p=h.loadNotifications();
  h.reads[0].resolve({data:[note('B','secret'),note('A','visible')]});
  await p;
- assert.deepEqual(h.state.notifications.map(n=>n.id),['visible']);
+ assert.deepEqual(Array.from(h.state.notifications,n=>n.id),['visible']);
  assert.deepEqual(h.profileLoads,[['actor-visible']]);
 });
 test('stale read cannot overwrite next account or load its actors',async()=>{
@@ -64,21 +64,21 @@ test('stale read cannot overwrite next account or load its actors',async()=>{
  h.switchAccount('B');const b=h.loadNotifications();
  h.reads[1].resolve({data:[note('B','b')]});await b;
  h.reads[0].resolve({data:[note('A','a')]});await a;
- assert.deepEqual(h.state.notifications.map(n=>n.id),['b']);
+ assert.deepEqual(Array.from(h.state.notifications,n=>n.id),['b']);
  assert.deepEqual(h.profileLoads,[['actor-b']]);
 });
 test('older same-session request cannot overwrite newer notification load',async()=>{
  const h=harness(),a=h.loadNotifications(),b=h.loadNotifications();
  h.reads[1].resolve({data:[note('A','new')]});await b;
  h.reads[0].resolve({data:[note('A','old')]});await a;
- assert.deepEqual(h.state.notifications.map(n=>n.id),['new']);
+ assert.deepEqual(Array.from(h.state.notifications,n=>n.id),['new']);
 });
 test('mark-read only writes current recipient IDs and never includes foreign rows',async()=>{
  const h=harness();h.state.notifications=[note('B','foreign'),note('A','own')];
  const p=h.markAllRead();
  assert.equal(h.writes.length,1);
  assert.equal(h.writes[0].recipient,'A');
- assert.deepEqual(h.writes[0].ids,['own']);
+ assert.deepEqual(Array.from(h.writes[0].ids),['own']);
  h.writes[0].resolve({error:null});
  await Promise.resolve();
  assert.equal(h.reads.length,1);
