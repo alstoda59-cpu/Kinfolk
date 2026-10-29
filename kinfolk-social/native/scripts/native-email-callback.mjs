@@ -10,7 +10,7 @@ export function alphaEmailCallback(value,{required=false}={}){
   }
   let parsed;
   try{parsed=new URL(raw)}catch{throw new Error('Native alpha email callback must be a valid HTTPS URL.')}
-  const host=parsed.hostname.toLowerCase().replace(/\\.$/,'').replace(/^\\[|\\]$/g,'');
+  const host=parsed.hostname.toLowerCase().replace(/\.$/,'').replace(/^\[|\]$/g,'');
   // Recovery320: Vercel previews intentionally fail closed before Auth boots.
   // Email links there cannot complete native login. Supabase API endpoints,
   // local hosts and IP literals are not public app-link callback destinations.
