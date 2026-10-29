@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const source=readFileSync(new URL('../kinfolk-community-membership.js',import.meta.url),'utf8');
 const ID='123e4567-e89b-42d3-a456-426614174000';
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {resolve,promise}};
-function harness({readError=null,readPending=false,writePending=false,writeError=null,writeRows=null}={}){
+function harness({readError=null,readPending=false,writePending=false,writeError=null,writeRows=null,initialMembership=false}={}){
   const state={user:{id:'A'},view:'communities'},calls=[],warnings=[];
   let card,listing;
   const element=()=>({isConnected:true,disabled:false,textContent:'',attrs:{},listeners:{},
@@ -20,7 +20,7 @@ function harness({readError=null,readPending=false,writePending=false,writeError
     return {
       select(){return {eq(k,v){assert.equal(k,'user_id');assert.equal(v,state.user.id);return this},
         in(k,ids){assert.equal(k,'community_id');assert.deepEqual(Array.from(ids),[ID]);calls.push('read');
-          return readPending?read.promise:Promise.resolve({data:[],error:readError})}}},
+          return readPending?read.promise:Promise.resolve({data:initialMembership?[{community_id:ID}]:[],error:readError})}}},
       insert(row){calls.push(['join',row]);return {select(columns){assert.equal(columns,'community_id,user_id');return writePending?write.promise:Promise.resolve({data:writeRows??[row],error:writeError})}}},
       delete(){const filters=[];return {eq(k,v){filters.push([k,v]);return this},select(columns){assert.equal(columns,'community_id,user_id');assert.deepEqual(filters,[['community_id',ID],['user_id','A']]);calls.push('leave');return writePending?write.promise:Promise.resolve({data:writeRows??[{community_id:ID,user_id:'A'}],error:writeError})}}}
     };
@@ -104,10 +104,11 @@ test('zero-row join response does not falsely claim membership',async()=>{
  assert.match(b.afterNodes[0].textContent,/failed/);
 });
 test('zero-row leave response retains existing membership',async()=>{
- const h=harness();await h.render();const b=h.card.children[0];
+ const h=harness({initialMembership:true,writeRows:[]});await h.render();const b=h.card.children[0];
+ assert.equal(b.textContent,'Leave community');
  await b.listeners.click();assert.equal(b.textContent,'Leave community');
- // Change backend mock behavior by temporarily replacing the API in a new harness with a preexisting membership.
- const denied=harness({writeRows:[]});denied.read.resolve({data:[{community_id:ID}],error:null});
+ assert.match(b.afterNodes[0].textContent,/failed/);
+ assert.equal(h.calls.includes('leave'),true);
 });
 test('wrong-account write confirmation cannot change membership state',async()=>{
  const h=harness({writeRows:[{community_id:ID,user_id:'B'}]});await h.render();const b=h.card.children[0];
