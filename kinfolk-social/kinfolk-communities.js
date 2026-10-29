@@ -3,7 +3,7 @@
   window.__kfCommunities=true;
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const pendingCreates=new Set();
+  const pendingCreates=new Map();
   // A logout/login of the same user ID is still a different auth lifecycle.
   const authEpoch=()=>typeof kf129Epoch==='undefined'?null:kf129Epoch;
   let directoryRequest=0;
@@ -21,7 +21,7 @@
     const status=form.querySelector('[data-community-status]');
     const button=form.querySelector('[type="submit"]');
     if(!status||!button)return false;
-    if(pendingCreates.has(uid)){status.textContent='Your community is already being created.';return false;}
+    if(pendingCreates.get(uid)?.epoch===epoch){status.textContent='Your community is already being created.';return false;}
     const name=String(form.querySelector('[name="name"]')?.value||'').trim();
     const description=String(form.querySelector('[name="description"]')?.value||'').trim();
     const visibility=form.querySelector('[name="visibility"]')?.value;
@@ -29,7 +29,8 @@
       status.textContent='Use a name of 3–60 characters and a description up to 500 characters.';
       return false;
     }
-    pendingCreates.add(uid);
+    const createToken={epoch};
+    pendingCreates.set(uid,createToken);
     button.disabled=true;
     status.textContent='Creating community…';
     try{
@@ -44,7 +45,7 @@
       if(!row||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(row.id||'')||
          row.owner_id!==uid||row.name!==name||row.visibility!==visibility||String(row.description??'')!==description)
         throw Error('Community creation was not confirmed by the backend.');
-      notice={uid,message:'Community created. You can find it under My communities.'};
+      notice={uid,epoch,message:'Community created. You can find it under My communities.'};
       const main=document.getElementById('main');
       if(main?.isConnected)await window.kfRenderCommunities(main);
     }catch(error){
@@ -55,7 +56,7 @@
       }
       console.warn('Kinfolk community creation',error);
     }finally{
-      pendingCreates.delete(uid);
+      if(pendingCreates.get(uid)===createToken)pendingCreates.delete(uid);
       if(authEpoch()===epoch&&form.isConnected&&state.user?.id===uid)button.disabled=false;
     }
     return false;
@@ -64,7 +65,7 @@
   window.kfRenderCommunities=async main=>{
     const uid=state.user?.id,epoch=authEpoch(),request=++directoryRequest;
     if(!uid||!main?.isConnected)return;
-    const feedback=notice?.uid===uid?notice.message:'';
+    const feedback=notice?.uid===uid&&notice.epoch===epoch?notice.message:'';
     main.innerHTML='<div class="card"><div class="cardpad">'+
       '<h2>Communities</h2><p class="muted">Find your people and create a space together.</p>'+
       '<p id="kfCommunityNotice" role="status" class="muted">'+esc(feedback)+'</p>'+
