@@ -11,6 +11,8 @@
 <meta name="apple-mobile-web-app-title" content="Kinfolk">
 <meta name="application-name" content="Kinfolk Social">
 <title>Kinfolk Social</title>
+<!-- Recovery317: prevent Vercel previews from contacting shared live Supabase. -->
+<script src="/kinfolk-preview-isolation.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- Recovery225: show an actionable mobile startup screen if the external auth SDK fails. -->
 <script id="kinfolk-auth-sdk-recovery">
