@@ -11,9 +11,9 @@ test('mobile reels teardown aborts viewport listeners and pauses videos',()=>{
  assert.match(reels,/active\.generation\+\+/);
 });
 test('reels reject late async rendering after navigation or feed mode changes',()=>{
- assert.match(reels,/const isCurrent=\\(\\)=>generation===active\\.generation&&active\\.feedMode===mode&&main\\.isConnected&&state\\.view==='reels'/);
- assert.match(reels,/const \\[reactionsReady,urls\\]=await Promise\\.all\\(\\[\\s*kf289LoadReactions\\(\\),\\s*kf287ResolveReelUrls\\(visibleReels,signed,isCurrent\\)\\s*\\]\\);/);
- assert.match(reels,/if\\(!isCurrent\\(\\)\\)return;\\s*const cards=\\[\\]/);
+ assert.match(reels,/const isCurrent=\(\)=>generation===active\.generation&&active\.feedMode===mode&&main\.isConnected&&state\.view==='reels'/);
+ assert.match(reels,/const \[reactionsReady,urls\]=await Promise\.all\(\[\s*kf289LoadReactions\(\),\s*kf287ResolveReelUrls\(visibleReels,signed,isCurrent\)\s*\]\);/);
+ assert.match(reels,/if\(!isCurrent\(\)\)return;\s*const cards=\[\]/);
 });
 test('mobile reels retain keyboard, playback, and accessibility controls',()=>{
  assert.match(reels,/aria-label="Play or pause reel"/);
