@@ -13,7 +13,7 @@ function harness(response={error:null,count:1}){
   const timers=[];
   let current=null;
   const ctx={
-    state:{user:{id:A}},console:{warn(){}},
+    state:{user:{id:A}},console:{warn(){},log(){}},
     setTimeout:fn=>{timers.push(fn);return timers.length},
     setInterval:()=>1,
     MutationObserver:class{observe(){}},
