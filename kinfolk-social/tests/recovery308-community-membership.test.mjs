@@ -66,3 +66,34 @@ test('community owner is not shown a self-join button',async()=>{
  assert.equal(h.card.children?.length,undefined);
  assert.deepEqual(h.calls,[]);
 });
+
+test('search rebuild restores membership buttons without another backend read',async()=>{
+ const h=harness();await h.render();
+ const search=h.listing;
+ h.reset();search.listeners.input();
+ assert.equal(h.card.children[0].textContent,'Join community');
+ await h.card.children[0].listeners.click();
+ h.reset();search.listeners.input();
+ assert.equal(h.card.children[0].textContent,'Leave community');
+ assert.equal(h.calls.filter(x=>x==='read').length,1);
+});
+test('search during pending join keeps new button disabled and preserves result',async()=>{
+ const h=harness({writePending:true});await h.render();
+ const search=h.listing;
+ const first=h.card.children[0].listeners.click();
+ h.reset();search.listeners.input();
+ const rebuilt=h.card.children[0];
+ assert.equal(rebuilt.disabled,true);
+ assert.equal(rebuilt.textContent,'Joining…');
+ await rebuilt.listeners.click();
+ assert.equal(h.calls.filter(x=>Array.isArray(x)&&x[0]==='join').length,1);
+ h.write.resolve({error:null});await first;
+ assert.equal(rebuilt.disabled,false);
+ assert.equal(rebuilt.textContent,'Leave community');
+});
+test('search after account switch never rehydrates old account membership',async()=>{
+ const h=harness();await h.render();
+ const search=h.listing;
+ h.state.user={id:'B'};h.reset();search.listeners.input();
+ assert.equal(h.card.children?.length,undefined);
+});
