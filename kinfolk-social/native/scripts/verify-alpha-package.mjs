@@ -43,6 +43,7 @@ const modules=nativeStartupScripts(html).filter(src=>/^\/kinfolk-[A-Za-z0-9_-]+\
 assertNativeModuleParity(original,html);
 assert.ok(modules.length>=20,'complete Kinfolk modules must be present');
 assert.ok(modules.includes('/kinfolk-reels159.js'),'shorts and reels must be packaged');
+assert.ok(modules.includes('/kinfolk-preview-isolation.js'),'preview isolation guard must ship but remain inactive on Capacitor localhost');
 assert.ok(modules.includes('/kinfolk-communities.js'),'Communities must be packaged in Android/iOS alpha');
 assert.ok(modules.includes('/kinfolk-community-membership.js'),'Community membership controls must be packaged in Android/iOS alpha');
 assert.ok(modules.includes('/kinfolk-community-owner-edit.js'),'Community owner editing must be packaged in Android/iOS alpha');
