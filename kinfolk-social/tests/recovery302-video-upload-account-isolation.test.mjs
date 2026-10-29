@@ -8,6 +8,8 @@ const start=html.indexOf('// Recovery302: video uploads must belong');
 const end=html.indexOf('async function renderChannels(main)',start);
 assert.ok(start>=0&&end>start,'Committed uploadVideo handler must exist');
 const actual=html.slice(start,end);
+// Allow Node VM async continuations to reach the metadata-insert boundary.
+const settle=()=>new Promise(resolve=>setImmediate(resolve));
 function deferred(){let resolve;const promise=new Promise(r=>{resolve=r});return {promise,resolve}}
 function harness({channel=null}={}){
  const uploads=[],inserts=[],removals=[],toasts=[];
@@ -58,7 +60,7 @@ test('successful upload uses captured owner ID and owned storage path',async()=>
  assert.equal(h.uploads.length,1);
  assert.equal(h.uploads[0].path,'A/videos/uuid-demo.mp4');
  assert.equal(h.button.disabled,true);
- h.uploads[0].resolve({error:null});await Promise.resolve();
+ h.uploads[0].resolve({error:null});await settle();
  assert.equal(h.inserts.length,1);
  assert.deepEqual({...h.inserts[0].payload},{
   creator_id:'A',title:'My reel',kind:'reel',source_type:'upload',
@@ -88,7 +90,7 @@ test('replaced video modal invalidates delayed upload',async()=>{
 test('double submit cannot start duplicate storage writes',async()=>{
  const h=harness(),first=h.submit(),second=h.submit();
  assert.equal(h.uploads.length,1);await second;
- h.uploads[0].resolve({error:null});await Promise.resolve();
+ h.uploads[0].resolve({error:null});await settle();
  h.inserts[0].resolve({error:null});await first;
  assert.equal(h.inserts.length,1);
 });
@@ -99,7 +101,7 @@ test('cannot upload to another account channel',async()=>{
 });
 test('database insertion failure cleans up uploaded object while session remains current',async()=>{
  const h=harness(),pending=h.submit();
- h.uploads[0].resolve({error:null});await Promise.resolve();
+ h.uploads[0].resolve({error:null});await settle();
  h.inserts[0].resolve({error:new Error('write rejected')});await pending;
  assert.deepEqual(h.removals,[['A/videos/uuid-demo.mp4']]);
  assert.equal(h.toasts[0][0],'write rejected');
@@ -107,7 +109,7 @@ test('database insertion failure cleans up uploaded object while session remains
 });
 test('account switch during database insert does not render or clean up with another account',async()=>{
  const h=harness(),pending=h.submit();
- h.uploads[0].resolve({error:null});await Promise.resolve();
+ h.uploads[0].resolve({error:null});await settle();
  assert.equal(h.inserts[0].payload.creator_id,'A');
  h.switchAccount('B');h.inserts[0].resolve({error:null});await pending;
  assert.equal(h.closed,0);assert.equal(h.loaded,0);assert.equal(h.toasts.length,0);
