@@ -28,6 +28,12 @@ Automated source and native compilation use an **unreachable CI-only Supabase pl
 
 After the user approves a specific nonproduction project and any cost, repackage with its real publishable URL/key, rerun CI and conduct authorized synthetic-account tests. The live project, production and Kinfolksworld remain untouched.
 
+## Recovery321 native email callback safeguards (2026-10-29)
+
+All native signup entry points, including legacy forms, now require the validated `KINFOLK_ALPHA_EMAIL_REDIRECT_URL` from the native packager. The generated HTML sets an early native marker before the Supabase SDK loads; a missing callback blocks signup instead of falling back to Supabase's Site URL. The same fail-closed behavior applies to native password reset. If password recovery is enabled for isolated testing, set the **separate** optional `KINFOLK_ALPHA_PASSWORD_RESET_REDIRECT_URL` to a verified public HTTPS recovery destination. The packager rejects Vercel preview, Supabase API, local, IP, credential-bearing and fragment callbacks. No callback is injected when this variable is absent, and the reset request is blocked on native.
+
+These URL checks are necessary but do not establish Android App Links, iOS Universal Links, domain ownership, Supabase redirect allowlisting or actual email delivery. Only use the designated isolated alpha project and synthetic accounts. Offline CI builds cannot authenticate.
+
 ## Local development
 
 1. Install Node.js 22+, Android Studio/Android SDK, and (for iOS) macOS + Xcode.

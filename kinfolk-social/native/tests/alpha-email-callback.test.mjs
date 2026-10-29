@@ -22,6 +22,9 @@ test('native packager injects configured callback and functional verifier requir
   const gate=await readFile(new URL('../scripts/verify-functional-alpha.mjs',import.meta.url),'utf8');
   const verify=await readFile(new URL('../scripts/verify-alpha-package.mjs',import.meta.url),'utf8');
   assert.match(pack,/alphaEmailCallback\(process\.env\.KINFOLK_ALPHA_EMAIL_REDIRECT_URL\)/);
+  assert.match(pack,/window\.KINFOLK_NATIVE_ALPHA=true/);
+  assert.match(pack,/KINFOLK_ALPHA_PASSWORD_RESET_REDIRECT_URL/);
+  assert.match(verify,/KINFOLK_ALPHA_PASSWORD_RESET_REDIRECT_URL/);
   assert.match(pack,/window\.KINFOLK_EMAIL_REDIRECT_URL=/);
   assert.match(gate,/alphaEmailCallback\(process\.env\.KINFOLK_ALPHA_EMAIL_REDIRECT_URL,\{required:true\}\)/);
   assert.match(verify,/native package must embed the configured HTTPS verification callback/);

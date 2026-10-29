@@ -20,6 +20,8 @@ assert.match(html,/<script src="\/kinfolk-supabase-sdk\.js"><\/script>/,'native 
 assert.doesNotMatch(html,/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js/,'native launch may not depend on CDN');
 assert.ok(html.indexOf('src="/kinfolk-supabase-sdk.js"')<html.indexOf('const sb=window.supabase.createClient'),'local SDK must execute first');
 assert.ok(html.includes(backend.url)&&html.includes(backend.key),'native entry must use the isolated backend');
+assert.ok(html.includes('window.KINFOLK_NATIVE_ALPHA=true;'),'native signup must have early packaged-alpha marker');
+assert.ok(html.indexOf('window.KINFOLK_NATIVE_ALPHA=true;')<html.indexOf('src="/kinfolk-supabase-sdk.js"'),'native marker must be set before auth SDK and app startup');
 const emailCallback=alphaEmailCallback(process.env.KINFOLK_ALPHA_EMAIL_REDIRECT_URL);
 if(emailCallback){
   assert.ok(html.includes('window.KINFOLK_EMAIL_REDIRECT_URL='+JSON.stringify(emailCallback)),
@@ -27,6 +29,14 @@ if(emailCallback){
 }else{
   assert.doesNotMatch(html,/window\.KINFOLK_EMAIL_REDIRECT_URL\s*=/,
     'native package must not silently retain an unconfigured email callback');
+}
+const passwordResetCallback=alphaEmailCallback(process.env.KINFOLK_ALPHA_PASSWORD_RESET_REDIRECT_URL);
+if(passwordResetCallback){
+  assert.ok(html.includes('window.KINFOLK_PASSWORD_RESET_REDIRECT_URL='+JSON.stringify(passwordResetCallback)),
+    'native package must embed the configured HTTPS password recovery callback');
+}else{
+  assert.doesNotMatch(html,/window\.KINFOLK_PASSWORD_RESET_REDIRECT_URL\s*=/,
+    'native package must not retain an unconfigured password recovery callback');
 }
 assert.doesNotMatch(html,/navigator\.serviceWorker\.register\('/,'Capacitor should not register a stale web service worker');
 
