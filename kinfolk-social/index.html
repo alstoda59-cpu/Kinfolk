@@ -265,7 +265,7 @@ async function createPost(e){
  form.dataset.kfAlphaSending='1';
  const button=form.querySelector('button[type="submit"],button:not([type])');
  if(button)button.disabled=true;
- let path=null;
+ let path=null,uploaded=false,inserted=false;
  try{
    if(file){
      const progress=form.querySelector('#postProgress');
@@ -274,18 +274,24 @@ async function createPost(e){
      const {error}=await sb.storage.from('kinfolk-media').upload(path,file,{upsert:false});
      if(!kfAlphaComposerCurrent(epoch,uid,form,'postForm'))return;
      if(error)throw error;
+     uploaded=true;
    }
    if(!kfAlphaComposerCurrent(epoch,uid,form,'postForm'))return;
    const {error}=await sb.from('posts').insert({author_id:uid,body,media_url:path});
    if(!kfAlphaComposerCurrent(epoch,uid,form,'postForm'))return;
    if(error)throw error;
+   inserted=true;
    closeModal();
    await loadFeed();
    if(!kfAlphaLoadCurrent(epoch,uid))return;
    await renderApp();
    if(kfAlphaLoadCurrent(epoch,uid))toast('Posted to Kinfolk','good');
  }catch(err){
-   if(kfAlphaComposerCurrent(epoch,uid,form,'postForm'))toast(err?.message||String(err),'danger');
+   if(kfAlphaComposerCurrent(epoch,uid,form,'postForm')){
+     // Only remove an orphan upload. Never delete media already referenced by a saved row.
+     if(uploaded&&!inserted&&path){try{await sb.storage.from('kinfolk-media').remove([path])}catch{}}
+     if(kfAlphaComposerCurrent(epoch,uid,form,'postForm'))toast(err?.message||String(err),'danger');
+   }
  }finally{
    delete form.dataset.kfAlphaSending;
    if(button)button.disabled=false;
@@ -301,25 +307,31 @@ async function createStory(e){
  form.dataset.kfAlphaSending='1';
  const button=form.querySelector('button[type="submit"],button:not([type])');
  if(button)button.disabled=true;
- let path=null;
+ let path=null,uploaded=false,inserted=false;
  try{
    if(file){
      path=`${uid}/stories/${crypto.randomUUID()}-${safeName(file.name)}`;
      const {error}=await sb.storage.from('kinfolk-media').upload(path,file,{upsert:false});
      if(!kfAlphaComposerCurrent(epoch,uid,form,'storyForm'))return;
      if(error)throw error;
+     uploaded=true;
    }
    if(!kfAlphaComposerCurrent(epoch,uid,form,'storyForm'))return;
    const {error}=await sb.from('kinfolk_stories').insert({owner_id:uid,body,media_url:path});
    if(!kfAlphaComposerCurrent(epoch,uid,form,'storyForm'))return;
    if(error)throw error;
+   inserted=true;
    closeModal();
    await loadStories();
    if(!kfAlphaLoadCurrent(epoch,uid))return;
    await renderApp();
    if(kfAlphaLoadCurrent(epoch,uid))toast('Story shared','good');
  }catch(err){
-   if(kfAlphaComposerCurrent(epoch,uid,form,'storyForm'))toast(err?.message||String(err),'danger');
+   if(kfAlphaComposerCurrent(epoch,uid,form,'storyForm')){
+     // Only remove an orphan upload. Never delete media already referenced by a saved row.
+     if(uploaded&&!inserted&&path){try{await sb.storage.from('kinfolk-media').remove([path])}catch{}}
+     if(kfAlphaComposerCurrent(epoch,uid,form,'storyForm'))toast(err?.message||String(err),'danger');
+   }
  }finally{
    delete form.dataset.kfAlphaSending;
    if(button)button.disabled=false;
@@ -472,7 +484,7 @@ async function uploadVideo(e){
  form.dataset.kfAlphaSending='1';
  const button=form.querySelector('button[type="submit"],button:not([type])');
  if(button)button.disabled=true;
- let path=null,uploaded=false;
+ let path=null,uploaded=false,inserted=false;
  try{
   const progress=form.querySelector('#videoProgress');
   if(progress)progress.textContent='Uploading…';
@@ -484,6 +496,7 @@ async function uploadVideo(e){
   const {error}=await sb.from('kinfolk_videos').insert({creator_id:uid,title,kind,source_type:'upload',storage_path:path,source_mime:file.type,source_size:file.size,channel_id,visibility:'public',processing_status:'ready',transcode_status:'not_required'});
   if(!kfAlphaComposerCurrent(epoch,uid,form,'videoForm'))return;
   if(error)throw error;
+  inserted=true;
   closeModal();
   await loadVideos();
   if(!kfAlphaLoadCurrent(epoch,uid))return;
@@ -492,7 +505,7 @@ async function uploadVideo(e){
  }catch(err){
   if(kfAlphaComposerCurrent(epoch,uid,form,'videoForm')){
    // Best-effort cleanup only while the initiating account still owns this session.
-   if(uploaded&&path){try{await sb.storage.from('kinfolk-video').remove([path])}catch{}}
+   if(uploaded&&!inserted&&path){try{await sb.storage.from('kinfolk-video').remove([path])}catch{}}
    if(kfAlphaComposerCurrent(epoch,uid,form,'videoForm'))toast(err?.message||String(err),'danger');
   }
  }finally{
