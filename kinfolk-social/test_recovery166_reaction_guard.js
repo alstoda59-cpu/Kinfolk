@@ -6,6 +6,6 @@ assert.ok(fn.includes("const pendingKey=sessionEpoch+':'+userId+':'+id"),'reacti
 assert.ok(fn.includes('if(pendingVideoReactionIds.has(pendingKey))return'));
 assert.ok(fn.includes('const stillCurrent=()=>state.user?.id===userId&&kf129Epoch===sessionEpoch'));
 assert.ok(fn.includes('reelButtons.forEach(b=>b.disabled=true)'));
-assert.equal((fn.match(/reelButtons\\.forEach\\(b=>b\\.disabled=false\\)/g)||[]).length,2);
+assert.equal((fn.match(/reelButtons\.forEach\(b=>b\.disabled=false\)/g)||[]).length,2);
 assert.ok(fn.includes('pendingVideoReactionIds.delete(pendingKey)'),'pending lock always released');
 console.log('Recovery166 reaction pending-state and account isolation source checks passed');
