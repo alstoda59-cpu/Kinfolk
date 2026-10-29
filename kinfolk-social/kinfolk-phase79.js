@@ -301,17 +301,25 @@
   // build through KINFOLK_EMAIL_REDIRECT_URL after backend allowlist approval.
   function emailRedirect(){
     const custom=window.KINFOLK_EMAIL_REDIRECT_URL;
-    // Capacitor uses capacitor://localhost (iOS) or a local WebView origin
-    // (Android). Falling back to Supabase's default Site URL can send an
-    // alpha confirmation link to the wrong app/environment.
-    const native=(typeof window.Capacitor?.isNativePlatform==='function'&&window.Capacitor.isNativePlatform())||
+    // Recovery322: the packaged marker is available before Capacitor's bridge.
+    // Both initial signup and "Resend verification email" call this helper.
+    // Never let a native resend fall back to Supabase's Site URL.
+    const native=window.KINFOLK_NATIVE_ALPHA===true||
+      (typeof window.Capacitor?.isNativePlatform==='function'&&window.Capacitor.isNativePlatform())||
       /^(?:capacitor|ionic):$/.test(location.protocol||'')||
       (location.protocol==='http:'&&['localhost','127.0.0.1'].includes(location.hostname));
     let redirect=null;
     try{
       const target=new URL(custom||location.origin);
-      if(target.protocol==='https:'&&!target.username&&!target.password&&!target.hash&&
-         !['localhost','127.0.0.1','0.0.0.0'].includes(target.hostname)){
+      const host=target.hostname.toLowerCase().replace(/\.$/,'').replace(/^\[|\]$/g,'');
+      // Reject the same unusable callback classes as the native packager.
+      const blocked=!host||host==='localhost'||host.endsWith('.localhost')||
+        host==='vercel.app'||host.endsWith('.vercel.app')||
+        host==='supabase.co'||host.endsWith('.supabase.co')||
+        host.endsWith('.local')||/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)||
+        host.includes(':');
+      if(target.protocol==='https:'&&!target.username&&!target.password&&
+         !target.hash&&!target.port&&!blocked){
         redirect=custom?target.href:target.origin;
       }
     }catch{}
