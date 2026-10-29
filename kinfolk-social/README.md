@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery310 (2026-10-28)
+
+Latest isolated checkpoint: [RECOVERY310.md](RECOVERY310.md). Community owners can edit their name, description and public/private visibility from My communities. Update requests require exactly one returned owned row before success, handle account-switch and pending-save races, and restore edit controls after search. Seven synthetic regression cases added to native alpha verification. Real isolated backend, RLS, current APK/iOS builds and device QA remain unverified; do not release production.
+
 # Kinfolk Social | Recovery309 (2026-10-28)
 
 Latest isolated checkpoint: [RECOVERY309.md](RECOVERY309.md). Community Join/Leave controls now survive search-triggered card rebuilding, including in-flight membership writes, without cross-account state leakage. Three additional synthetic Node regression cases; no real isolated backend community tables, native builds, or physical-device QA verified. Draft PR #9 targets Recovery308, not production.
