@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery313 (2026-10-29)
+
+Latest isolated checkpoint: [RECOVERY313.md](RECOVERY313.md). Fixed cross-account races in first-login profile hydration and legacy profile editor uploads/saves; added 15 source-backed synthetic regression cases to native alpha verification and updated four obsolete static fixtures without weakening the new runtime tests. Draft PR #13 targets Recovery312, not main/production. Source CI and preview verification are tracked in the report. Real isolated signup/email/RLS, missing community/video tables, current Android/iPhone builds and device QA remain blockers. No production release.
+
 # Kinfolk Social | Recovery312 (2026-10-29)
 
 Latest isolated checkpoint: [RECOVERY312.md](RECOVERY312.md). Community creation now requires exactly one backend-confirmed owner-matched UUID row and matching submitted fields before displaying success; added synthetic regressions for zero-row, wrong-owner, mismatched/multiple rows and empty descriptions. Draft PR #12 targets Recovery311 only. Isolated community tables, real RLS/auth, current Android/iOS builds and physical-device QA remain blocked. No production release.
