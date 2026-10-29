@@ -13,7 +13,7 @@ function harness(response={error:null,count:1}){
   const timers=[];
   let current=null;
   const ctx={
-    state:{user:{id:A}},console:{warn(){},log(){}},
+    state:{user:{id:A}},kf129Epoch:1,console:{warn(){},log(){}},
     setTimeout:fn=>{timers.push(fn);return timers.length},
     setInterval:()=>1,
     MutationObserver:class{observe(){}},
@@ -92,6 +92,21 @@ test('account switch during pending report cannot close modal or show success',a
   assert.equal(h.calls.writes[0].row.reporter_id,A);
   assert.equal(h.calls.closed,0);
   assert.equal(h.calls.toasts.length,0);
+});
+test('same-account new activation cannot show stale report success',async()=>{
+  const gate=deferred(),h=harness(()=>gate.promise),button=h.open();
+  const pending=button.onclick();
+  h.ctx.kf129Epoch++;
+  gate.resolve({error:null,count:1});await pending;
+  assert.equal(h.calls.closed,0);
+  assert.equal(h.calls.toasts.length,0);
+});
+test('same-account new activation cannot submit an old report modal',async()=>{
+  const h=harness(),button=h.open();
+  h.ctx.kf129Epoch++;
+  await button.onclick();
+  assert.equal(h.calls.writes.length,0);
+  assert.equal(h.calls.toasts[0][0],'Sign in again before reporting.');
 });
 test('new report modal remains independent of an older in-flight report',async()=>{
   const old=deferred(),newer=deferred();let n=0;
