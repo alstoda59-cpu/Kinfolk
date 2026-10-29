@@ -30,8 +30,52 @@ const H=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt
 const one=async t=>{const r=await sb.from(t).select('*').eq('user_id',state.user.id).maybeSingle();return r.error?null:r.data};
 const css=document.createElement('style');css.textContent=`.kfsSub{position:fixed;inset:0;z-index:10020;background:var(--bg,#0d0d12);color:var(--text,#fff);overflow:auto}.kfsSubTop{position:sticky;top:0;display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:rgba(13,13,18,.96);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.08)}.kfsSubTop button{border:0;background:transparent;color:inherit;font-size:30px}.kfsSubBody{max-width:640px;margin:auto;padding:18px 18px 50px}.kfsPerson{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}.kfsAvatar{width:48px;height:48px;border-radius:50%;object-fit:cover;background:#2b2b33}.kfsPersonMain{min-width:0;flex:1}.kfsPersonMain b,.kfsPersonMain small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kfsGhostBtn,.kfsAction{border:1px solid color-mix(in srgb,var(--accent) 70%,#fff);border-radius:999px;padding:9px 14px;background:transparent;color:inherit;font-weight:800}.kfsAction{background:var(--accent);border-color:var(--accent);color:#fff}.kfsText{width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(255,255,255,.04);color:inherit;padding:12px;font:inherit}.kfsNote{color:var(--muted,#aaa);line-height:1.5}.kfsCheck{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}.kfsCheck input{width:20px;height:20px;accent-color:var(--accent)}.kfsLegal h3{margin-top:24px}.kfsLegal p,.kfsLegal li{line-height:1.55;color:#ddd}.kfsDanger{color:#ff8f9d}`;document.head.appendChild(css);
 function sub(title,body){document.getElementById('kfsSubScreen')?.remove();const el=document.createElement('div');el.id='kfsSubScreen';el.className='kfsSub';el.innerHTML=`<div class="kfsSubTop"><button type="button" onclick="closeKfsSub()">‹</button><h2 style="margin:0;font-size:21px">${H(title)}</h2></div><div class="kfsSubBody">${body}</div>`;document.body.appendChild(el);return el}window.closeKfsSub=()=>document.getElementById('kfsSubScreen')?.remove();
-window.openBlockedAccounts=async function(){sub('Blocked accounts','<p class="kfsNote">People you block are removed from discovery and suggestions. You can unblock them here.</p><div id="kfsBlockedList">Loading…</div>');const {data:rows,error}=await sb.from('blocks').select('blocked_id').eq('blocker_id',state.user.id);if(error)return $('#kfsBlockedList').textContent=error.message;const ids=(rows||[]).map(x=>x.blocked_id);if(!ids.length)return $('#kfsBlockedList').innerHTML='<p class="kfsNote">You have no blocked accounts.</p>';const {data:people}=await sb.from('profiles').select('id,username,display_name,avatar_url').in('id',ids);$('#kfsBlockedList').innerHTML=(people||[]).map(p=>`<div class="kfsPerson"><img class="kfsAvatar" src="${H(p.avatar_url||'')}" onerror="this.style.visibility='hidden'"><div class="kfsPersonMain"><b>${H(p.display_name||p.username)}</b><small>@${H(p.username||'')}</small></div><button class="kfsGhostBtn" onclick="unblockKinfolk('${p.id}')">Unblock</button></div>`).join('')};
-window.unblockKinfolk=async id=>{const {error}=await sb.from('blocks').delete().eq('blocker_id',state.user.id).eq('blocked_id',id);if(error)return toast(error.message,'danger');toast('Account unblocked','good');openBlockedAccounts()};
+// Recovery326: keep blocked-account reads and unblocks tied to their opening session and screen.
+let kfsBlockedContext=null;
+window.openBlockedAccounts=async function(){
+  const accountId=state.user?.id;
+  if(!accountId)return toast('Sign in to manage blocked accounts.','danger');
+  const epoch=typeof kf129Epoch==='number'?kf129Epoch:null;
+  const screen=sub('Blocked accounts','<p class="kfsNote">People you block are removed from discovery and suggestions. You can unblock them here.</p><div id="kfsBlockedList">Loading…</div>');
+  const list=screen.querySelector('#kfsBlockedList');
+  const context={accountId,epoch,screen,list,ids:new Set(),pending:new Set()};
+  context.current=()=>screen.isConnected&&document.getElementById('kfsSubScreen')===screen&&state.user?.id===accountId&&
+    (epoch===null||kf129Epoch===epoch);
+  kfsBlockedContext=context;
+  if(!list)return;
+  try{
+    const {data:rows,error}=await sb.from('blocks').select('blocked_id').eq('blocker_id',accountId);
+    if(!context.current())return;
+    if(error)throw error;
+    const ids=(rows||[]).map(row=>row.blocked_id).filter(Boolean);
+    context.ids=new Set(ids);
+    if(!ids.length){list.innerHTML='<p class="kfsNote">You have no blocked accounts.</p>';return;}
+    const {data:people,error:profileError}=await sb.from('profiles').select('id,username,display_name,avatar_url').in('id',ids);
+    if(!context.current())return;
+    if(profileError)throw profileError;
+    list.innerHTML=(people||[]).filter(person=>context.ids.has(person.id)).map(person=>`<div class="kfsPerson"><img class="kfsAvatar" src="${H(person.avatar_url||'')}" onerror="this.style.visibility='hidden'"><div class="kfsPersonMain"><b>${H(person.display_name||person.username)}</b><small>@${H(person.username||'')}</small></div><button type="button" class="kfsGhostBtn" data-blocked-id="${H(person.id)}">Unblock</button></div>`).join('')||'<p class="kfsNote">No blocked profiles could be displayed.</p>';
+    list.addEventListener('click',event=>{
+      const button=event.target?.closest?.('button[data-blocked-id]');
+      if(button&&list.contains(button))window.unblockKinfolk(button.dataset.blockedId,context,button);
+    });
+  }catch(error){if(context.current())list.textContent=error?.message||'Could not load blocked accounts.';}
+};
+window.unblockKinfolk=async function(id,context=kfsBlockedContext,button=null){
+  if(!context?.current()||!context.ids.has(id)||context.pending.has(id))return;
+  context.pending.add(id);
+  if(button)button.disabled=true;
+  try{
+    const {error}=await sb.from('blocks').delete().eq('blocker_id',context.accountId).eq('blocked_id',id);
+    if(!context.current())return;
+    if(error)throw error;
+    toast('Account unblocked','good');
+    await window.openBlockedAccounts();
+  }catch(error){if(context.current())toast(error?.message||'Could not unblock this account.','danger');}
+  finally{
+    context.pending.delete(id);
+    if(button&&context.current())button.disabled=false;
+  }
+};
 // Recovery325: bind password changes to the opening account, activation and sub-screen.
 window.openAccountSecurity=function(){
   const accountId=state.user?.id;
