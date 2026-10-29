@@ -28,7 +28,7 @@ Date: 2026-10-29 (America/Los_Angeles). Scope: FULL MAIN Kinfolk Social in `kinf
 - GitHub Contents API confirmed application and test commits.
 - GitHub Actions run https://github.com/alstoda59-cpu/Kinfolk/actions/runs/40850373105 failed its synthetic Node stage: 533/538 passed, five failed old static string assertions after refactor. All 14 newly added runtime tests passed in that run. Fixed the old assertions rather than reverting account isolation.
 - Replacement run https://github.com/alstoda59-cpu/Kinfolk/actions/runs/40850499209 completed its Node regression stage SUCCESS; browser stages were still in progress at inspection. This predates the final stale-hydration editor regression.
-- Newest application/test run https://github.com/alstoda59-cpu/Kinfolk/actions/runs/40850675351 for `200795d2` was pending at inspection. No full CI success is claimed for final code.
+- Application/test run https://github.com/alstoda59-cpu/Kinfolk/actions/runs/40850675351 for `200795d2` completed the **Node synthetic regression stage SUCCESS**, including all 15 new runtime cases; browser dependencies and later stages were still in progress at inspection. No full CI success is claimed for final code.
 - Nonproduction Vercel preview for `a6f52c46` is READY; final `9f6aa166` and test/doc commits are NOT confirmed READY.
 - No real synthetic-user backend auth/email, two-user RLS, actual upload, messaging, Android APK/iOS package, or physical-device tests completed in Recovery313.
 
