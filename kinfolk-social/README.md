@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery308 (2026-10-28)
+
+Latest isolated checkpoint: [RECOVERY308.md](RECOVERY308.md). Added public Community Join/Leave controls with account-safe async behavior and missing-backend fallback, native package parity and synthetic regressions. Added review-only community/membership RLS SQL; **not applied**. Real isolated community backend, full CI, native packages and physical-device QA remain unverified. Draft PR #8 targets Recovery307 only; no production release.
+
 # Kinfolk Social | Recovery307 (2026-10-28)
 
 Latest isolated checkpoint: [RECOVERY307.md](RECOVERY307.md). Community owners now see their own private spaces in **My communities** after creation; creation feedback survives a refresh and late account-switch responses are ignored. Added eight synthetic source regressions and made native alpha verification require the Communities module. This is **not** real backend/RLS or physical-device proof. Draft PR #7 targets Recovery306, not production.
