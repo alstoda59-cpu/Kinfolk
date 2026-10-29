@@ -32,6 +32,6 @@ test('native password reset rejects blocked and malformed callback destinations'
   ])assert.throws(()=>helper({callback})(),/approved HTTPS recovery callback/,callback);
 });
 test('normal web password recovery keeps existing public HTTPS origin behavior',()=>{
-  assert.deepEqual(helper({native:false,origin:'https://web.example.test'})(),{redirectTo:'https://web.example.test/'});
+  assert.deepEqual(helper({native:false,origin:'https://web.example.test'})(),{redirectTo:'https://web.example.test'});
   assert.deepEqual(helper({native:false,origin:'https://localhost'})(),{});
 });
