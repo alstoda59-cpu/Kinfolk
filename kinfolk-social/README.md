@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery315 (2026-10-29)
+
+Latest isolated checkpoint: [RECOVERY315.md](RECOVERY315.md). Moderation reports now require an exact confirmed insert count, preserving insert-only member RLS; report modals and pending submissions are account/target-scoped across rapid navigation and duplicate taps. Ten source-backed synthetic regressions are wired into native alpha verification and the reporting module is required in Capacitor packaging. GitHub Node regression stage passed after fixture repairs; full CI, real isolated report/auth/RLS testing and current Android/iPhone builds are separate gates. Nonproduction READY code preview is **not safe for test signups** because its web source still references the shared live backend. No production release.
+
 # Kinfolk Social | Recovery314 (2026-10-29)
 
 Latest isolated checkpoint: [RECOVERY314.md](RECOVERY314.md). Channel create/edit now pins uploads and database writes to the initiating account, owner-scopes edits, confirms returned database rows and prevents duplicate submissions or stale modal completions. Ten source-backed synthetic tests were added to native alpha verification; PR #14 targets Recovery313 only. GitHub Node regression stage passed; full CI and current native builds are not confirmed. An earlier code commit has a READY nonproduction preview, but the isolated backend still lacks channel/video tables and real auth/RLS/device QA remains blocked. No production release.
