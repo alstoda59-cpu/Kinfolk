@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery317 (2026-10-29)
+
+Latest isolated checkpoint: [RECOVERY317.md](RECOVERY317.md). Vercel previews still contain the shared live Supabase URL/key, so the web app now **fails closed on *.vercel.app** before the SDK loads: a preview-only CSP blocks cross-origin backend/media requests, an accessible dark overlay explains the restriction, and capture-phase form submissions are suppressed. Production custom domains and Capacitor localhost are unaffected. Seven synthetic Node tests plus a Chromium/WebKit browser regression are integrated into source/native alpha verification; full CI and real backend/device tests remain separate gates. A READY preview is **not** a usable signup environment. Draft PR #17 targets Recovery316, not main/production. No shared live backend, Kinfolksworld, store or production changes.
+
 # Kinfolk Social | Recovery316 (2026-10-29)
 
 Latest isolated checkpoint: [RECOVERY316.md](RECOVERY316.md). On an authenticated account switch, clear the previous member's feed, private signed media URLs, notifications, videos, stories, channels, cached reactions, profile state, old overlays and profile/Reels playback synchronously before the new account hydrates. Six source-backed synthetic regressions are included in native alpha verification; draft PR #16 targets Recovery315 only. The nonproduction Vercel preview is READY but **still references shared live Supabase and must not be used for signups or test writes**. Real isolated auth/RLS and current physical Android/iPhone QA remain unverified. No production release.
