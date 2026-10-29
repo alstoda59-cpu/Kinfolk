@@ -630,9 +630,9 @@ async function saveProfile(e){
     if(!active())return;
     if(savedProfile.error)throw savedProfile.error;
     if(savedExtras.error)throw savedExtras.error;
-    closeModal();
     const hydrated=await hydrateUser();
-    if(!hydrated||!sameAccount())return;
+    if(!hydrated||!active())return;
+    closeModal();
     state.profiles.set(uid,state.profile);
     await loadCore();
     if(!sameAccount())return;
