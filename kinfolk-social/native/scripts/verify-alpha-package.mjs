@@ -20,6 +20,8 @@ assert.match(html,/<script src="\/kinfolk-supabase-sdk\.js"><\/script>/,'native 
 assert.doesNotMatch(html,/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js/,'native launch may not depend on CDN');
 assert.ok(html.indexOf('src="/kinfolk-supabase-sdk.js"')<html.indexOf('const sb=window.supabase.createClient'),'local SDK must execute first');
 assert.ok(html.includes(backend.url)&&html.includes(backend.key),'native entry must use the isolated backend');
+assert.ok(html.includes('window.KINFOLK_NATIVE_ALPHA=true;'),'native signup must have early packaged-alpha marker');
+assert.ok(html.indexOf('window.KINFOLK_NATIVE_ALPHA=true;')<html.indexOf('src="/kinfolk-supabase-sdk.js"'),'native marker must be set before auth SDK and app startup');
 const emailCallback=alphaEmailCallback(process.env.KINFOLK_ALPHA_EMAIL_REDIRECT_URL);
 if(emailCallback){
   assert.ok(html.includes('window.KINFOLK_EMAIL_REDIRECT_URL='+JSON.stringify(emailCallback)),
