@@ -1,3 +1,7 @@
+# Recovery329 | Native authentication regression gate integrity (2026-10-29)
+
+Continued from Recovery328 on an isolated branch. [RECOVERY329.md](RECOVERY329.md) fixes the nonexistent Recovery324 standalone test path introduced into native auth verification: the overlap regression actually lives in the existing Recovery323 suite. Adds a native source-suite integrity regression to reject missing/duplicate test paths and protect password reset/change coverage. CI and native compilation require exact-head confirmation; real isolated signup/email/RLS and physical-device QA remain unverified. No production, shared live Supabase, Kinfolksworld, paid resources or app stores changed.
+
 # Recovery327 | Notification preferences account isolation (2026-10-29)
 
 Continued from [Recovery326](RECOVERY326.md) on an isolated draft branch. [RECOVERY327.md](RECOVERY327.md) pins notification detail reads and saves to the opening account, auth activation and exact settings screen; prevents stale account-switch responses and duplicate saves; and requires a backend-confirmed matching preference row before showing success. Twelve synthetic regressions are integrated into native alpha verification. Offline Android/iOS compilation is not real backend, email, RLS or physical-device QA. No production, shared live Supabase, Kinfolksworld, paid resources or store changes.
