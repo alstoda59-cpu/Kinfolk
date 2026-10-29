@@ -24,7 +24,7 @@
     "alpha:reels:source:test": "node --test ../tests/recovery299-reels-filter-viewport.test.mjs ../tests/recovery287-reels-signed-urls.test.mjs ../tests/recovery288-reels-account-switch.test.mjs ../tests/recovery289-reels-reaction-resilience.test.mjs ../tests/recovery294-video-download-session.test.mjs ../tests/recovery295-reels-immersive.test.mjs ../tests/recovery296-reels-subscriptions.test.mjs ../tests/recovery298-overlapping-content-renders.test.mjs",
     "alpha:messages:source:test": "node --test ../tests/recovery300-dm-account-isolation.test.mjs",
     "alpha:notifications:source:test": "node --test ../tests/recovery301-notification-account-isolation.test.mjs",
-    "alpha:media:source:test": "node --test ../tests/recovery302-video-upload-account-isolation.test.mjs"
+    "alpha:media:source:test": "node --test ../tests/recovery302-video-upload-account-isolation.test.mjs ../tests/recovery303-post-story-media-integrity.test.mjs"
   },
   "dependencies": {
     "@capacitor/core": "7.6.9",
