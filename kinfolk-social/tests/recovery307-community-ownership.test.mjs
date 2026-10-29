@@ -136,3 +136,11 @@ test('multiple or mismatched returned rows never confirm Community creation',asy
    assert.doesNotMatch(h.main.html,/Community created/);
  }
 });
+
+test('empty optional description may be returned as null without false failure',async()=>{
+ const h=harness({insertRows:[{id:'123e4567-e89b-42d3-a456-426614174001',owner_id:'A',name:'No Description',description:null,visibility:'private'}]});
+ await h.render();const form=h.fill('No Description','private');h.main.nodes.description.value='';
+ await h.create(form);
+ assert.match(h.main.html,/Community created/);
+ assert.match(h.main.nodes['#kfOwnedCommunities'].innerHTML,/No Description/);
+});
