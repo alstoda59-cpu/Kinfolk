@@ -5,7 +5,8 @@ window.kf108Report=function(type,id,label='content'){
   if(!TYPES.has(type)||!id||!window.state?.user?.id)return tell108('Report could not be opened.');
   if(type==='profile'&&id===state.user.id)return tell108('You cannot report your own account.');
   const reporterId=state.user.id,token=++reportModalSerial;
-  activeReport={type,id,reporterId,token};
+  const activationEpoch=typeof kf129Epoch==='number'?kf129Epoch:null;
+  activeReport={type,id,reporterId,token,activationEpoch};
   const opts=REASONS.map(r=>`<option value="${esc108(r)}">${esc108(r)}</option>`).join('');
   modal('Report '+label,`<div class="muted" style="margin-bottom:10px">Reports are sent to Kinfolk moderation for review.</div><label class="label">Reason</label><select id="kf108Reason" class="field">${opts}</select><label class="label">Details</label><textarea id="kf108Details" class="textarea" maxlength="500" placeholder="Optional details"></textarea><button id="kf108Submit" class="btn primary full" type="button" style="margin-top:12px">Submit report</button>`);
   setTimeout(()=>{
@@ -18,11 +19,12 @@ window.kf108SubmitReport=async function(type,id,token){
   const report=activeReport;
   if(!report||report.token!==token||report.type!==type||report.id!==id||!TYPES.has(type))return;
   const reporterId=window.state?.user?.id;
-  if(!reporterId||reporterId!==report.reporterId)return tell108('Sign in again before reporting.');
+  const sameActivation=()=>report.activationEpoch===null||(typeof kf129Epoch==='number'&&kf129Epoch===report.activationEpoch);
+  if(!reporterId||reporterId!==report.reporterId||!sameActivation())return tell108('Sign in again before reporting.');
   if(sendingToken===token)return;
   const b=document.getElementById('kf108Submit');
   if(!b)return;
-  const stillCurrent=()=>window.state?.user?.id===reporterId&&activeReport?.token===token&&document.getElementById('kf108Submit')===b;
+  const stillCurrent=()=>window.state?.user?.id===reporterId&&sameActivation()&&activeReport?.token===token&&document.getElementById('kf108Submit')===b;
   const reason=document.getElementById('kf108Reason')?.value||'Other';
   const details=document.getElementById('kf108Details')?.value.trim()||'';
   const full=details?`${reason}: ${details}`:reason;
