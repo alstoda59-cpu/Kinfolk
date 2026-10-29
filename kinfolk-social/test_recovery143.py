@@ -48,7 +48,10 @@ with sync_playwright() as p:
         assert record['email']=='recovery@example.test',record
         redirect=record['options'].get('redirectTo')
         assert redirect==expected,(callback,record)
-        assert 'sent' in page.locator('.kf73Msg').inner_text().lower()
+        # Recovery323 intentionally avoids promising that an email was delivered.
+        status=page.locator('.kf73Msg').inner_text().lower()
+        assert 'reset link has been requested' in status,status
+        assert 'email sent' not in status,status
 
     # No explicit callback on about:blank should fall back to the Supabase
     # project Site URL, rather than using an unusable native-like origin.

@@ -993,7 +993,13 @@ setTimeout(harden,0);setTimeout(harden,700);setInterval(unlockStuck,1200);
           form.querySelector('#kf73Email')===emailField&&
           String(emailField.value||'').trim().toLowerCase()===email.toLowerCase()&&
           (window.state?.user?.id||null)===accountId;
-        const invalidate=()=>{if(form.__kf323PasswordReset===request)delete form.__kf323PasswordReset};
+        // Recovery324: editing the address permits an immediate retry, but an
+        // older request must never unlock a newer in-flight reset.
+        const invalidate=()=>{
+          if(form.__kf323PasswordReset!==request)return;
+          delete form.__kf323PasswordReset;
+          if(sameControl())forgot.disabled=false;
+        };
         emailField.addEventListener('input',invalidate,{once:true});
         forgot.disabled=true;
         let timeoutId=null;
@@ -1019,8 +1025,12 @@ setTimeout(harden,0);setTimeout(harden,700);setInterval(unlockStuck,1200);
         }finally{
           if(timeoutId!==null)clearTimeout(timeoutId);
           emailField.removeEventListener('input',invalidate);
-          if(form.__kf323PasswordReset===request)delete form.__kf323PasswordReset;
-          if(sameControl())forgot.disabled=false;
+          // Only the owner of the pending request may release this control.
+          // An invalidated request may finish after a new request has started.
+          if(form.__kf323PasswordReset===request){
+            delete form.__kf323PasswordReset;
+            if(sameControl())forgot.disabled=false;
+          }
         }
       };
     }else{

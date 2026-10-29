@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery324 (2026-10-29)
+
+Continued from [Recovery323](RECOVERY323.md) on an isolated draft branch. [RECOVERY324.md](RECOVERY324.md) fixes a real password-reset retry race: editing the email immediately unlocks retry, while an older request can no longer unlock the newer pending request. Added overlapping-request regression and repaired the legacy Chromium fixture whose stale expectation caused Recovery323 **full source CI to fail**. Current source/native CI must be checked at the exact Recovery324 head; Android/iOS offline compilation is not live backend or physical-device verification. No shared live Supabase, Kinfolksworld, production, paid infrastructure or stores changed.
+
 # Kinfolk Social | Recovery323 (2026-10-29)
 
 Continued from [Recovery322](RECOVERY322.md) on an isolated draft branch. [RECOVERY323.md](RECOVERY323.md) fixes the existing mobile login **Forgot Password** lifecycle: delayed reset responses cannot display on another email, replaced form, login mode or account; input edits invalidate the old attempt, duplicate taps are blocked, and a 20-second timeout reports uncertainty rather than falsely claiming delivery. Seven synthetic regressions are included in native `alpha:verify`, and offline-only Android/iOS compilation is requested. Source CI, native compilation, real isolated email/RLS and physical-device QA are separate gates. No production, shared live backend, Kinfolksworld, paid infrastructure or stores changed.
