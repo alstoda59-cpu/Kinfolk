@@ -16,7 +16,7 @@ async function waitForInsert(h){
  assert.equal(h.inserts.length,1,'metadata insert should begin after storage upload resolves');
 }
 function deferred(){let resolve;const promise=new Promise(r=>{resolve=r});return {promise,resolve}}
-function harness({channel=null}={}){
+function harness({channel=null,failLoad=false}={}){
  const uploads=[],inserts=[],removals=[],toasts=[];
  const state={user:{id:'A'},channels:[{id:'chan-A',owner_id:'A'},{id:'chan-B',owner_id:'B'}]};
  const button={disabled:false};
@@ -39,7 +39,7 @@ function harness({channel=null}={}){
   safeName:n=>n,
   toast:(...a)=>toasts.push(a),
   closeModal:()=>{closed++},
-  loadVideos:async()=>{loaded++},
+  loadVideos:async()=>{loaded++;if(failLoad)throw new Error('refresh unavailable')},
   renderApp:async()=>{rendered++},
   sb:{
    storage:{from:bucket=>{assert.equal(bucket,'kinfolk-video');return {
@@ -125,4 +125,14 @@ test('storage failure never creates a video row',async()=>{
  h.uploads[0].resolve({error:new Error('storage rejected')});await pending;
  assert.equal(h.inserts.length,0);assert.equal(h.toasts[0][0],'storage rejected');
  assert.equal(h.button.disabled,false);
+});
+
+test('successful video insert is never rolled back by a later feed refresh failure',async()=>{
+ const h=harness({failLoad:true}),pending=h.submit();
+ h.uploads[0].resolve({error:null});await waitForInsert(h);
+ h.inserts[0].resolve({error:null});await pending;
+ assert.equal(h.closed,1);
+ assert.equal(h.loaded,1);
+ assert.deepEqual(h.removals,[],'saved video media must not be deleted');
+ assert.match(h.toasts[0][0],/refresh unavailable/);
 });
