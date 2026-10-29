@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const source=readFileSync(new URL('../kinfolk-communities.js',import.meta.url),'utf8');
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve}};
-function harness({rows=[],insertError=null,deferInsert=false,deferReads=false}={}){
+function harness({rows=[],insertError=null,insertRows=null,deferInsert=false,deferReads=false}={}){
   const state={user:{id:'A'},view:'communities'};
   const calls=[],writes=[],readRequests=[],pendingInsert=deferred();
   const main={isConnected:true,html:'',nodes:{},querySelector(selector){return this.nodes[selector]||null}};
@@ -27,9 +27,13 @@ function harness({rows=[],insertError=null,deferInsert=false,deferReads=false}={
         return Promise.resolve({data:rows.filter(c=>c[field]===value),error:null});
       }
     }},
-    insert(payload){writes.push(payload);if(deferInsert)return pendingInsert.promise;
-      if(!insertError)rows.push({id:'new-'+writes.length,...payload,created_at:'2026-10-28'});
-      return Promise.resolve({error:insertError});}
+    insert(payload){writes.push(payload);return {select(columns){
+      assert.equal(columns,'id,owner_id,name,description,visibility');
+      if(deferInsert)return pendingInsert.promise;
+      const row={id:'123e4567-e89b-42d3-a456-42661417400'+writes.length,...payload,created_at:'2026-10-28'};
+      if(!insertError)rows.push(row);
+      return Promise.resolve({data:insertRows??(insertError?null:[row]),error:insertError});
+    }};}
   }} };
   const warnings=[];
   const context={window:{},state,sb,document:{getElementById:key=>key==='main'?main:null},console:{warn:(...args)=>warnings.push(args)}};
@@ -102,4 +106,41 @@ test('invalid names and privacy values are rejected without writing',async()=>{
  const h=harness();await h.render();let form=h.fill('x','private');await h.create(form);
  form=h.fill('Valid Name','not-a-privacy');await h.create(form);
  assert.equal(h.writes.length,0);
+});
+
+test('zero-row successful HTTP insert does not claim Community creation',async()=>{
+ const h=harness({insertRows:[]});await h.render();const form=h.fill('A public community');
+ await h.create(form);
+ assert.equal(h.writes.length,1);
+ assert.match(h.main.nodes.status.textContent,/creation failed/i);
+ assert.doesNotMatch(h.main.html,/Community created/);
+});
+
+test('wrong-owner returned row cannot confirm a new Community',async()=>{
+ const h=harness({insertRows:[{id:'123e4567-e89b-42d3-a456-426614174001',owner_id:'B',name:'A public community',description:'A friendly group',visibility:'public'}]});
+ await h.render();await h.create(h.fill('A public community'));
+ assert.equal(h.writes[0].owner_id,'A');
+ assert.match(h.main.nodes.status.textContent,/creation failed/i);
+ assert.doesNotMatch(h.main.html,/Community created/);
+});
+
+test('multiple or mismatched returned rows never confirm Community creation',async()=>{
+ for(const insertRows of [
+   [{id:'123e4567-e89b-42d3-a456-426614174001',owner_id:'A',name:'A public community',description:'A friendly group',visibility:'private'}],
+   [{id:'123e4567-e89b-42d3-a456-426614174001',owner_id:'A',name:'A public community',description:'A friendly group',visibility:'public'},
+    {id:'123e4567-e89b-42d3-a456-426614174002',owner_id:'A',name:'A public community',description:'A friendly group',visibility:'public'}],
+   [{id:'not-a-uuid',owner_id:'A',name:'A public community',description:'A friendly group',visibility:'public'}]
+ ]){
+   const h=harness({insertRows});await h.render();await h.create(h.fill('A public community'));
+   assert.match(h.main.nodes.status.textContent,/creation failed/i);
+   assert.doesNotMatch(h.main.html,/Community created/);
+ }
+});
+
+test('empty optional description may be returned as null without false failure',async()=>{
+ const h=harness({insertRows:[{id:'123e4567-e89b-42d3-a456-426614174001',owner_id:'A',name:'No Description',description:null,visibility:'private'}]});
+ await h.render();const form=h.fill('No Description','private');h.main.nodes.description.value='';
+ await h.create(form);
+ assert.match(h.main.html,/Community created/);
+ assert.match(h.main.nodes['#kfOwnedCommunities'].innerHTML,/No Description/);
 });

@@ -31,9 +31,17 @@
     button.disabled=true;
     status.textContent='Creating community…';
     try{
-      const {error}=await sb.from('kinfolk_communities').insert({name,description,visibility,owner_id:uid});
-      if(error)throw error;
+      // An INSERT may succeed at the HTTP layer without returning a visible row.
+      // Require an RLS-visible, owner-matching row before claiming creation.
+      const {data,error}=await sb.from('kinfolk_communities')
+        .insert({name,description,visibility,owner_id:uid})
+        .select('id,owner_id,name,description,visibility');
       if(state.user?.id!==uid||state.view!=='communities'||!form.isConnected)return false;
+      if(error)throw error;
+      const row=Array.isArray(data)&&data.length===1?data[0]:null;
+      if(!row||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(row.id||'')||
+         row.owner_id!==uid||row.name!==name||row.visibility!==visibility||String(row.description??'')!==description)
+        throw Error('Community creation was not confirmed by the backend.');
       notice={uid,message:'Community created. You can find it under My communities.'};
       const main=document.getElementById('main');
       if(main?.isConnected)await window.kfRenderCommunities(main);
