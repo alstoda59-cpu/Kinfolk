@@ -32,7 +32,43 @@ const css=document.createElement('style');css.textContent=`.kfsSub{position:fixe
 function sub(title,body){document.getElementById('kfsSubScreen')?.remove();const el=document.createElement('div');el.id='kfsSubScreen';el.className='kfsSub';el.innerHTML=`<div class="kfsSubTop"><button type="button" onclick="closeKfsSub()">‹</button><h2 style="margin:0;font-size:21px">${H(title)}</h2></div><div class="kfsSubBody">${body}</div>`;document.body.appendChild(el);return el}window.closeKfsSub=()=>document.getElementById('kfsSubScreen')?.remove();
 window.openBlockedAccounts=async function(){sub('Blocked accounts','<p class="kfsNote">People you block are removed from discovery and suggestions. You can unblock them here.</p><div id="kfsBlockedList">Loading…</div>');const {data:rows,error}=await sb.from('blocks').select('blocked_id').eq('blocker_id',state.user.id);if(error)return $('#kfsBlockedList').textContent=error.message;const ids=(rows||[]).map(x=>x.blocked_id);if(!ids.length)return $('#kfsBlockedList').innerHTML='<p class="kfsNote">You have no blocked accounts.</p>';const {data:people}=await sb.from('profiles').select('id,username,display_name,avatar_url').in('id',ids);$('#kfsBlockedList').innerHTML=(people||[]).map(p=>`<div class="kfsPerson"><img class="kfsAvatar" src="${H(p.avatar_url||'')}" onerror="this.style.visibility='hidden'"><div class="kfsPersonMain"><b>${H(p.display_name||p.username)}</b><small>@${H(p.username||'')}</small></div><button class="kfsGhostBtn" onclick="unblockKinfolk('${p.id}')">Unblock</button></div>`).join('')};
 window.unblockKinfolk=async id=>{const {error}=await sb.from('blocks').delete().eq('blocker_id',state.user.id).eq('blocked_id',id);if(error)return toast(error.message,'danger');toast('Account unblocked','good');openBlockedAccounts()};
-window.openAccountSecurity=function(){sub('Account security',`<p class="kfsNote">Change your password while signed in. Kinfolk currently accepts 12–128 characters.</p><form id="kfsPasswordForm"><label><b>New password</b><input id="kfsNewPassword" class="kfsText" type="password" minlength="12" maxlength="128" autocomplete="new-password"></label><label style="display:block;margin-top:14px"><b>Confirm password</b><input id="kfsConfirmPassword" class="kfsText" type="password" minlength="12" maxlength="128" autocomplete="new-password"></label><button class="kfsAction" style="width:100%;margin-top:18px" type="submit">Update password</button></form>`);$('#kfsPasswordForm').onsubmit=async e=>{e.preventDefault();const a=$('#kfsNewPassword').value,b=$('#kfsConfirmPassword').value;if(a.length<12||a.length>128)return toast('Password must be 12–128 characters','danger');if(a!==b)return toast('Passwords do not match','danger');const {error}=await sb.auth.updateUser({password:a});if(error)return toast(error.message,'danger');toast('Password updated','good');closeKfsSub()}};
+// Recovery325: bind password changes to the opening account, activation and sub-screen.
+window.openAccountSecurity=function(){
+  const accountId=state.user?.id;
+  if(!accountId)return toast('Sign in before changing your password.','danger');
+  const activationEpoch=typeof kf129Epoch==='number'?kf129Epoch:null;
+  sub('Account security',`<p class="kfsNote">Change your password while signed in. Kinfolk currently accepts 12–128 characters.</p><form id="kfsPasswordForm"><label><b>New password</b><input id="kfsNewPassword" class="kfsText" type="password" minlength="12" maxlength="128" autocomplete="new-password"></label><label style="display:block;margin-top:14px"><b>Confirm password</b><input id="kfsConfirmPassword" class="kfsText" type="password" minlength="12" maxlength="128" autocomplete="new-password"></label><button class="kfsAction" style="width:100%;margin-top:18px" type="submit">Update password</button></form>`);
+  const form=$('#kfsPasswordForm'),password=$('#kfsNewPassword'),confirmation=$('#kfsConfirmPassword');
+  const button=form?.querySelector('button[type="submit"]');
+  if(!form||!password||!confirmation||!button)return;
+  const current=()=>form.isConnected&&$('#kfsPasswordForm')===form&&state.user?.id===accountId&&
+    (activationEpoch===null||kf129Epoch===activationEpoch);
+  let pending=false;
+  form.onsubmit=async event=>{
+    event.preventDefault();
+    if(pending)return;
+    if(!current()){
+      if(form.isConnected&&$('#kfsPasswordForm')===form)toast('Account changed. Reopen Account security.','danger');
+      return;
+    }
+    const nextPassword=password.value,confirmPassword=confirmation.value;
+    if(nextPassword.length<12||nextPassword.length>128)return toast('Password must be 12–128 characters','danger');
+    if(nextPassword!==confirmPassword)return toast('Passwords do not match','danger');
+    pending=true;button.disabled=true;button.textContent='Updating…';
+    try{
+      const {data,error}=await sb.auth.updateUser({password:nextPassword});
+      if(!current())return;
+      if(error)throw error;
+      if(data?.user?.id!==accountId)throw new Error('Password update could not be confirmed for this account.');
+      password.value='';confirmation.value='';
+      toast('Password updated','good');closeKfsSub();
+    }catch(error){
+      if(current())toast(error?.message||'Password update failed. Try again.','danger');
+    }finally{
+      if(current()){pending=false;button.disabled=false;button.textContent='Update password';}
+    }
+  };
+};
 window.openNotificationDetails=async function(){const n=await one('notification_preferences')||{};sub('Notification settings',`<p class="kfsNote">Choose exactly which activity can reach your email.</p><form id="kfsNotifDetailForm"><label class="kfsCheck"><span>Friend requests</span><input id="ndFriend" type="checkbox" ${n.email_friend_requests!==false?'checked':''}></label><label class="kfsCheck"><span>Direct messages</span><input id="ndMessages" type="checkbox" ${n.email_messages?'checked':''}></label><label class="kfsCheck"><span>Group activity</span><input id="ndGroups" type="checkbox" ${n.email_group_activity?'checked':''}></label><label class="kfsCheck"><span>Post activity</span><input id="ndPosts" type="checkbox" ${n.email_post_activity?'checked':''}></label><label class="kfsCheck"><span>Kinfolk updates & marketing</span><input id="ndMarketing" type="checkbox" ${n.marketing_email?'checked':''}></label><button class="kfsAction" style="width:100%;margin-top:18px" type="submit">Save notifications</button></form>`);$('#kfsNotifDetailForm').onsubmit=async e=>{e.preventDefault();const {error}=await sb.from('notification_preferences').upsert({user_id:state.user.id,email_friend_requests:$('#ndFriend').checked,email_messages:$('#ndMessages').checked,email_group_activity:$('#ndGroups').checked,email_post_activity:$('#ndPosts').checked,marketing_email:$('#ndMarketing').checked},{onConflict:'user_id'});if(error)return toast(error.message,'danger');toast('Notification settings saved','good');closeKfsSub()}};
 window.openKinfolkHelp=function(){sub('Help & support',`<p class="kfsNote">Tell us what went wrong. This sends a diagnostic report tied to your account so the issue can be investigated.</p><form id="kfsProblemForm"><textarea id="kfsProblemText" class="kfsText" rows="7" maxlength="500" placeholder="Describe the problem…"></textarea><button class="kfsAction" style="width:100%;margin-top:14px" type="submit">Report a problem</button></form>`);$('#kfsProblemForm').onsubmit=async e=>{e.preventDefault();const msg=$('#kfsProblemText').value.trim();if(msg.length<5)return toast('Please add a little more detail','danger');const platform=/android/i.test(navigator.userAgent)?'android':/iphone|ipad/i.test(navigator.userAgent)?'ios':'web';const {error}=await sb.from('client_diagnostics').insert({user_id:state.user.id,app_version:'phase39',platform,area:'user_report',code:'USER_REPORT',message:msg,context:{path:location.pathname,user_agent:navigator.userAgent.slice(0,300)}});if(error)return toast(error.message,'danger');toast('Problem report sent','good');closeKfsSub()}};
 window.openKinfolkGuidelines=function(){sub('Community Guidelines',`<div class="kfsLegal"><p>Kinfolk is for real people, creative profiles, conversation and community. These preview guidelines are being wired into the app before launch.</p><h3>Be respectful</h3><p>No harassment, threats, hateful conduct, impersonation or targeted abuse.</p><h3>Keep people safe</h3><p>No sexual exploitation, non-consensual intimate content, dangerous challenges, or attempts to sexualize minors.</p><h3>Post what you have the right to share</h3><p>Do not post private information or copyrighted material you do not have permission to use.</p><h3>Use reporting and blocking</h3><p>Kinfolk includes reporting and blocking tools to help users control their experience.</p></div>`)};
