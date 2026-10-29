@@ -456,7 +456,50 @@ window.shareKinfolkVideo=shareKinfolkVideo;window.remixKinfolkVideo=remixKinfolk
 async function renderVideoGrid(root,arr){if(!arr.length){root.innerHTML='<div class="card"><div class="empty">No videos yet.</div></div>';return}await loadVideoReactions();let h='';for(const v of arr){const p=state.profiles.get(v.creator_id);const u=v.source_type==='upload'&&v.storage_path?await signed('kinfolk-video',v.storage_path):v.video_url;h+=`<div class="videoCard"><div class="videoThumb">${u?videoEmbed(u,v.source_type):'<span class="muted">No preview</span>'}</div><div class="videoMeta"><b>${esc(v.title)}</b><div class="muted" style="font-size:12px">${esc(p?.display_name||p?.username||'Creator')} · ${fmt(v.created_at)}</div>${videoReactionControls(v)}</div></div>`}root.innerHTML=h}
 function videoEmbed(u,type){if(type==='external'&&/youtu(?:\.be|be\.com)/i.test(u)){return `<a href="${esc(u)}" target="_blank" class="btn">Open video ↗</a>`}return `<video src="${esc(u)}" controls playsinline preload="metadata"></video>`}
 function openVideoModal(){const opts=state.channels.filter(c=>c.owner_id===state.user.id).map(c=>`<option value="${c.id}">${esc(c.title)}</option>`).join('');modal('Upload video',`<form id="videoForm"><div class="label">Title</div><input class="field" id="videoTitle" maxlength="120" required><div class="formRow"><div><div class="label">Type</div><select class="field" id="videoKind"><option value="reel">Reel / Short</option><option value="video">Video</option></select></div><div><div class="label">Channel</div><select class="field" id="videoChannel"><option value="">Personal profile</option>${opts}</select></div></div><div class="label">Video file</div><input class="field" id="videoFile" type="file" accept="video/mp4,video/webm,video/quicktime" required><div id="videoProgress" class="muted" style="margin:9px 0"></div><button class="btn primary full">Upload video</button></form>`);$('#videoForm').onsubmit=uploadVideo}
-async function uploadVideo(e){e.preventDefault();const f=$('#videoFile').files[0],title=$('#videoTitle').value.trim(),kind=$('#videoKind').value,channel_id=$('#videoChannel').value||null;if(!f)return;try{$('#videoProgress').textContent='Uploading…';const path=`${state.user.id}/videos/${crypto.randomUUID()}-${safeName(f.name)}`;const {error:up}=await sb.storage.from('kinfolk-video').upload(path,f,{contentType:f.type,upsert:false});if(up)throw up;const {error}=await sb.from('kinfolk_videos').insert({creator_id:state.user.id,title,kind,source_type:'upload',storage_path:path,source_mime:f.type,source_size:f.size,channel_id,visibility:'public',processing_status:'ready',transcode_status:'not_required'});if(error)throw error;closeModal();await loadVideos();await renderApp();toast('Video uploaded','good')}catch(err){toast(err.message,'danger')}}
+// Recovery302: video uploads must belong to the account and modal that started them.
+async function uploadVideo(e){
+ e.preventDefault();
+ const form=e.currentTarget||e.target,epoch=kf129Epoch,uid=state.user?.id;
+ if(!kfAlphaComposerCurrent(epoch,uid,form,'videoForm')||form.dataset.kfAlphaSending==='1')return;
+ const file=form.querySelector('#videoFile')?.files?.[0];
+ const title=form.querySelector('#videoTitle')?.value.trim()||'';
+ const kind=form.querySelector('#videoKind')?.value||'reel';
+ const channel_id=form.querySelector('#videoChannel')?.value||null;
+ if(!file)return;
+ if(channel_id&&!state.channels.some(c=>c.id===channel_id&&c.owner_id===uid)){
+  toast('Choose a channel you own.','danger');return;
+ }
+ form.dataset.kfAlphaSending='1';
+ const button=form.querySelector('button[type="submit"],button:not([type])');
+ if(button)button.disabled=true;
+ let path=null,uploaded=false;
+ try{
+  const progress=form.querySelector('#videoProgress');
+  if(progress)progress.textContent='Uploading…';
+  path=`${uid}/videos/${crypto.randomUUID()}-${safeName(file.name)}`;
+  const {error:up}=await sb.storage.from('kinfolk-video').upload(path,file,{contentType:file.type,upsert:false});
+  if(!kfAlphaComposerCurrent(epoch,uid,form,'videoForm'))return;
+  if(up)throw up;
+  uploaded=true;
+  const {error}=await sb.from('kinfolk_videos').insert({creator_id:uid,title,kind,source_type:'upload',storage_path:path,source_mime:file.type,source_size:file.size,channel_id,visibility:'public',processing_status:'ready',transcode_status:'not_required'});
+  if(!kfAlphaComposerCurrent(epoch,uid,form,'videoForm'))return;
+  if(error)throw error;
+  closeModal();
+  await loadVideos();
+  if(!kfAlphaLoadCurrent(epoch,uid))return;
+  await renderApp();
+  if(kfAlphaLoadCurrent(epoch,uid))toast('Video uploaded','good');
+ }catch(err){
+  if(kfAlphaComposerCurrent(epoch,uid,form,'videoForm')){
+   // Best-effort cleanup only while the initiating account still owns this session.
+   if(uploaded&&path){try{await sb.storage.from('kinfolk-video').remove([path])}catch{}}
+   if(kfAlphaComposerCurrent(epoch,uid,form,'videoForm'))toast(err?.message||String(err),'danger');
+  }
+ }finally{
+  delete form.dataset.kfAlphaSending;
+  if(button)button.disabled=false;
+ }
+}
 async function renderChannels(main){const mine=state.channels.filter(c=>c.owner_id===state.user.id),subIds=[...state.subscriptions.entries()].filter(([_,a])=>a.some(s=>s.user_id===state.user.id)).map(([id])=>id);const subVideos=state.videos.filter(v=>v.channel_id&&subIds.includes(v.channel_id));main.innerHTML=`<div class="card"><div class="cardpad"><div style="display:flex;align-items:center;gap:10px"><div><div class="sectionTitle" style="margin:0">Creator Channels</div><div class="muted">Build an audience beyond your personal profile.</div></div><div class="spacer"></div><button class="btn primary" onclick="openChannelModal()">＋ Create channel</button></div><div class="chips" style="margin-top:14px"><button class="chip active" onclick="channelFilter('discover',this)">Discover</button><button class="chip" onclick="channelFilter('subscriptions',this)">Subscriptions</button><button class="chip" onclick="channelFilter('mine',this)">My channels (${mine.length})</button></div></div></div><div id="channelBody"></div>`;await renderChannelList($('#channelBody'),state.channels);window.__channelSets={mine,subIds,subVideos}}
 async function channelFilter(kind,btn){const root=$('#channelBody');document.querySelectorAll('.chips .chip').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');if(kind==='mine')return renderChannelList(root,window.__channelSets.mine);if(kind==='subscriptions'){root.innerHTML='<div class="card"><div class="cardpad"><div class="sectionTitle">Subscription feed</div><div id="subVideos" class="videoGrid"></div></div></div>';return renderVideoGrid($('#subVideos'),window.__channelSets.subVideos)}await renderChannelList(root,state.channels)}
 async function renderChannelList(root,arr){if(!arr.length){root.innerHTML='<div class="card"><div class="empty">No channels here yet.</div></div>';return}let h='<div class="card">';for(const c of arr){const p=state.profiles.get(c.owner_id),av=c.avatar_url?await signed('kinfolk-media',c.avatar_url):null,subs=state.subscriptions.get(c.id)||[],isSub=subs.some(s=>s.user_id===state.user.id);h+=`<div class="channelCard"><div>${av?`<img class="avatar" src="${esc(av)}">`:`<div class="avatar">${esc((c.title||'?')[0])}</div>`}</div><div class="clickable" onclick="openChannel('${c.id}')"><b>${esc(c.title)}</b><div class="muted">${subs.length} subscriber${subs.length===1?'':'s'} · ${esc(c.category||'creator')}</div><div class="muted" style="font-size:12px">${esc(c.description||'')}</div></div>${c.owner_id===state.user.id?`<button class="btn small" onclick="openChannel('${c.id}')">Manage</button>`:`<button class="btn small ${isSub?'ghost':'primary'}" onclick="toggleSubscribe('${c.id}')">${isSub?'Subscribed':'Subscribe'}</button>`}</div>`}h+='</div>';root.innerHTML=h}
