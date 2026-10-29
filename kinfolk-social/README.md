@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery311 (2026-10-29)
+
+Latest isolated checkpoint: [RECOVERY311.md](RECOVERY311.md). Public Community Join/Leave now requires exactly one backend-confirmed matching membership row, preventing false success on zero-row or mismatched writes. Updated synthetic regressions and draft PR #11 target Recovery310 only. Isolated backend community tables, real RLS, current native builds and device QA remain launch blockers. No production release.
+
 # Kinfolk Social | Recovery310 (2026-10-28)
 
 Latest isolated checkpoint: [RECOVERY310.md](RECOVERY310.md). Community owners can edit their name, description and public/private visibility from My communities. Update requests require exactly one returned owned row before success, handle account-switch and pending-save races, and restore edit controls after search. Seven synthetic regression cases added to native alpha verification. Real isolated backend, RLS, current APK/iOS builds and device QA remain unverified; do not release production.
