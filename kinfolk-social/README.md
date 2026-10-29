@@ -1,3 +1,7 @@
+# Kinfolk Social | Recovery307 (2026-10-28)
+
+Latest isolated checkpoint: [RECOVERY307.md](RECOVERY307.md). Community owners now see their own private spaces in **My communities** after creation; creation feedback survives a refresh and late account-switch responses are ignored. Added eight synthetic source regressions and made native alpha verification require the Communities module. This is **not** real backend/RLS or physical-device proof. Draft PR #7 targets Recovery306, not production.
+
 # Kinfolk Social | Recovery303 (2026-10-28)
 
 Latest isolated checkpoint: [RECOVERY303.md](RECOVERY303.md). Corrected post/story orphan upload cleanup on database failure and protected already-inserted video media from deletion when feed refresh fails. Added post/story and video regressions and repaired timing-sensitive Recovery302 Node fixtures. Draft PR #6 targets Recovery302 only, not production. Real isolated Supabase auth/RLS, missing tables, current Android/iPhone builds and device QA remain blockers.
