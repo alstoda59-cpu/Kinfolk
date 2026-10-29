@@ -41,7 +41,7 @@ test('mobile form hardening applies signup limits only in signup mode',()=>{
 test('account security password update allows 12–128 and source parses',()=>{
   assert.match(legacy,/id="kfsNewPassword"[^>]+minlength="12" maxlength="128"/);
   assert.match(legacy,/id="kfsConfirmPassword"[^>]+minlength="12" maxlength="128"/);
-  assert.match(legacy,/if\(a\.length<12\|\|a\.length>128\)/);
+  assert.match(legacy,/if\(nextPassword\.length<12\|\|nextPassword\.length>128\)/);
   assert.doesNotThrow(()=>new Function(legacy));
   assert.doesNotThrow(()=>new Function(signup));
 });
