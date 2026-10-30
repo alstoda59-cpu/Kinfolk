@@ -5,7 +5,7 @@ P=Path(__file__).parent
 MOCK=r'''(function(){
 const storage=()=>{const m=new Map();return {getItem:k=>m.has(k)?m.get(k):null,setItem:(k,v)=>m.set(k,String(v)),removeItem:k=>m.delete(k),clear:()=>m.clear()}};
 Object.defineProperty(window,'localStorage',{configurable:true,value:storage()});Object.defineProperty(window,'sessionStorage',{configurable:true,value:storage()});
-const user={id:'11111111-1111-4111-8111-111111111111',email:'qa@example.test',user_metadata:{username:'qa_member',display_name:'QA Member'},app_metadata:{}};
+const user={id:'11111111-1111-4111-8111-111111111111',email:'qa@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z',user_metadata:{username:'qa_member',display_name:'QA Member'},app_metadata:{}};
 const profile={id:user.id,username:'qa_member',display_name:'QA Member',bio:'Test',accent_color:'#14b8a6'};
 let session=null,authEmail=user.email;const listeners=[],queries=[];let signupCalls=0;
 function emit(e,s){for(const f of listeners)Promise.resolve().then(()=>f(e,s))}
@@ -88,6 +88,7 @@ with sync_playwright() as p:
  print('AFTER LOGIN',page.locator('#main').count(),page.locator('.kf73Title').all_inner_texts(),'session',page.evaluate('!!window.__kfMock.session'),'tab',page.evaluate("sessionStorage.getItem('kinfolk_session_tab')"),'errors',errors[-5:])
  assert page.locator('#main').count()==1,'login did not open main app'
  assert page.evaluate('window.state.user?.id')=='11111111-1111-4111-8111-111111111111'
+ assert page.evaluate('!!window.__kfMock.session?.user?.email_confirmed_at'),'mock adopted session must be email-confirmed'
  assert page.evaluate("sessionStorage.getItem('kinfolk_session_tab')")=='1'
  # Repeated auth events and session activation must not refetch everything or reset the screen.
  before=page.evaluate("window.__kfMock.queries.filter(q=>q.table==='posts').length")
