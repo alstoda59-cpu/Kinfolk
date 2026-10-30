@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
-const a=html.indexOf('async function kf129RestorableSession()');
+const a=html.indexOf('function kf339RestoreAllowed(){');
 const b=html.indexOf('async function boot()',a);
 assert.ok(a>0&&b>a,'extract real restoration helper and Retry handler');
 const actual=html.slice(a,b);
