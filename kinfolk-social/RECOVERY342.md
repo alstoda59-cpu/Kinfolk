@@ -20,3 +20,8 @@ Date: 2026-10-30 (America/Los_Angeles). Scope: FULL MAIN Kinfolk Social only, `k
 - Vercel READY is only deployment status, not authenticated UI QA. No real two-user Supabase/RLS tests or physical-device tests were performed.
 - This client-side filtering is defense in depth, not proof of RLS correctness. Real cross-account isolation still requires separate authorized synthetic test accounts against the isolated backend.
 - No shared live Supabase schema/data/auth/security, production Vercel deployments/aliases, Kinfolksworld files, paid resources or app stores changed. Native CI uses an unreachable backend.
+
+## CI diagnosis and regression-fixture repair
+- Initial source run [41055316778](https://github.com/alstoda59-cpu/Kinfolk/actions/runs/41055316778) failed in the Node stage: 690 passed, eight failed. Seven failures came from the legacy effective-DM VM fixture not supplying the new `kf129Epoch`/modal generation context; the eighth was a brittle friend-only source regex that expected the old one-line guard.
+- Commits `c2dc34ba8d1346835929ec3f1003972955bd372d` and `dbbcbcc427e7e62672579cf1640d5569bc3fb3f1` update those fixtures to exercise the new guard without relaxing friend-only behavior. Source CI for the repaired head must be verified separately.
+- Direct execution of the effective GitHub-source override in a synthetic JavaScript harness confirmed pair filtering, same-account auth-epoch rejection, and single-write duplicate-submit locking. This is not the GitHub CI result or a real backend test.
