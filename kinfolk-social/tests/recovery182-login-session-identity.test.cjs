@@ -45,7 +45,7 @@ function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionEr
   const timers=[];
   vm.runInNewContext(source,{
     window,document,sb,console,AbortController,
-    fetch:async()=>({ok:true,json:async()=>({access_token:'synthetic',refresh_token:'synthetic',user:tokenUserId?{id:tokenUserId,email:'test@example.test'}:null})}),
+    fetch:async()=>({ok:true,json:async()=>({access_token:'synthetic',refresh_token:'synthetic',user:tokenUserId?{id:tokenUserId,email:'test@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'}:null})}),
     localStorage:storage(local),sessionStorage:storage(tab),
     MutationObserver:class{observe(){}},
     setInterval(){},
