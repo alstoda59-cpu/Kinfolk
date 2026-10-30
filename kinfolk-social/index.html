@@ -167,20 +167,34 @@ async function kf129ActivateSession(session){
 }
 window.kf129ActivateSession=kf129ActivateSession;
 // Recovery149: the Retry button must honor the same device/session policy as boot.
-async function kf129RestorableSession(){
-  const {data,error}=await sb.auth.getSession();if(error)throw error;
-  let session=data?.session||null;
-  if(!session)return null;
-  // A nonpersistent login may survive a refresh in its original tab only.
-  // Storage failures fail closed instead of restoring an unverified session.
+// Recovery339: check the device preference again immediately before clearing a
+// nonpersistent session. A new login or a changed preference can arrive while
+// the first getSession is pending; never sign out that newer session.
+function kf339RestoreAllowed(){
   let keep=false,allowedTab=false;
   try{keep=localStorage.getItem('kinfolk_stay_logged_in_v1')!=='0'&&localStorage.getItem('kinfolk_stay_logged_in')!=='0'}catch{}
   if(!keep){try{allowedTab=sessionStorage.getItem('kinfolk_session_tab')==='1'}catch{}}
-  if(!keep&&!allowedTab){
-    const out=await sb.auth.signOut({scope:'local'});if(out?.error)throw out.error;
-    session=null;
-  }
-  return session;
+  return keep||allowedTab;
+}
+async function kf129RestorableSession(){
+  const {data,error}=await sb.auth.getSession();if(error)throw error;
+  const session=data?.session||null;
+  if(!session)return null;
+  // A nonpersistent login may survive a refresh in its original tab only.
+  // Storage failures fail closed instead of restoring an unverified session.
+  if(kf339RestoreAllowed())return session;
+  const {data:latest,error:latestError}=await sb.auth.getSession();
+  if(latestError)throw latestError;
+  const active=latest?.session||null;
+  if(!active)return null;
+  if(kf339RestoreAllowed())return active;
+  // Check both account and token identity: even the same member may have
+  // logged in again while the original session read was in flight.
+  if(active.user?.id!==session.user?.id||
+     active.access_token!==session.access_token||
+     active.refresh_token!==session.refresh_token)return null;
+  const out=await sb.auth.signOut({scope:'local'});if(out?.error)throw out.error;
+  return null;
 }
 window.kf129Retry=async()=>{try{await kf129ActivateSession(await kf129RestorableSession())}catch(error){kf129Error(error?.message||String(error))}};
 // A delayed SIGNED_OUT callback can arrive after a different session was
