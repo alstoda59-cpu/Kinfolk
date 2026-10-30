@@ -180,13 +180,15 @@ async function kf129RestorableSession(){
   const {data,error}=await sb.auth.getSession();if(error)throw error;
   const session=data?.session||null;
   if(!session)return null;
-  // A nonpersistent login may survive a refresh in its original tab only.
-  // Storage failures fail closed instead of restoring an unverified session.
-  if(kf339RestoreAllowed())return session;
+  // A persistent session can change accounts or refresh its tokens while
+  // the first getSession is pending. Re-read before activating ANY account,
+  // including Stay Logged In and original-tab sessions.
   const {data:latest,error:latestError}=await sb.auth.getSession();
   if(latestError)throw latestError;
   const active=latest?.session||null;
   if(!active)return null;
+  // Evaluate the preference AFTER the latest auth read: it may have changed.
+  // Storage failures fail closed rather than restoring an unauthorized tab.
   if(kf339RestoreAllowed())return active;
   // Check both account and token identity: even the same member may have
   // logged in again while the original session read was in flight.
