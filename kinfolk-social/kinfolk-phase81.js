@@ -80,7 +80,7 @@
     const input=$q('.kf81MusicUrl',card),btn=$q('[data-kf81-save-music]',card);
     if(!btn||btn.disabled)return;
     const url=(input?.value||'').trim();
-    if(url&&!/^https:\/\//i.test(url))return setMsg(card,'Use a full https:// music or YouTube link.');
+    if(url&&!safeMusicUrl(url))return setMsg(card,'Use a valid https:// music or YouTube link.');
     const uid=state?.user?.id,epoch=typeof kf129Epoch==='undefined'?null:kf129Epoch;
     if(!appearanceCurrent(card,uid,epoch))return;
     btn.disabled=true;btn.textContent='Saving music…';
