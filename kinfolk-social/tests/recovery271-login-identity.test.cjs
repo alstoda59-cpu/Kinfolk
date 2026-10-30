@@ -15,7 +15,7 @@ const adoptSource=source.slice(adoptStart,adoptEnd);
 const response=(email)=>({
   access_token:'synthetic-access',
   refresh_token:'synthetic-refresh',
-  user:{id:'synthetic-id',...(email===undefined?{}:{email})}
+  user:{id:'synthetic-id',email_confirmed_at:'2026-10-29T12:00:00.000Z',...(email===undefined?{}:{email})}
 });
 const tokenHarness=payload=>vm.runInNewContext(tokenSource+'\n tokenLogin',{
   SUPABASE_URL:'https://example.invalid',

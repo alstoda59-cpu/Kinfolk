@@ -49,7 +49,7 @@ function fixture(kind){
     if(kind==='invalid-password')return {ok:false,status:401,json:async()=>({error:'Invalid login credentials'})};
     if(kind==='timeout')throw new Error('Kinfolk login timed out. Check your connection and try again.');
     return {ok:true,json:async()=>({
-      access_token:'synthetic',refresh_token:'synthetic',user:{id:'account-1',email:'test@example.invalid'}
+      access_token:'synthetic',refresh_token:'synthetic',user:{id:'account-1',email:'test@example.invalid',email_confirmed_at:'2026-10-29T12:00:00.000Z'}
     })};
   };
   const timers=[];

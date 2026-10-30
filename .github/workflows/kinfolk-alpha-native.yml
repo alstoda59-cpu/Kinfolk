@@ -34,6 +34,8 @@ on:
       - kinfolk-social/recovery331-phase95-login-completion-guard-20261029
       # Recovery332: validate unexpected adopted-session cleanup before offline mobile builds.
       - kinfolk-social/recovery332-adopted-session-cleanup-20261029
+      # Recovery333: require verified email tokens before adopting mobile auth sessions.
+      - kinfolk-social/recovery333-email-confirmed-token-guard-20261029
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'

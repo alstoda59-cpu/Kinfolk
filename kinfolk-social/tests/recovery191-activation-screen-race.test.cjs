@@ -40,7 +40,7 @@ function harness(){
   const timers=[];
   vm.runInNewContext(source,{
     window,document,sb,console,AbortController,
-    fetch:async()=>({ok:true,json:async()=>({access_token:'synthetic',refresh_token:'synthetic',user:{id:'account-1',email:'test@example.invalid'}})}),
+    fetch:async()=>({ok:true,json:async()=>({access_token:'synthetic',refresh_token:'synthetic',user:{id:'account-1',email:'test@example.invalid',email_confirmed_at:'2026-10-29T12:00:00.000Z'}})}),
     localStorage,
     sessionStorage:{getItem(){return null},setItem(){},removeItem(){}},
     MutationObserver:class{observe(){}},
