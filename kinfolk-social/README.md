@@ -1,3 +1,7 @@
+# Recovery352 | Token-bound failed-login cleanup (2026-10-30)
+
+Continued from [Recovery351](RECOVERY351.md) on an isolated branch. [RECOVERY352.md](RECOVERY352.md) fixes the effective Phase95 login rollback so an older failed login cannot clear a newer same-account session solely because the user ID matches. Cleanup requires the exact adopted access token, checks the current session twice and retains local-only sign-out. Nine new synthetic regressions plus updated Recovery332 token fixtures are integrated into offline Android/iOS alpha verification. Real isolated Supabase signup/email/RLS, physical-device QA and signed iPhone packaging remain separate release gates. No shared live backend, production, Kinfolksworld, paid resources or stores changed.
+
 # Recovery351 | Safe profile music playback across login activations (2026-10-30)
 
 Continued from [Recovery350](RECOVERY350.md) on an isolated branch. [RECOVERY351.md](RECOVERY351.md) validates stored profile music URLs before rendering audio/YouTube/Open controls, rejects deceptive YouTube hosts, isolates asynchronous music playback by account activation, queues a missed refresh and stops late audio playback after navigation. Ten new synthetic regressions, including two new invalid-save cases in the existing Recovery348 suite, are wired into the offline native alpha gate. Real isolated Supabase Auth/RLS, physical Android/iPhone QA, signed iPhone packaging and end-to-end alpha readiness remain unverified. No shared live backend, production, Kinfolksworld, paid resources or stores changed.
