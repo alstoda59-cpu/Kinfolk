@@ -66,6 +66,8 @@ on:
       - kinfolk-social/recovery347-account-deletion-session-guard-20261030
       # Recovery348: verify account-scoped appearance saves in offline native packages.
       - kinfolk-social/recovery348-appearance-session-save-20261030
+      # Recovery349: verify authoritative music removal and read-only playback.
+      - kinfolk-social/recovery349-profile-music-null-authority-20261030
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
