@@ -12,7 +12,7 @@ Date: 2026-10-30 (America/Los_Angeles). Scope: FULL MAIN Kinfolk Social under `k
 
 ## Actual application fix
 
-- `kinfolk-phase81.js`: validate persisted profile music links before building a player or external Open link. Reject non-HTTPS, malformed and credential-bearing URLs.
+- `kinfolk-phase81.js`: validate new and persisted profile music links before Supabase saves or building a player/external Open link. Reject non-HTTPS, malformed and credential-bearing URLs.
 - Only exact recognized YouTube hostnames with valid 11-character video IDs can become embedded players. Lookalike domains remain ordinary HTTPS external links rather than embedded YouTube.
 - Direct audio recognition now checks the validated HTTPS URL's pathname instead of treating arbitrary query text as an audio file.
 - Capture the authentication activation epoch around async music lookups. Old same-account relogin results cannot mount a player. An existing player from a previous activation is torn down and reconstructed even if the URL is identical.
@@ -22,7 +22,7 @@ Date: 2026-10-30 (America/Los_Angeles). Scope: FULL MAIN Kinfolk Social under `k
 ## Synthetic tests and native verification gate
 
 - Added `tests/recovery351-profile-music-url-session-safety.test.mjs`: eight source-extracted tests for unsafe URLs, YouTube lookalikes, audio path classification, persisted unsafe URL rejection, same-user relogin, queued refresh, old player teardown and late audio playback.
-- Added the suite to `native/package.json` `alpha:profile:source:test`, transitively included in `alpha:verify`.
+- Extended the existing Recovery348 save-handler suite with two more synthetic regressions for credential-bearing and malformed HTTPS links (ten new cases total).\n- Added the suite to `native/package.json` `alpha:profile:source:test`, transitively included in `alpha:verify`.
 - Enabled the isolated Recovery351 branch in `.github/workflows/kinfolk-alpha-native.yml` for offline-only Android debug APK and unsigned iOS Simulator compilation. CI uses an unreachable packaging-only Supabase placeholder, not the live backend.
 - Verification must be recorded from exact-head GitHub CI and deployment results. A READY Vercel preview is not real auth/RLS QA, and an iOS Simulator ZIP is not an installable physical-iPhone IPA.
 
