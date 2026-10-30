@@ -12,6 +12,6 @@ assert.ok(source.indexOf(guard)<source.indexOf(activation),'Guard must precede a
 assert.ok(source.indexOf(activation)<source.indexOf(success),'Success feedback must follow activation');
 assert.ok(source.includes('catch(activationError){try{restoreStay()}'),'Activation failure must roll back login preference');
 assert.ok(source.includes('The active account changed while opening Kinfolk.'),'Activation must verify active account again');
-assert.ok(source.includes("if(currentLoginScreen())"+success),'Only display success when the original login screen is still connected');
+assert.ok(source.includes("if(currentLoginScreen()){form.__kf95CompletedTitle=loginTitle;"+success+"}"),'Only display success when the original login screen is still connected');
 assert.ok(source.includes("form.isConnected&&form.querySelector('.kf73Title')===loginTitle&&mode(form)==='login'"),'Screen guard must verify DOM element identity after login/signup navigation');
 console.log('PASS Recovery183 activation feedback source ordering');
