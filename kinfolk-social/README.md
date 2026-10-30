@@ -1,3 +1,7 @@
+# Recovery344 | Video upload alpha storage compatibility (2026-10-30)
+
+Continued from [Recovery343](RECOVERY343.md) on a separate draft branch. [RECOVERY344.md](RECOVERY344.md) aligns the active mobile video upload UI and preflight checks with the **read-only verified isolated alpha** `kinfolk-video` bucket (50 MiB, MP4/WebM only). Six additional source-extracted synthetic regressions cover invalid files and the exact size boundary. This does not enable longer videos or prove real uploads, Supabase RLS, email signup or physical-device readiness. No production, shared live Supabase, Kinfolksworld, paid infrastructure or store changes.
+
 # Recovery343 | Group-chat account and modal isolation (2026-10-30)
 
 Continued from [Recovery342](RECOVERY342.md) on isolated draft PR #41. [RECOVERY343.md](RECOVERY343.md) hardens the actual group-chat read/send handler against stale account, same-user relogin, replaced modal, overbroad group message results and duplicate sends. Nine synthetic source regressions are wired into offline Android/iOS alpha verification. Real isolated Supabase group schema, email delivery, two-user RLS and physical-device QA remain unverified. No production, shared live Supabase, Kinfolksworld, paid infrastructure or store changes.

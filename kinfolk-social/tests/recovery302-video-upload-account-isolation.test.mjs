@@ -16,13 +16,13 @@ async function waitForInsert(h){
  assert.equal(h.inserts.length,1,'metadata insert should begin after storage upload resolves');
 }
 function deferred(){let resolve;const promise=new Promise(r=>{resolve=r});return {promise,resolve}}
-function harness({channel=null,failLoad=false}={}){
+function harness({channel=null,failLoad=false,file={name:'demo.mp4',type:'video/mp4',size:123}}={}){
  const uploads=[],inserts=[],removals=[],toasts=[];
  const state={user:{id:'A'},channels:[{id:'chan-A',owner_id:'A'},{id:'chan-B',owner_id:'B'}]};
  const button={disabled:false};
  const progress={textContent:''};
  const fields={
-  '#videoFile':{files:[{name:'demo.mp4',type:'video/mp4',size:123}]},
+  '#videoFile':{files:[file]},
   '#videoTitle':{value:'My reel'},
   '#videoKind':{value:'reel'},
   '#videoChannel':{value:channel||''},
@@ -135,4 +135,46 @@ test('successful video insert is never rolled back by a later feed refresh failu
  assert.equal(h.loaded,1);
  assert.deepEqual(h.removals,[],'saved video media must not be deleted');
  assert.match(h.toasts[0][0],/refresh unavailable/);
+});
+
+test('Recovery344 rejects files larger than the verified 50 MiB alpha bucket limit before storage',async()=>{
+ const h=harness({file:{name:'oversized.mp4',type:'video/mp4',size:50*1024*1024+1}});
+ await h.submit();
+ assert.equal(h.uploads.length,0);assert.equal(h.inserts.length,0);
+ assert.equal(h.button.disabled,false);assert.match(h.toasts[0][0],/50 MiB/);
+});
+test('Recovery344 rejects empty video files before storage',async()=>{
+ const h=harness({file:{name:'empty.mp4',type:'video/mp4',size:0}});
+ await h.submit();
+ assert.equal(h.uploads.length,0);assert.equal(h.inserts.length,0);
+ assert.match(h.toasts[0][0],/larger than 0 bytes/);
+});
+test('Recovery344 rejects MOV files not allowed by isolated alpha bucket',async()=>{
+ const h=harness({file:{name:'iphone.mov',type:'video/quicktime',size:100}});
+ await h.submit();
+ assert.equal(h.uploads.length,0);assert.equal(h.inserts.length,0);
+ assert.match(h.toasts[0][0],/MP4 or WebM/);
+});
+test('Recovery344 rejects unsupported and missing video MIME types',async()=>{
+ for(const type of ['application/octet-stream','']){
+  const h=harness({file:{name:'mystery.bin',type,size:100}});
+  await h.submit();
+  assert.equal(h.uploads.length,0);assert.equal(h.inserts.length,0);
+  assert.match(h.toasts[0][0],/MP4 or WebM/);
+ }
+});
+test('Recovery344 permits a valid WebM at the exact 50 MiB boundary',async()=>{
+ const file={name:'edge.webm',type:'video/webm',size:50*1024*1024};
+ const h=harness({file}),pending=h.submit();
+ assert.equal(h.uploads.length,1);assert.equal(h.uploads[0].file,file);
+ h.uploads[0].resolve({error:null});await waitForInsert(h);
+ assert.equal(h.inserts[0].payload.source_size,file.size);
+ assert.equal(h.inserts[0].payload.source_mime,'video/webm');
+ h.inserts[0].resolve({error:null});await pending;
+ assert.equal(h.closed,1);assert.equal(h.button.disabled,false);
+});
+test('Recovery344 upload modal advertises only supported alpha video formats and size',()=>{
+ assert.match(html,/accept="video\/mp4,video\/webm" required/);
+ assert.match(html,/MP4 or WebM, up to 50 MiB on the alpha test backend/);
+ assert.doesNotMatch(html,/accept="video\/mp4,video\/webm,video\/quicktime"/);
 });

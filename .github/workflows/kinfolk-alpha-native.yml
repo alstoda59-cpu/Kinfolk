@@ -56,6 +56,8 @@ on:
       - kinfolk-social/recovery342-dm-overlay-isolation-20261030
       # Recovery343: verify group-chat account/modal isolation and duplicate-send safety.
       - kinfolk-social/recovery343-group-chat-session-isolation-20261030
+      # Recovery344: verify alpha video MIME and 50 MiB preflight before offline mobile builds.
+      - kinfolk-social/recovery344-video-upload-alpha-preflight-20261030
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
