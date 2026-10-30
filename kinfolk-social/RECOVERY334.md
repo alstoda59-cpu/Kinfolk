@@ -9,8 +9,9 @@ Date: 2026-10-29. Scope: full MAIN Kinfolk Social in `kinfolk-social/` only. Iso
 - Recovery333 Vercel previews marked READY were at intermediate commits, not the final Recovery333 head. READY is not functional authentication evidence.
 
 ## Actual change
-- Updated only the synthetic password-token response in `test_recovery129.py` to supply an explicit confirmed-email timestamp, matching a verified account.
-- The production Phase95 fail-closed email confirmation check is **unchanged**. No test assertions, app behavior or security checks were weakened.
+- Updated the synthetic password-token response in `test_recovery129.py` to supply an explicit confirmed-email timestamp, matching a verified account.
+- Added a browser-level negative case that returns HTTP 200 tokens without email confirmation, checks that the main app stays closed, no session is adopted, an actionable message appears and login can retry. The following existing verified-login, Home/Reels/Channels, profile and signup scenarios remain in place.
+- The production Phase95 fail-closed email confirmation check is **unchanged**. No existing test assertions, app behavior or security checks were weakened.
 - Enabled Recovery334 isolated offline Android debug APK and unsigned iOS Simulator build workflow.
 - The browser fixture remains offline and uses synthetic `example.test` identities, not a real Supabase account.
 
