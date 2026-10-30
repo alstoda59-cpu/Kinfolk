@@ -65,7 +65,7 @@ test('successful login JSON clears timeout after complete response', async () =>
     json: async () => ({
       access_token: 'synthetic-access',
       refresh_token: 'synthetic-refresh',
-      user: { id: 'synthetic-user', email: 'qa@example.test' }
+      user: { id: 'synthetic-user', email: 'qa@example.test', email_confirmed_at: '2026-10-29T12:00:00.000Z' }
     })
   }));
   const result = await h.login('qa@example.test', 'synthetic-password');
