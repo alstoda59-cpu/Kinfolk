@@ -826,7 +826,52 @@ async function openPlaylist(id){const {data:p,error}=await sb.from('kinfolk_play
 async function managePlaylist(id){const {data:p,error}=await sb.from('kinfolk_playlists').select('*').eq('id',id).single();if(error)return toast(error.message,'danger');const {data:items}=await sb.from('kinfolk_playlist_items').select('*').eq('playlist_id',id);const selected=new Set((items||[]).map(i=>i.video_id));const candidates=state.videos.filter(v=>!p.channel_id||v.channel_id===p.channel_id);modal('Manage playlist',`<form id="playlistManageForm"><div class="label">Choose videos</div>${candidates.map(v=>`<label class="checkrow"><input type="checkbox" name="vid" value="${v.id}" ${selected.has(v.id)?'checked':''}><span><b>${esc(v.title)}</b><div class="muted">${esc(v.kind||'video')}</div></span></label>`).join('')||'<div class="empty">Upload videos to this channel first.</div>'}<button class="btn primary full" style="margin-top:12px">Save playlist</button></form>`);$('#playlistManageForm').onsubmit=async e=>{e.preventDefault();const ids=[...e.target.querySelectorAll('input[name=vid]:checked')].map(x=>x.value);const del=await sb.from('kinfolk_playlist_items').delete().eq('playlist_id',id);if(del.error)return toast(del.error.message,'danger');if(ids.length){const ins=await sb.from('kinfolk_playlist_items').insert(ids.map((video_id,position)=>({playlist_id:id,video_id,position})));if(ins.error)return toast(ins.error.message,'danger')}await openPlaylist(id);toast('Playlist updated','good')}}
 async function openGroups(){const {data,error}=await sb.from('group_conversations').select('*').order('created_at',{ascending:false});if(error)return toast(error.message,'danger');modal('Group chats',`<div class="row"><button class="btn" onclick="openMessages()">Direct messages</button><button class="btn primary">Group chats</button><div class="grow"></div><button class="btn small primary" onclick="openGroupCreate()">＋ New group</button></div><div class="divider"></div>${(data||[]).map(g=>`<button class="sideitem" onclick="openGroup('${g.id}')">☻ <b>${esc(g.title)}</b><span class="muted">${g.owner_id===state.user.id?'Owner':'Member'}</span></button>`).join('')||'<div class="empty">No group chats yet.</div>'}`)}
 async function openGroupCreate(){const friendIds=state.friendRequests.filter(r=>r.status==='accepted').map(r=>r.sender_id===state.user.id?r.receiver_id:r.sender_id);await loadProfiles(friendIds);modal('New group chat',`<form id="groupCreateForm"><div class="label">Group name</div><input class="field" id="groupTitle" maxlength="80" required><div class="label">Invite friends</div>${friendIds.map(id=>{const p=state.profiles.get(id);return `<label class="checkrow"><input type="checkbox" name="member" value="${id}"><span>${esc(p?.display_name||p?.username||'Friend')}</span></label>`}).join('')||'<div class="muted">Add friends first, or create the group now and invite later.</div>'}<button class="btn primary full" style="margin-top:12px">Create group</button></form>`);$('#groupCreateForm').onsubmit=async e=>{e.preventDefault();const {data:g,error}=await sb.from('group_conversations').insert({owner_id:state.user.id,title:$('#groupTitle').value.trim()}).select().single();if(error)return toast(error.message,'danger');const members=[...e.target.querySelectorAll('input[name=member]:checked')].map(x=>x.value);if(members.length){const ins=await sb.from('group_members').insert(members.map(user_id=>({conversation_id:g.id,user_id})));if(ins.error)return toast(ins.error.message,'danger')}await openGroup(g.id)}}
-async function openGroup(id){const [{data:g,error:e1},{data:msgs,error:e2}]=await Promise.all([sb.from('group_conversations').select('*').eq('id',id).single(),sb.from('group_messages').select('*').eq('conversation_id',id).order('created_at',{ascending:true}).limit(150)]);if(e1||e2)return toast((e1||e2).message,'danger');await loadProfiles((msgs||[]).map(m=>m.sender_id));modal(g.title,`<div id="groupMsgList" style="max-height:55vh;overflow:auto">${(msgs||[]).map(m=>{const p=state.profiles.get(m.sender_id);return `<div style="margin:9px 0"><div class="muted" style="font-size:11px">${esc(p?.display_name||p?.username||'User')}</div><div class="bubble">${esc(m.body)}</div></div>`}).join('')}</div><form id="groupMsgForm" class="commentForm"><input class="field" name="body" placeholder="Message group…" required><button class="btn primary">Send</button></form>`);$('#groupMsgForm').onsubmit=async e=>{e.preventDefault();const body=e.target.body.value.trim();if(!body)return;const {error}=await sb.from('group_messages').insert({conversation_id:id,sender_id:state.user.id,body});if(error)return toast(error.message,'danger');await openGroup(id)}}
+// Recovery343: group chats must remain bound to the account and modal that opened them.
+let kf343GroupRequest=0;
+async function openGroup(id){
+ const viewerId=state.user?.id,authEpoch=kf129Epoch,request=++kf343GroupRequest;
+ let modalEpoch=kf300MessageRequest;
+ const active=()=>!!viewerId&&kf129Epoch===authEpoch&&state.user?.id===viewerId&&request===kf343GroupRequest&&kf300MessageRequest===modalEpoch;
+ if(!active())return;
+ const [{data:g,error:e1},{data:msgs,error:e2}]=await Promise.all([
+   sb.from('group_conversations').select('*').eq('id',id).single(),
+   sb.from('group_messages').select('*').eq('conversation_id',id).order('created_at',{ascending:true}).limit(150)
+ ]);
+ if(!active())return;
+ if(e1||e2)return toast((e1||e2).message,'danger');
+ // RLS must enforce membership server-side; never render unrelated rows even if a query is overbroad.
+ if(!g||g.id!==id)return toast('Group conversation unavailable.','danger');
+ const scopedMessages=(msgs||[]).filter(m=>m.conversation_id===id);
+ await loadProfiles(scopedMessages.map(m=>m.sender_id),authEpoch,viewerId);
+ if(!active())return;
+ modal(g.title,`<div id="groupMsgList" style="max-height:55vh;overflow:auto">${scopedMessages.map(m=>{const p=state.profiles.get(m.sender_id);return `<div style="margin:9px 0"><div class="muted" style="font-size:11px">${esc(p?.display_name||p?.username||'User')}</div><div class="bubble">${esc(m.body)}</div></div>`}).join('')}</div><form id="groupMsgForm" data-group="${esc(id)}" class="commentForm"><input class="field" name="body" placeholder="Message group…" required><button class="btn primary">Send</button></form>`);
+ modalEpoch=kf300MessageRequest;
+ const form=$('#groupMsgForm');
+ if(!form)return;
+ form.onsubmit=async e=>{
+   e.preventDefault();
+   if(!active()||form!==$('#groupMsgForm')||form.dataset.group!==id||form.dataset.kfSending==='1')return;
+   const body=String(form.elements.namedItem('body')?.value||'').trim();
+   if(!body)return;
+   const button=form.querySelector('button[type="submit"],button.btn.primary');
+   form.dataset.kfSending='1';
+   if(button)button.disabled=true;
+   try{
+     const {error}=await sb.from('group_messages').insert({conversation_id:id,sender_id:viewerId,body});
+     if(!active()||form!==$('#groupMsgForm'))return;
+     if(error)return toast(error.message,'danger');
+     await openGroup(id);
+   }catch(error){
+     if(active()&&form===$('#groupMsgForm'))toast(error?.message||'Message could not be sent.','danger');
+   }finally{
+     // Do not unlock or refresh a replacement modal or another account's form.
+     if(kf129Epoch===authEpoch&&state.user?.id===viewerId&&kf300MessageRequest===modalEpoch&&form===$('#groupMsgForm')){
+       delete form.dataset.kfSending;
+       if(button)button.disabled=false;
+     }
+   }
+ };
+}
 function modal(title,body){++kf300MessageRequest;$('#modalRoot').innerHTML=`<div class="modalBack" onclick="if(event.target===this)closeModal()"><div class="modal"><div class="modalHead"><h3>${esc(title)}</h3><div class="spacer"></div><button class="iconbtn" onclick="closeModal()">×</button></div><div class="modalBody">${body}</div></div></div>`}
 function closeModal(){++kf300MessageRequest;$('#modalRoot').innerHTML=''}
 // Recovery222: never claim logout succeeded while the SDK still has a session.
