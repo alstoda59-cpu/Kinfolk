@@ -42,5 +42,5 @@ test('login handler awaits verified activation and preserves rollback on failure
   const recheck=handler.indexOf('if(await currentAccountId()!==session?.user?.id)',activate);
   assert.ok(activate>=0&&recheck>activate,'activation result checked before final account verification');
   assert.match(handler,/catch\(activationError\)\{try\{restoreStay\(\)\}/);
-  assert.match(handler,/await clearFailedLoginSession\(session\?\.user\?\.id,startingAccount\)/);
+  assert.match(handler,/await clearFailedLoginSession\(session\?\.user\?\.id,startingAccount,session\?\.access_token\)/);
 });
