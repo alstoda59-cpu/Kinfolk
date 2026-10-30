@@ -1,3 +1,7 @@
+# Recovery346 | Post comment and reply account/form isolation (2026-10-30)
+
+Continued from [Recovery345](RECOVERY345.md) on isolated draft PR #44. [RECOVERY346.md](RECOVERY346.md) fixes the **effective** post-comment/reply override so pending writes cannot refresh or reopen comments after logout, relogin, account switch, navigation or form replacement. Reply parents are bound to the initiating account/form; duplicate sends are suppressed. Eleven source-extracted synthetic regressions are wired into offline Android/iOS verification. Exact-head CI, real isolated Supabase signup/email/two-user RLS and physical-device QA remain separate gates. No shared live backend, production, Kinfolksworld, paid infrastructure or stores changed.
+
 # Recovery345 | Post and story image alpha preflight (2026-10-30)
 
 Continued from [Recovery344](RECOVERY344.md) on an isolated draft branch. [RECOVERY345.md](RECOVERY345.md) adds actual-runtime post/story photo preflight for the read-only verified private alpha `kinfolk-media` bucket (JPG/PNG/WebP/GIF, 50 MiB), preserving text-only posting and account-isolation safeguards. Eleven source-extracted synthetic regressions cover rejected/valid boundaries, and older filename-only synthetic fixtures were corrected. Offline Android/iOS packaging, Vercel READY, real Supabase uploads/RLS and physical-device QA remain distinct. No shared live backend, production, Kinfolksworld, paid infrastructure or stores changed.
