@@ -1,3 +1,7 @@
+# Recovery353 | Token-scoped cleanup of rejected adopted sessions (2026-10-30)
+
+Continued from [Recovery352](RECOVERY352.md) on an isolated branch. [RECOVERY353.md](RECOVERY353.md) fixes the effective Phase95 login adoption path so wrong-email or unconfirmed adopted sessions carry their actual access token into local-only cleanup; a newer same-account token cannot be silently adopted or signed out by the older attempt. Seven source-extracted synthetic regressions are included in the offline Android/iOS auth gate. Real isolated Supabase signup/email/RLS, physical-device QA and signed iPhone packaging remain unverified. No production, shared live backend, Kinfolksworld, paid resources or stores changed.
+
 # Recovery352 | Token-bound failed-login cleanup (2026-10-30)
 
 Continued from [Recovery351](RECOVERY351.md) on an isolated branch. [RECOVERY352.md](RECOVERY352.md) fixes the effective Phase95 login rollback so an older failed login cannot clear a newer same-account session solely because the user ID matches. Cleanup requires the exact adopted access token, checks the current session twice and retains local-only sign-out. Nine new synthetic regressions plus updated Recovery332 token fixtures are integrated into offline Android/iOS alpha verification. Real isolated Supabase signup/email/RLS, physical-device QA and signed iPhone packaging remain separate release gates. No shared live backend, production, Kinfolksworld, paid resources or stores changed.
