@@ -1,3 +1,7 @@
+# Recovery332 | Unexpected adopted-session cleanup (2026-10-29)
+
+Continued from [Recovery331](RECOVERY331.md) on an isolated draft branch. [RECOVERY332.md](RECOVERY332.md) fixes the active Phase95 login path so a Supabase session identity mismatch rolls back the **actually adopted** account, without signing out an unrelated newer session. Five source-backed synthetic regressions are included in native alpha verification; offline Android/iOS builds remain distinct from real backend authentication and physical-device QA. No production, shared live Supabase, Kinfolksworld, paid resources or app-store changes.
+
 # Recovery331 | Effective Phase95 login completion lock (2026-10-29)
 
 Continued from [Recovery330](RECOVERY330.md) on an isolated draft branch. [RECOVERY331.md](RECOVERY331.md) fixes the actual Phase95 capture-phase login handler: a verified login no longer unlocks its submit button or permits duplicate requests while the same screen remains visible. Three source-backed synthetic regressions are wired into offline Android/iOS alpha verification. Real isolated auth/RLS, email callbacks, and physical-device QA remain unverified. No production, shared live Supabase, Kinfolksworld, paid resources or store changes.

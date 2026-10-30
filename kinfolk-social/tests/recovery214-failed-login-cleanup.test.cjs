@@ -38,7 +38,7 @@ test('adoption and activation failures invoke guarded cleanup after restoring pr
  const a=source.indexOf('catch(adoptError)');
  const b=source.indexOf('catch(activationError)');
  assert.ok(a>=0&&b>a);
- for(const [start,stop,marker] of [[a,b,'await clearFailedLoginSession(tokens.user.id,startingAccount)'],[b,source.indexOf('if(form.isConnected',b),'await clearFailedLoginSession(session?.user?.id,startingAccount)']]){
+ for(const [start,stop,marker] of [[a,b,'await clearFailedLoginSession(adoptError?.adoptedSessionId||tokens.user.id,startingAccount)'],[b,source.indexOf('if(form.isConnected',b),'await clearFailedLoginSession(session?.user?.id,startingAccount)']]){
    const block=source.slice(start,stop);
    assert.ok(block.indexOf('restoreStay()')>=0&&block.indexOf(marker)>block.indexOf('restoreStay()'));
  }
