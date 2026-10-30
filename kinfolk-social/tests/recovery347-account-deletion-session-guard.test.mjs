@@ -10,7 +10,7 @@ const end=source.indexOf("function mount(){",start);
 assert.ok(start>0&&end>start,'Phase115 account deletion source is present');
 assert.match(source,/Recovery347: account deletion must never continue/);
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve}}
-async function flush(){for(let i=0;i<16;i++)await Promise.resolve()}
+async function flush(){for(let i=0;i<120;i++)await Promise.resolve()}
 function harness(){
   const calls={auth:0,rpc:[],lists:[],removes:[],signOut:0,redirects:[]};
   const overlay={dataset:{kf115Owner:'account-a',kf115Epoch:'1'},isConnected:true,remove(){this.isConnected=false}};
