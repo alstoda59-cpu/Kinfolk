@@ -19,7 +19,7 @@ function from(table){let method='select',filters=[],values=null,selected=false,o
 const auth={getSession:async()=>({data:{session},error:null}),setSession:async()=>{session={user:{...user,email:authEmail},access_token:'fake',refresh_token:'fake'};emit('SIGNED_IN',session);return{data:{session},error:null}},signInWithPassword:async()=>auth.setSession(),signUp:async args=>{signupCalls++;return{data:{user:{...user,email:args.email},session:null},error:null}},signOut:async()=>{session=null;emit('SIGNED_OUT',null);return{error:null}},onAuthStateChange:f=>{listeners.push(f);Promise.resolve().then(()=>f('INITIAL_SESSION',session));return{data:{subscription:{unsubscribe(){}}}}},resetPasswordForEmail:async()=>({error:null})};
 const client={auth,from,rpc:async()=>({data:[],error:null}),storage:{from:()=>({createSignedUrl:async(path)=>({data:{signedUrl:'https://example.test/'+path},error:null}),upload:async()=>({error:null}),remove:async()=>({error:null})})}};
 window.supabase={createClient:()=>client};window.__kfMock={get session(){return session},get signupCalls(){return signupCalls},queries,profile,emit,client,user};
-const nativeFetch=window.fetch;window.fetch=async function(url,opts){if(String(url).includes('/auth/v1/token')){try{authEmail=JSON.parse(opts?.body||'{}').email||user.email}catch{authEmail=user.email}return new Response(JSON.stringify({access_token:'fake',refresh_token:'fake',user:{...user,email:authEmail}}),{status:200,headers:{'Content-Type':'application/json'}});}return new Response(JSON.stringify([]),{status:200,headers:{'Content-Type':'application/json'}})};
+const nativeFetch=window.fetch;window.fetch=async function(url,opts){if(String(url).includes('/auth/v1/token')){try{authEmail=JSON.parse(opts?.body||'{}').email||user.email}catch{authEmail=user.email}return new Response(JSON.stringify({access_token:'fake',refresh_token:'fake',user:{...user,email:authEmail,email_confirmed_at:'2026-10-29T12:00:00.000Z'}}),{status:200,headers:{'Content-Type':'application/json'}});}return new Response(JSON.stringify([]),{status:200,headers:{'Content-Type':'application/json'}})};
 })();'''
 
 def test_html():
@@ -68,6 +68,27 @@ with sync_playwright() as p:
  assert page.locator('.kf73Primary').is_enabled()
  assert 'incorrect' in page.locator('.kf73Msg').inner_text().lower()
  page.evaluate("window.fetch=window.__authFetchBeforeFailure")
+ # Browser-level defense in depth: a successful HTTP token response without
+ # email confirmation must not adopt a session or open the main app.
+ page.evaluate("""() => {
+   window.__confirmedTokenFetch=window.fetch;
+   window.fetch=async (url,opts)=>{
+     if(String(url).includes('/auth/v1/token'))
+       return new Response(JSON.stringify({
+         access_token:'synthetic-unconfirmed-access',
+         refresh_token:'synthetic-unconfirmed-refresh',
+         user:{id:window.__kfMock.user.id,email:'qa@example.test'}
+       }),{status:200,headers:{'Content-Type':'application/json'}});
+     return window.__confirmedTokenFetch(url,opts);
+   };
+ }""")
+ page.locator('.kf73Primary').click()
+ page.wait_for_timeout(350)
+ assert page.locator('#main').count()==0,'unconfirmed token opened main app'
+ assert page.evaluate('window.__kfMock.session') is None,'unconfirmed token was adopted'
+ assert 'confirmed' in page.locator('.kf73Msg').inner_text().lower()
+ assert page.locator('.kf73Primary').is_enabled()
+ page.evaluate("window.fetch=window.__confirmedTokenFetch")
  # Delay the synthetic token endpoint and submit twice to catch overlapping
  # requests on slow mobile connections. No real backend traffic is sent.
  page.evaluate("""() => {
