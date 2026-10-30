@@ -1,3 +1,7 @@
+# Recovery337 | Confirmed-session preference regression (2026-10-30)
+
+Continued from [Recovery336](RECOVERY336.md) on an isolated branch. [RECOVERY337.md](RECOVERY337.md) repairs the legacy Recovery151 synthetic login preference fixture to include verified-email status at both adopted and active session stages, adds two negative confirmation checks, and enables offline Android/iOS native CI. Recovery336 source CI failed after Node and browser checks passed because the old fixture lacked confirmation. Real backend authentication, two-user RLS, signed builds and physical-device QA remain unverified. No production, shared live Supabase, Kinfolksworld, paid resources or stores changed.
+
 # Recovery336 | Confirmed adopted-session browser fixture (2026-10-29)
 
 Continued from [Recovery335](RECOVERY335.md) on an isolated draft branch. [RECOVERY336.md](RECOVERY336.md) repairs the Chromium synthetic login fixture so both adopted and active mock Supabase sessions explicitly carry confirmed-email status, matching the production Phase95 guard. The Recovery335 exact-head Node stage passed 667/667 but browser CI failed on the stale fixture; Recovery336 adds an adopted-session browser assertion. Exact-head CI, native compilation, READY preview, real isolated auth/RLS and physical-device QA remain separate gates. No production, shared live backend, Kinfolksworld, paid resources or stores changed.
