@@ -68,6 +68,27 @@ with sync_playwright() as p:
  assert page.locator('.kf73Primary').is_enabled()
  assert 'incorrect' in page.locator('.kf73Msg').inner_text().lower()
  page.evaluate("window.fetch=window.__authFetchBeforeFailure")
+ # Browser-level defense in depth: a successful HTTP token response without
+ # email confirmation must not adopt a session or open the main app.
+ page.evaluate("""() => {
+   window.__confirmedTokenFetch=window.fetch;
+   window.fetch=async (url,opts)=>{
+     if(String(url).includes('/auth/v1/token'))
+       return new Response(JSON.stringify({
+         access_token:'synthetic-unconfirmed-access',
+         refresh_token:'synthetic-unconfirmed-refresh',
+         user:{id:window.__kfMock.user.id,email:'qa@example.test'}
+       }),{status:200,headers:{'Content-Type':'application/json'}});
+     return window.__confirmedTokenFetch(url,opts);
+   };
+ }""")
+ page.locator('.kf73Primary').click()
+ page.wait_for_timeout(350)
+ assert page.locator('#main').count()==0,'unconfirmed token opened main app'
+ assert page.evaluate('window.__kfMock.session') is None,'unconfirmed token was adopted'
+ assert 'confirmed' in page.locator('.kf73Msg').inner_text().lower()
+ assert page.locator('.kf73Primary').is_enabled()
+ page.evaluate("window.fetch=window.__confirmedTokenFetch")
  # Delay the synthetic token endpoint and submit twice to catch overlapping
  # requests on slow mobile connections. No real backend traffic is sent.
  page.evaluate("""() => {
