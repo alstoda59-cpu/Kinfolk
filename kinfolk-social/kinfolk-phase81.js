@@ -149,18 +149,19 @@
     return ctl;
   }
 
+  // Recovery349: a private extras row is authoritative, including an explicit
+  // null/empty value when music was removed. Profile playback is read-only:
+  // never repair a public profile record as a side effect of opening it.
   async function musicUrlFor(uid){
     const p=state?.profiles?.get?.(uid)||(uid===state?.user?.id?state?.profile:null)||{};
     let url=p?.profile_music_url||'';
     if(uid===state?.user?.id){
+      const epoch=typeof kf129Epoch==='undefined'?null:kf129Epoch;
       try{
-        const {data}=await sb.from('kinfolk_profile_extras').select('music_url').eq('user_id',uid).maybeSingle();
-        if(state?.user?.id!==uid)return url;
-        if(data?.music_url)url=data.music_url;
-        if(url&&p?.profile_music_url!==url){
-          const {data:updated}=await sb.from('profiles').update({profile_music_url:url}).eq('id',uid).select().single();
-          if(updated&&state?.user?.id===uid&&state.view==='profile'&&(state.profileViewId||uid)===uid){state.profile=updated;state.profiles?.set?.(uid,updated)}
-        }
+        const {data,error}=await sb.from('kinfolk_profile_extras').select('music_url').eq('user_id',uid).maybeSingle();
+        if(state?.user?.id!==uid||(epoch!==null&&kf129Epoch!==epoch))return '';
+        if(!error&&data&&Object.prototype.hasOwnProperty.call(data,'music_url'))
+          url=data.music_url||'';
       }catch{}
     }
     return url;
