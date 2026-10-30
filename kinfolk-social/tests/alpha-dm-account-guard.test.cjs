@@ -7,7 +7,7 @@ const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 const begin=html.indexOf('let kfAlphaDmOpenEpoch=0;window.openDm=async function(peer){');
 const end=html.indexOf('};})();',begin);
 assert.ok(begin>=0&&end>begin,'Active DM override exists');
-const install=new Function('window','state','kfAlphaCanDm','toast','sb','modal','$','esc','document',html.slice(begin,end+2));
+const install=new Function('window','state','kfAlphaCanDm','toast','sb','modal','$','esc','document','kf129Epoch','kf300MessageRequest',html.slice(begin,end+2));
 const uid='11111111-1111-4111-8111-111111111111';
 const peer='22222222-2222-4222-8222-222222222222';
 const other='33333333-3333-4333-8333-333333333333';
@@ -32,9 +32,9 @@ function harness(options={}){
   rpc(){calls.marks++;return Promise.resolve({data:null,error:null})}
  };
  const window={};
- const modal=()=>{calls.modals++;currentForm={dataset:{peer},elements:{namedItem(name){return name==='body'?{value:'Synthetic message'}:{checked:true}}}}};
+ const modal=()=>{calls.modals++;currentForm={dataset:{peer},elements:{namedItem(name){return name==='body'?{value:'Synthetic message'}:{checked:true}}},querySelector(){return {disabled:false}}}};
  const document={getElementById(){return currentForm}};
- install(window,state,canDm,(...args)=>calls.toasts.push(args),sb,modal,()=>currentForm,value=>value,document);
+ install(window,state,canDm,(...args)=>calls.toasts.push(args),sb,modal,()=>currentForm,value=>value,document,1,1);
  return {window,state,calls,getForm:()=>currentForm,setForm:value=>{currentForm=value}};
 }
 function submit(form){return form.onsubmit({preventDefault(){},currentTarget:form})}
