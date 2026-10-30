@@ -43,7 +43,7 @@ function fixture({existing=false,stage='token'}={}){
       if(stage==='token')await hold.promise;
       return {ok:true,status:200,json:async()=>({
         access_token:'synthetic-access',refresh_token:'synthetic-refresh',
-        user:{id:'new-id',email:'synthetic@example.test'}
+        user:{id:'new-id',email:'synthetic@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'}
       })};
     },
     AbortController,localStorage:store(prefs),sessionStorage:store(tab),
