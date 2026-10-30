@@ -568,9 +568,9 @@ async function renderVideoGrid(root,arr){if(!arr.length){root.innerHTML='<div cl
 function videoEmbed(u,type){if(type==='external'&&/youtu(?:\.be|be\.com)/i.test(u)){return `<a href="${esc(u)}" target="_blank" class="btn">Open video ↗</a>`}return `<video src="${esc(u)}" controls playsinline preload="metadata"></video>`}
 function openVideoModal(){const opts=state.channels.filter(c=>c.owner_id===state.user.id).map(c=>`<option value="${c.id}">${esc(c.title)}</option>`).join('');modal('Upload video',`<form id="videoForm"><div class="label">Title</div><input class="field" id="videoTitle" maxlength="120" required><div class="formRow"><div><div class="label">Type</div><select class="field" id="videoKind"><option value="reel">Reel / Short</option><option value="video">Video</option></select></div><div><div class="label">Channel</div><select class="field" id="videoChannel"><option value="">Personal profile</option>${opts}</select></div></div><div class="label">Video file</div><input class="field" id="videoFile" type="file" accept="video/mp4,video/webm" required><div class="muted" style="margin:7px 0">MP4 or WebM, up to 50 MiB on the alpha test backend. Larger videos need additional upload support.</div><div id="videoProgress" class="muted" style="margin:9px 0"></div><button class="btn primary full">Upload video</button></form>`);$('#videoForm').onsubmit=uploadVideo}
 // Recovery302: video uploads must belong to the account and modal that started them.
-// Recovery344: match the isolated alpha video bucket\u0027s verified 50 MiB and MP4/WebM limits before any network write.
+// Recovery344: match the isolated alpha video bucket's verified 50 MiB and MP4/WebM limits before any network write.
 const KF_ALPHA_VIDEO_MAX_BYTES=50*1024*1024;
-const KF_ALPHA_VIDEO_MIME_TYPES=new Set([\u0027video/mp4\u0027,\u0027video/webm\u0027]);
+const KF_ALPHA_VIDEO_MIME_TYPES=new Set(['video/mp4','video/webm']);
 async function uploadVideo(e){
  e.preventDefault();
  const form=e.currentTarget||e.target,epoch=kf129Epoch,uid=state.user?.id;
