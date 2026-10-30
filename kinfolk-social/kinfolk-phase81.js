@@ -16,11 +16,19 @@
   async function loadOwnAppearance(){
     if(typeof sb==='undefined'||!state?.user?.id)return null;
     const uid=state.user.id;
-    const profile=state.profile||state.profiles?.get?.(uid)||{};
+    const epoch=typeof kf129Epoch==='undefined'?null:kf129Epoch;
+    const current=()=>state?.user?.id===uid&&(epoch===null||kf129Epoch===epoch);
+    // Never hydrate the owner's settings from another profile or an earlier
+    // activation of the same account while a private extras read is pending.
+    const profile=(state.profile?.id===uid?state.profile:state.profiles?.get?.(uid))||{};
     let extra={};
-    try{extra=(await sb.from('kinfolk_profile_extras').select('music_url').eq('user_id',uid).maybeSingle()).data||{}}catch{}
-    if(state?.user?.id!==uid)return null;
-    return{profile,extra,userId:uid};
+    try{
+      const result=await sb.from('kinfolk_profile_extras').select('music_url').eq('user_id',uid).maybeSingle();
+      if(!current())return null;
+      if(!result.error&&result.data)extra=result.data;
+    }catch{}
+    if(!current())return null;
+    return{profile,extra,userId:uid,epoch};
   }
 
   function setMsg(card,text,good=false){
@@ -100,7 +108,7 @@
     const safetyBox=document.getElementById('kf78-safety');
     if(!safetyBox)return;
     const loaded=await loadOwnAppearance();
-    if(!loaded||state?.user?.id!==loaded.userId||document.getElementById('kf78-sheet')!==sheet||sheet.querySelector('.kf81Card'))return;
+    if(!loaded||state?.user?.id!==loaded.userId||(loaded.epoch!==null&&kf129Epoch!==loaded.epoch)||document.getElementById('kf78-sheet')!==sheet||sheet.querySelector('.kf81Card'))return;
     const {profile,extra}=loaded;
     const card=document.createElement('section');card.className='kf81Card';
     const color=hexOk(profile.accent_color)?profile.accent_color:'#e85a9b';
@@ -121,10 +129,13 @@
     const text=document.getElementById('kfsAccentText'),picker=document.getElementById('kfsAccent');
     const color=(text?.value||picker?.value||'').trim();
     if(!hexOk(color))return;
-    const uid=state.user.id;
+    const uid=state.user.id,epoch=typeof kf129Epoch==='undefined'?null:kf129Epoch,form=e.target;
+    const current=()=>state?.user?.id===uid&&(epoch===null||kf129Epoch===epoch)
+      &&document.getElementById('kfsForm')===form&&form.isConnected!==false;
+    if(!current())return;
     sb.from('profiles').update({accent_color:color}).eq('id',uid).select().single().then(({data,error})=>{
-      if(error||!data||state?.user?.id!==uid)return;
-      state.profile=data;state.profiles?.set?.(data.id,data);window.applyKinfolkTheme?.(color);
+      if(error||!data||data.id!==uid||String(data.accent_color||'').toLowerCase()!==color.toLowerCase()||!current())return;
+      state.profile=data;state.profiles?.set?.(uid,data);window.applyKinfolkTheme?.(color);
     }).catch(()=>{});
   },true);
 
