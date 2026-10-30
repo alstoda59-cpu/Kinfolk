@@ -12,14 +12,14 @@ Date: 2026-10-30 (America/Los_Angeles). Scope: full main Kinfolk Social in `kinf
 ## Application fix
 
 - `kinfolk-phase81.js`: the profile music reader previously used `if(data?.music_url)` and fell back to the stale public `profile_music_url` when private extras explicitly contained `music_url: null`. As a result, removing music could make the old track play again.
-- An existing private extras row is now authoritative even for `null` or empty music, while missing/error extras rows retain the public-profile fallback. Other members' public music still works.
+- An existing private extras row is now authoritative even for `null` or empty music, both in playback and in the Settings input, while missing/error extras rows retain the public-profile fallback. Other members' public music still works.
 - Opening a profile no longer performs an implicit `profiles.update` write to reconcile a different extras URL. This avoids unrequested background writes during navigation and same-account activation races.
 - An async extras lookup invalidated by account switch or same-user reactivation returns no URL, while the existing `ensureMusic` guard still checks the active profile and hero element before rendering.
 - This does not make the two sequential saveMusic writes atomic. If extras succeeds but public profile update fails, the backend may remain temporarily inconsistent; explicit reconciliation needs isolated-backend testing.
 
 ## Tests and packaging
 
-- `tests/recovery349-profile-music-null-authority.test.mjs` adds eight source-extracted synthetic cases for explicit removal, empty values, private override, missing/error fallback, public other-member view, account switch and same-user activation change.
+- `tests/recovery349-profile-music-null-authority.test.mjs` adds ten source-extracted synthetic cases for explicit removal, empty values, private override, missing/error fallback, public other-member view, account switch and same-user activation change.
 - `native/package.json` adds the suite to `alpha:profile:source:test`, which is part of `alpha:verify`.
 - `.github/workflows/kinfolk-alpha-native.yml` includes the Recovery349 branch, retaining its unreachable CI-only Supabase backend and packaging-only mode.
 - New exact-head CI, Vercel preview, real Supabase authentication/RLS and physical Android/iPhone tests must be independently verified. Compilation or READY status does not prove an end-to-end working alpha.
