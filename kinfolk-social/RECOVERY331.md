@@ -19,6 +19,7 @@ Date: 2026-10-29. Scope: full main Kinfolk Social only, `kinfolk-social/`. Isola
 ## Tests and CI scope
 - Added `tests/recovery331-phase95-login-completion-lock.test.cjs`: three source-backed synthetic VM regressions for success lock, duplicate suppression and failed activation retry.
 - Integrated into `native/package.json` `alpha:auth:source:test` and included the isolated Recovery331 branch in offline-only Android/iOS workflow triggers.
+- First source CI run 40985664669 executed 644 synthetic Node tests: 642 passed and 2 legacy static fixtures failed because they expected the old one-line success notice rather than the new guarded completion block. Updated Recovery183/215 fixture assertions to retain their original title-identity and post-activation checks; the three new Phase95 runtime regressions passed in that run. Full CI must be rechecked at the repaired exact head.
 - CI, native compilation and preview results must be checked at the exact final commit. Real isolated-backend signup, email verification, two-account RLS and physical device QA remain unverified.
 
 ## Remaining blockers
