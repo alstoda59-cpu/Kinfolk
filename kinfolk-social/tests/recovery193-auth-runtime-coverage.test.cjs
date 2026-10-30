@@ -40,7 +40,7 @@ function fixture(kind){
     getSession:async()=>({data:{session},error:null}),
     setSession:async()=>{
       if(kind==='adoption-pending')await new Promise(resolve=>{finishAdoption=resolve});
-      session={user:{id:'account-1',email:'test@example.invalid'}};
+      session={user:{id:'account-1',email:'test@example.invalid',email_confirmed_at:'2026-10-29T12:00:00.000Z'}};
       return {data:{session},error:null};
     }
   }};
