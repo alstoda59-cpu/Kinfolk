@@ -51,7 +51,7 @@ function fixture(stage='token'){
    if((stage==='token'||stage==='token-error')&&tokenCalls===1)await hold.promise;
    if(stage==='token-error'&&tokenCalls===1)
      return {ok:false,status:400,json:async()=>({error_description:'Invalid login credentials'})};
-   return {ok:true,status:200,json:async()=>({access_token:'fake',refresh_token:'fake',user:{id:user.id,email:fields['#kf73Email'].value}})};
+   return {ok:true,status:200,json:async()=>({access_token:'fake',refresh_token:'fake',user:{id:user.id,email:fields['#kf73Email'].value,email_confirmed_at:'2026-10-29T12:00:00.000Z'}})};
  };
  class AbortControllerStub{constructor(){this.signal={aborted:false}}abort(){this.signal.aborted=true}}
  const ctx={window,document,sb:{auth},fetch,localStorage:store(prefs),sessionStorage:store(tab),
