@@ -118,8 +118,32 @@ function kf316ClearPreviousAccount(){
   state.channelViewId=null;state.channelTab='videos';state.busy=false;
   window._kinfolkSuggestionHidden=new Set();
 }
+// Recovery338: startup, retry, legacy recovery and auth events all enter this
+// single gate. Phase95 login already verifies email, but restored sessions and
+// older recovery handlers must not bypass that protection.
+function kf338ConfirmedSession(session){
+  return !!(session?.user?.id&&typeof session.user.email_confirmed_at==='string'&&session.user.email_confirmed_at.trim());
+}
+async function kf338RejectUnconfirmedSession(uid){
+  // Clear private UI synchronously before any asynchronous Supabase operation.
+  await kf129ActivateSession(null);
+  try{
+    const {data,error}=await sb.auth.getSession();
+    if(error)throw error;
+    const active=data?.session;
+    // Never sign out a newer or newly verified session during stale callbacks.
+    if(active?.user?.id===uid&&!kf338ConfirmedSession(active)){
+      const result=await sb.auth.signOut({scope:'local'});
+      if(result?.error)throw result.error;
+    }
+  }catch(error){console.warn('Kinfolk could not clear unconfirmed local session',error)}
+}
 async function kf129ActivateSession(session){
   const uid=session?.user?.id||null;
+  if(uid&&!kf338ConfirmedSession(session)){
+    await kf338RejectUnconfirmedSession(uid);
+    return false;
+  }
   if(!uid){++kf129Epoch;kf129ReadyUid=null;kf129InFlight=null;try{window.closeKinfolkSettings?.()}catch{}document.getElementById('kf78-overlay')?.remove();document.getElementById('kf115-delete-overlay')?.remove();document.getElementById('modalRoot')?.replaceChildren();document.body.style.overflow='';try{window.kf159StopReels?.()}catch{}try{window.kf81StopProfileMusic?.()}catch{}
     state.user=null;state.profile=null;state.extras=null;state.feed=[];state.videos=[];state.stories=[];state.notifications=[];
     state.channels=[];state.friendRequests=[];state.likes.clear();state.comments.clear();state.subscriptions.clear();
