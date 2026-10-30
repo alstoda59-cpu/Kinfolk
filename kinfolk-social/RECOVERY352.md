@@ -22,6 +22,12 @@ Date: 2026-10-30 (America/Los_Angeles). Scope: FULL MAIN Kinfolk Social in `kinf
 - Updated the earlier Recovery332 adopted-session fixture to model access tokens, preserving the previously tested mismatched-user cleanup path.
 - Added Recovery352 tests to the native `alpha:auth:source:test` gate and enabled the isolated branch for offline-only Android/iOS native CI. The packaging backend remains an unreachable CI placeholder, not the live backend.
 
+## CI findings and corrections
+
+- Initial source workflow [41138055904](https://github.com/alstoda59-cpu/Kinfolk/actions/runs/41138055904) completed FAILURE: 804 synthetic tests ran, 799 passed and five older test fixtures failed because they assumed ID-only cleanup or did not model adopted access tokens.
+- Updated Recovery214, Recovery273 and Recovery285 fixtures to assert token-scoped cleanup and model a real adopted session's access token. Recovery332 was updated earlier. The nine new Recovery352 synthetic cases passed in the initial run.
+- The corrected exact-head source workflow, native build results and final-commit Vercel preview must be verified independently; do not infer success from intermediate preview READY. Vercel has reported a build-rate-limit status on later commits, with no paid upgrade authorized.
+
 ## Separate acceptance gates
 
 Record exact-head source CI, native Android debug APK and iOS Simulator compilation, and Vercel preview readiness separately once their jobs finish. None is proof of real email delivery, signup, logout, session restoration, Supabase RLS or physical-device functionality. Physical iPhone installation still requires an appropriately signed IPA.
