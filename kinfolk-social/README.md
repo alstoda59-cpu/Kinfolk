@@ -1,3 +1,7 @@
+# Recovery331 | Effective Phase95 login completion lock (2026-10-29)
+
+Continued from [Recovery330](RECOVERY330.md) on an isolated draft branch. [RECOVERY331.md](RECOVERY331.md) fixes the actual Phase95 capture-phase login handler: a verified login no longer unlocks its submit button or permits duplicate requests while the same screen remains visible. Three source-backed synthetic regressions are wired into offline Android/iOS alpha verification. Real isolated auth/RLS, email callbacks, and physical-device QA remain unverified. No production, shared live Supabase, Kinfolksworld, paid resources or store changes.
+
 # Recovery330 | Mobile login/signup request isolation (2026-10-29)
 
 Continued from [Recovery329](RECOVERY329.md) on an isolated branch. [RECOVERY330.md](RECOVERY330.md) pins the active mobile login/signup submit to one form, mode, and input snapshot; prevents duplicate Auth requests, stale notices and stale button unlocks; and avoids claiming email-confirmed signup succeeded without a session. Nine synthetic VM regressions are integrated into native alpha verification, and offline-only Android/iOS compilation is configured. Exact-head CI, real isolated Auth/RLS, approved callbacks and physical-device QA remain separate, unverified gates. No production, shared live Supabase, Kinfolksworld, paid resources or store changes.

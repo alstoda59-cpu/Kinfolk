@@ -16,7 +16,7 @@ test('login screen guard requires original title node identity, not only same ti
  const screen=source.indexOf("if(!currentLoginScreen())",begin);
  assert.ok(begin>=0&&identity>begin&&screen>identity);
  assert.ok((source.match(/if\(!currentLoginScreen\(\)\)/g)||[]).length>=4);
- assert.ok(source.includes("if(currentLoginScreen())show(form,'Logged in."));
+ assert.ok(source.includes("if(currentLoginScreen()){form.__kf95CompletedTitle=loginTitle;show(form,'Logged in."));
  assert.ok(source.includes("catch(err){if(currentLoginScreen())"));
 });
 
