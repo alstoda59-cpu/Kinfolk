@@ -1,3 +1,7 @@
+# Recovery345 | Post and story image alpha preflight (2026-10-30)
+
+Continued from [Recovery344](RECOVERY344.md) on an isolated draft branch. [RECOVERY345.md](RECOVERY345.md) adds actual-runtime post/story photo preflight for the read-only verified private alpha `kinfolk-media` bucket (JPG/PNG/WebP/GIF, 50 MiB), preserving text-only posting and account-isolation safeguards. Eleven source-extracted synthetic regressions cover rejected/valid boundaries, and older filename-only synthetic fixtures were corrected. Offline Android/iOS packaging, Vercel READY, real Supabase uploads/RLS and physical-device QA remain distinct. No shared live backend, production, Kinfolksworld, paid infrastructure or stores changed.
+
 # Recovery344 | Video upload alpha storage compatibility (2026-10-30)
 
 Continued from [Recovery343](RECOVERY343.md) on a separate draft branch. [RECOVERY344.md](RECOVERY344.md) aligns the active mobile video upload UI and preflight checks with the **read-only verified isolated alpha** `kinfolk-video` bucket (50 MiB, MP4/WebM only). Six additional source-extracted synthetic regressions cover invalid files and the exact size boundary. This does not enable longer videos or prove real uploads, Supabase RLS, email signup or physical-device readiness. No production, shared live Supabase, Kinfolksworld, paid infrastructure or store changes.

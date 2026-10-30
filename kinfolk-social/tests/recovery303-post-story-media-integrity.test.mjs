@@ -11,15 +11,15 @@ function extract(start,end){
 }
 const handlers=extract('async function createPost(e){','function openStoryModal()')+'\n'+extract('async function createStory(e){','async function viewStory(id)');
 function deferred(){let resolve;const promise=new Promise(r=>{resolve=r});return {resolve,promise}}
-function harness(kind,{file=true,failInsert=false,failRefresh=false,deferUpload=false}={}){
+function harness(kind,{file=true,mediaFile=null,failInsert=false,failRefresh=false,deferUpload=false}={}){
  const isPost=kind==='post',id=isPost?'postForm':'storyForm',table=isPost?'posts':'kinfolk_stories';
  const uploads=[],removals=[],inserts=[],toasts=[];
  const state={user:{id:'A'}};
  const submitButton={disabled:false},progress={textContent:''};
  const fields=isPost?{
-  '#postBody':{value:'hello'},'#postFile':{files:file?[{name:'image.png'}]:[]},'#postProgress':progress
+  '#postBody':{value:'hello'},'#postFile':{files:file?[mediaFile||{name:'image.png',type:'image/png',size:123}]:[]},'#postProgress':progress
  }:{
-  '#storyBody':{value:'hello'},'#storyFile':{files:file?[{name:'image.png'}]:[]}
+  '#storyBody':{value:'hello'},'#storyFile':{files:file?[mediaFile||{name:'image.png',type:'image/png',size:123}]:[]}
  };
  const form={dataset:{},isConnected:true,querySelector:s=>s.startsWith('button')?submitButton:fields[s]||null};
  let closed=0,refreshed=0,rendered=0;
@@ -76,3 +76,44 @@ for(const kind of ['post','story']){
   assert.deepEqual(h.removals,[]);
  });
 }
+
+for(const kind of ['post','story']){
+ test(kind+': Recovery345 rejects oversized alpha images without storage or metadata writes',async()=>{
+  const h=harness(kind,{mediaFile:{name:'large.png',type:'image/png',size:50*1024*1024+1}});
+  await h.submit();
+  assert.equal(h.uploads.length,0);assert.equal(h.inserts.length,0);
+  assert.equal(h.submitButton.disabled,false);assert.match(h.toasts[0][0],/50 MiB/);
+ });
+ test(kind+': Recovery345 rejects empty and invalid-size images',async()=>{
+  for(const size of [0,NaN,Infinity,-1]){
+   const h=harness(kind,{mediaFile:{name:'empty.png',type:'image/png',size}});
+   await h.submit();
+   assert.equal(h.uploads.length,0);assert.equal(h.inserts.length,0);
+   assert.match(h.toasts[0][0],/larger than 0 bytes/);
+  }
+ });
+ test(kind+': Recovery345 rejects unsupported and absent image MIME types',async()=>{
+  for(const type of ['video/quicktime','application/octet-stream','']){
+   const h=harness(kind,{mediaFile:{name:'invalid.mov',type,size:120}});
+   await h.submit();
+   assert.equal(h.uploads.length,0);assert.equal(h.inserts.length,0);
+   assert.match(h.toasts[0][0],/JPG, PNG, WebP or GIF/);
+  }
+ });
+ test(kind+': Recovery345 permits a supported image at exactly 50 MiB',async()=>{
+  const h=harness(kind,{mediaFile:{name:'boundary.webp',type:'image/webp',size:50*1024*1024}});
+  await h.submit();
+  assert.equal(h.uploads.length,1);assert.equal(h.inserts.length,1);
+  assert.equal(h.closed,1);assert.equal(h.submitButton.disabled,false);
+ });
+ test(kind+': Recovery345 preserves text-only composer without media upload',async()=>{
+  const h=harness(kind,{file:false});
+  await h.submit();
+  assert.equal(h.uploads.length,0);assert.equal(h.inserts.length,1);
+  assert.equal(h.closed,1);
+ });
+}
+test('Recovery345 post and story forms explain the isolated alpha image limit',()=>{
+ assert.match(html,/JPG, PNG, WebP or GIF, up to 50 MiB on the alpha backend/g);
+ assert.match(html,/accept="image\/jpeg,image\/png,image\/webp,image\/gif"/g);
+});
