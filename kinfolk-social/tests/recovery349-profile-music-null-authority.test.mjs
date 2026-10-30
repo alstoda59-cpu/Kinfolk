@@ -17,9 +17,9 @@ const old='https://example.test/old.mp3';
 const fresh='https://example.test/new.mp3';
 
 function deferred(){
-  let resolve;
-  const promise=new Promise(r=>{resolve=r});
-  return {promise,resolve};
+  let resolve,reject;
+  const promise=new Promise((r,j)=>{resolve=r;reject=j});
+  return {promise,resolve,reject};
 }
 function harness(response={data:{music_url:fresh},error:null}){
   const calls=[];
@@ -90,5 +90,23 @@ test('same-user new auth activation discards stale music lookup',async()=>{
   const pending=h.lookup(A);
   h.ctx.kf129Epoch++;
   d.resolve({data:{music_url:fresh},error:null});
+  assert.equal(await pending,'');
+});
+
+test('Settings shows removed music as blank even if public profile still has old URL',()=>{
+  const start=source.indexOf("    const music=Object.prototype.hasOwnProperty.call(extra,'music_url')");
+  assert.ok(start>=0,'effective Settings music fallback is present');
+  const expression=source.slice(start,source.indexOf(';',start)+1);
+  const evaluate=(extra,profile)=>vm.runInNewContext('(()=>{'+expression+'return music;})()',{extra,profile});
+  assert.equal(evaluate({music_url:null},{profile_music_url:old}),'');
+  assert.equal(evaluate({music_url:''},{profile_music_url:old}),'');
+  assert.equal(evaluate({music_url:fresh},{profile_music_url:old}),fresh);
+  assert.equal(evaluate({},{profile_music_url:old}),old);
+});
+test('failed extras lookup after same-user relogin does not return stale public music',async()=>{
+  const d=deferred(),h=harness(d.promise);
+  const pending=h.lookup(A);
+  h.ctx.kf129Epoch++;
+  d.reject(new Error('request failed'));
   assert.equal(await pending,'');
 });
