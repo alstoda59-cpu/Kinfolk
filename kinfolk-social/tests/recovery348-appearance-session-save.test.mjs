@@ -11,6 +11,7 @@ const start=source.indexOf('  // Recovery348: appearance saves belong');
 const end=source.indexOf('  async function mountAppearance(){',start);
 assert.ok(start>=0&&end>start,'effective Phase81 appearance handlers are present');
 const code=source.slice(start,end);
+const safeMusicUrl=vm.runInNewContext(source.slice(source.indexOf('  const safeMusicUrl=raw=>'),source.indexOf('  const style='))+';safeMusicUrl',{URL},{timeout:1000});
 const A='11111111-1111-4111-8111-111111111111';
 const B='22222222-2222-4222-8222-222222222222';
 
@@ -39,6 +40,7 @@ function harness(){
       querySelector:()=>({style:{setProperty:(...args)=>themes.push(['profile',...args])}})
     },
     window:{applyKinfolkTheme:color=>themes.push(['theme',color])},
+    safeMusicUrl,
     $q:(selector,el)=>el.controls[selector],
     hexOk:value=>/^#[0-9a-fA-F]{6}$/.test(value||''),
     setMsg:(el,message,good)=>messages.push({el,message,good:!!good}),
@@ -185,4 +187,17 @@ test('invalid music URL is rejected before any backend write',async()=>{
   await h.api.saveMusic(h.card);
   assert.equal(h.writes.length,0);
   assert.match(h.messages.at(-1).message,/https:\/\//);
+});
+
+test('credential-bearing HTTPS music links are rejected before storage',async()=>{
+  const h=harness();h.card.controls['.kf81MusicUrl'].value='https://user:pass@example.test/song.mp3';
+  await h.api.saveMusic(h.card);
+  assert.equal(h.writes.length,0);
+  assert.match(h.messages.at(-1).message,/valid https:/);
+});
+test('malformed HTTPS music links are rejected before storage',async()=>{
+  const h=harness();h.card.controls['.kf81MusicUrl'].value='https://';
+  await h.api.saveMusic(h.card);
+  assert.equal(h.writes.length,0);
+  assert.match(h.messages.at(-1).message,/valid https:/);
 });

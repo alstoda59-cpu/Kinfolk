@@ -1,3 +1,7 @@
+# Recovery351 | Safe profile music playback across login activations (2026-10-30)
+
+Continued from [Recovery350](RECOVERY350.md) on an isolated branch. [RECOVERY351.md](RECOVERY351.md) validates stored profile music URLs before rendering audio/YouTube/Open controls, rejects deceptive YouTube hosts, isolates asynchronous music playback by account activation, queues a missed refresh and stops late audio playback after navigation. Ten new synthetic regressions, including two new invalid-save cases in the existing Recovery348 suite, are wired into the offline native alpha gate. Real isolated Supabase Auth/RLS, physical Android/iPhone QA, signed iPhone packaging and end-to-end alpha readiness remain unverified. No shared live backend, production, Kinfolksworld, paid resources or stores changed.
+
 # Recovery350 | Session-safe profile settings hydration (2026-10-30)
 
 Continued from [Recovery349](RECOVERY349.md) on an isolated branch. [RECOVERY350.md](RECOVERY350.md) prevents stale same-account relogin settings hydration, wrong-profile Settings data and legacy color-save responses from overwriting a newer account activation. Thirteen synthetic source regressions are included in the offline native alpha gate. Exact-head CI, real isolated Supabase signup/email/RLS, physical Android/iPhone QA and signed iPhone packaging remain separate release gates. No production, shared live Supabase, Kinfolksworld, paid infrastructure or app stores changed.
