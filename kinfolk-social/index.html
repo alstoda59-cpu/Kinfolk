@@ -1052,18 +1052,27 @@ dmForm.onsubmit=async e=>{
     if(p.profile_animated)card.classList.add('kinfolk-layout-animated');
   }
 
+  // Recovery346: comment and reply UI belongs to the originating account, auth epoch and form.
   const postReplyParents={};
+  function kf346CommentFormCurrent(epoch,uid,pid,form){
+    return !!uid&&kfAlphaLoadCurrent(epoch,uid)&&!!form&&form.isConnected!==false
+      &&document.querySelector('#comments-'+pid+' .commentForm')===form;
+  }
   window.setPostReply=function(pid,cid){
-    postReplyParents[pid]=cid;
-    const form=document.querySelector(`#comments-${pid} .commentForm`);
-    if(form){
-      const input=form.querySelector('[name=body]');
-      if(input){input.placeholder='Write a reply…';input.focus();}
-      let lab=form.querySelector('.replyingTo');
-      if(!lab){lab=document.createElement('div');lab.className='replyingTo';form.prepend(lab);}
-      lab.innerHTML='Replying to comment · <button type="button" class="replyBtn">Cancel</button>';
-      lab.querySelector('button').onclick=()=>{postReplyParents[pid]=null;lab.remove();if(input)input.placeholder='Write a comment…';};
-    }
+    const uid=state.user?.id,epoch=kf129Epoch;
+    const form=document.querySelector('#comments-'+pid+' .commentForm');
+    if(!kf346CommentFormCurrent(epoch,uid,pid,form))return;
+    postReplyParents[pid]={id:cid,uid,epoch,form};
+    const input=form.querySelector('[name=body]');
+    if(input){input.placeholder='Write a reply…';input.focus();}
+    let lab=form.querySelector('.replyingTo');
+    if(!lab){lab=document.createElement('div');lab.className='replyingTo';form.prepend(lab);}
+    lab.innerHTML='Replying to comment · <button type="button" class="replyBtn">Cancel</button>';
+    lab.querySelector('button').onclick=()=>{
+      if(postReplyParents[pid]?.form===form)delete postReplyParents[pid];
+      lab.remove();
+      if(input)input.placeholder='Write a comment…';
+    };
   };
 
   window.commentsHtml=async function(pid,comments){
@@ -1087,13 +1096,34 @@ dmForm.onsubmit=async e=>{
 
   window.addComment=async function(e,pid){
     e.preventDefault();
-    const body=e.target.body.value.trim(); if(!body)return;
-    const parent_id=postReplyParents[pid]||null;
-    const {error}=await sb.from('comments').insert({post_id:pid,author_id:state.user.id,body,parent_id});
-    if(error)return toast(error.message,'danger');
-    postReplyParents[pid]=null;
-    await loadFeed(); await renderApp();
-    setTimeout(()=>{$('#comments-'+pid)?.classList.remove('hide')},50);
+    const form=e.currentTarget||e.target,epoch=kf129Epoch,uid=state.user?.id,view=state.view;
+    const current=()=>kf346CommentFormCurrent(epoch,uid,pid,form)&&state.view===view;
+    if(!current()||form.dataset.kfCommentSending==='1')return;
+    const field=form.elements?.namedItem('body')||form.querySelector('[name=body]');
+    const body=String(field?.value||'').trim();
+    if(!body)return;
+    const reply=postReplyParents[pid];
+    const parent_id=reply?.uid===uid&&reply?.epoch===epoch&&reply?.form===form?reply.id:null;
+    form.dataset.kfCommentSending='1';
+    const button=form.querySelector('button[type="submit"],button:not([type])');
+    if(button)button.disabled=true;
+    try{
+      const {error}=await sb.from('comments').insert({post_id:pid,author_id:uid,body,parent_id});
+      if(!current())return;
+      if(error)throw error;
+      delete postReplyParents[pid];
+      await loadFeed();
+      if(!current())return;
+      await renderApp();
+      if(kfAlphaLoadCurrent(epoch,uid)&&state.view===view){
+        document.getElementById('comments-'+pid)?.classList.remove('hide');
+      }
+    }catch(err){
+      if(current())toast(err?.message||String(err),'danger');
+    }finally{
+      delete form.dataset.kfCommentSending;
+      if(button)button.disabled=false;
+    }
   };
 
   let mediaReplyParent=null;
