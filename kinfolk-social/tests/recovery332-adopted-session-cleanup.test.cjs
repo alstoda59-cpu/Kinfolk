@@ -15,8 +15,8 @@ const tokens={access_token:'synthetic-access',refresh_token:'synthetic-refresh',
 function sessionHarness(adoptedId='synthetic-unexpected'){
   let activeId=null,signOutCount=0;
   const auth={
-    async setSession(){activeId=adoptedId;return {data:{session:{user:{id:adoptedId,email:tokens.user.email}}}};},
-    async getSession(){return {data:{session:activeId?{user:{id:activeId,email:tokens.user.email}}:null}};},
+    async setSession(){activeId=adoptedId;return {data:{session:{user:{id:adoptedId,email:tokens.user.email,email_confirmed_at:'2026-10-29T20:00:00Z'}}}};},
+    async getSession(){return {data:{session:activeId?{user:{id:activeId,email:tokens.user.email,email_confirmed_at:'2026-10-29T20:00:00Z'}}:null}};},
     async signOut(){signOutCount++;activeId=null;return {error:null};}
   };
   const context={sb:{auth},currentAccountId:async()=>activeId,console,setTimeout};
