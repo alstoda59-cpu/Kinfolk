@@ -1,3 +1,7 @@
+# Recovery330 | Mobile login/signup request isolation (2026-10-29)
+
+Continued from [Recovery329](RECOVERY329.md) on an isolated branch. [RECOVERY330.md](RECOVERY330.md) pins the active mobile login/signup submit to one form, mode, and input snapshot; prevents duplicate Auth requests, stale notices and stale button unlocks; and avoids claiming email-confirmed signup succeeded without a session. Nine synthetic VM regressions are integrated into native alpha verification, and offline-only Android/iOS compilation is configured. Exact-head CI, real isolated Auth/RLS, approved callbacks and physical-device QA remain separate, unverified gates. No production, shared live Supabase, Kinfolksworld, paid resources or store changes.
+
 # Recovery329 | Native authentication regression gate integrity (2026-10-29)
 
 Continued from Recovery328 on an isolated branch. [RECOVERY329.md](RECOVERY329.md) fixes the nonexistent Recovery324 standalone test path introduced into native auth verification: the overlap regression actually lives in the existing Recovery323 suite. Adds a native source-suite integrity regression to reject missing/duplicate test paths and protect password reset/change coverage. CI and native compilation require exact-head confirmation; real isolated signup/email/RLS and physical-device QA remain unverified. No production, shared live Supabase, Kinfolksworld, paid resources or app stores changed.
