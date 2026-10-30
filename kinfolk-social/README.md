@@ -1,3 +1,7 @@
+# Recovery342 | Effective disappearing-message privacy and send isolation (2026-10-30)
+
+Continued from [Recovery341](RECOVERY341.md) on an isolated draft branch. [RECOVERY342.md](RECOVERY342.md) fixes the effective disappearing-DM override, which previously bypassed the older DM handler's account/modal and pair-filter protections. Initial/refreshed messages and read receipts are now restricted to the initiating pair, stale same-user relogins and replaced modals cannot reopen messages, and duplicate sends are locked. Seven synthetic source regressions are integrated into native alpha verification. Real isolated Supabase auth/RLS, email delivery and physical Android/iPhone QA remain unverified. No production, shared live Supabase, Kinfolksworld, paid resources or stores changed.
+
 # Recovery341 | Fresh persistent mobile session restoration (2026-10-30)
 
 Continued from [Recovery340](RECOVERY340.md) on isolated draft PR #39. [RECOVERY341.md](RECOVERY341.md) fixes the shared startup/Retry session policy so Stay Logged In and same-tab sessions are re-read before activation, preventing stale account or token restoration when another login arrives during the first auth read. Nine source-extracted synthetic regressions are included in native alpha verification. Exact-head source CI, offline Android/iOS compilation, Vercel preview, real isolated Supabase auth/RLS and physical-device QA remain distinct gates. No shared live backend, production, Kinfolksworld, paid resources or stores changed.
