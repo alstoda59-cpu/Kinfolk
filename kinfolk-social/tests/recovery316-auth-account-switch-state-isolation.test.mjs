@@ -10,6 +10,7 @@ assert.ok(start>0&&end>start,'use the committed account-switch cleanup and activ
 const source=html.slice(start,end);
 const A='11111111-1111-4111-8111-111111111111';
 const B='22222222-2222-4222-8222-222222222222';
+const confirmed=id=>({user:{id,email_confirmed_at:'2026-10-30T00:00:00Z'}});
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve}};
 
 function harness({oldUid=A,hydrate}={}){
@@ -40,8 +41,10 @@ function harness({oldUid=A,hydrate}={}){
     kf81StopProfileMusic(){calls.music++},
     _kinfolkSuggestionHidden:new Set(['old-hidden'])
   };
+  const auth={session:null,signouts:0};
   const context={
     state,window,document,sessionStorage:{removeItem(){}},
+    sb:{auth:{getSession:async()=>({data:{session:auth.session},error:null}),signOut:async()=>{auth.signouts++;auth.session=null;return {error:null}}}},
     kf129Epoch:0,kf129ReadyUid:null,kf129InFlight:null,
     $:()=>app,
     kf129Timeout:async promise=>promise,
@@ -52,7 +55,7 @@ function harness({oldUid=A,hydrate}={}){
     kf129Error(){throw new Error('unexpected startup error')}
   };
   const activate=vm.runInNewContext(source+';kf129ActivateSession',context);
-  return {activate,context,state,window,calls,app};
+  return {activate,context,state,window,calls,app,auth};
 }
 
 test('switching accounts clears every cached private content lane before hydration',async()=>{
@@ -61,7 +64,7 @@ test('switching accounts clears every cached private content lane before hydrati
     user:h.state.user?.id,feed:h.state.feed.length,privateUrls:h.state.signed.size,
     notifications:h.state.notifications.length,profile:h.state.profile
   };return true}});
-  const task=h.activate({user:{id:B}});
+  const task=h.activate(confirmed(B));
   assert.equal(h.state.user.id,B);
   assert.deepEqual(observed,{user:B,feed:0,privateUrls:0,notifications:0,profile:null});
   for(const key of ['feed','videos','stories','notifications','channels','friendRequests'])assert.equal(h.state[key].length,0,key);
@@ -78,7 +81,7 @@ test('switching accounts clears every cached private content lane before hydrati
 
 test('account switch stops old audio/video and closes old private overlays',async()=>{
   const h=harness();
-  await h.activate({user:{id:B}});
+  await h.activate(confirmed(B));
   assert.equal(h.calls.music,1);
   assert.equal(h.calls.reels,1);
   assert.equal(h.calls.settings,1);
@@ -90,7 +93,7 @@ test('account switch stops old audio/video and closes old private overlays',asyn
 
 test('repeated authentication for the same member does not wipe their current feed or playback',async()=>{
   const h=harness();
-  assert.equal(await h.activate({user:{id:A}}),true);
+  assert.equal(await h.activate(confirmed(A)),true);
   assert.equal(h.state.feed.length,1);
   assert.equal(h.state.signed.size,1);
   assert.equal(h.calls.music,0);
@@ -100,7 +103,7 @@ test('repeated authentication for the same member does not wipe their current fe
 
 test('fresh login after signed-out state starts without old account caches',async()=>{
   const h=harness({oldUid:null});
-  assert.equal(await h.activate({user:{id:B}}),true);
+  assert.equal(await h.activate(confirmed(B)),true);
   assert.equal(h.state.feed.length,0);
   assert.equal(h.state.signed.size,0);
   assert.equal(h.state.user.id,B);
@@ -118,10 +121,49 @@ test('logout still clears private state and returns to login',async()=>{
 test('older in-flight account activation cannot render after another account becomes active',async()=>{
   const gate=deferred();let hydrations=0;
   const h=harness({oldUid:null,hydrate:()=>++hydrations===1?gate.promise:Promise.resolve(true)});
-  const old=h.activate({user:{id:A}});
-  const newer=h.activate({user:{id:B}});
+  const old=h.activate(confirmed(A));
+  const newer=h.activate(confirmed(B));
   assert.equal(await newer,true);
   gate.resolve(true);
   assert.equal(await old,false);
   assert.equal(h.state.user.id,B);
+});
+
+test('unconfirmed startup session never hydrates and clears private UI before local sign-out',async()=>{
+  let hydrated=0;
+  const h=harness({hydrate:async()=>{hydrated++;return true}});
+  h.auth.session={user:{id:B,email_confirmed_at:null}};
+  assert.equal(await h.activate(h.auth.session),false);
+  assert.equal(hydrated,0);
+  assert.equal(h.state.user,null);
+  assert.equal(h.state.feed.length,0);
+  assert.equal(h.state.signed.size,0);
+  assert.deepEqual(h.calls.auth,['login']);
+  assert.equal(h.auth.signouts,1);
+});
+
+test('stale unconfirmed event cannot sign out a newer verified account',async()=>{
+  const h=harness();
+  h.auth.session=confirmed(B);
+  assert.equal(await h.activate({user:{id:A}}),false);
+  assert.equal(h.auth.signouts,0);
+  assert.equal(h.auth.session.user.id,B);
+  assert.equal(h.state.user,null);
+});
+
+test('unconfirmed startup rejects even if the previous account was marked ready',async()=>{
+  const h=harness();
+  h.context.kf129ReadyUid=A;
+  h.auth.session={user:{id:A}};
+  assert.equal(await h.activate(h.auth.session),false);
+  assert.equal(h.auth.signouts,1);
+  assert.equal(h.state.user,null);
+});
+
+test('confirmed startup session continues normal hydration without local sign-out',async()=>{
+  const h=harness({oldUid:null});
+  h.auth.session=confirmed(B);
+  assert.equal(await h.activate(h.auth.session),true);
+  assert.equal(h.state.user.id,B);
+  assert.equal(h.auth.signouts,0);
 });
