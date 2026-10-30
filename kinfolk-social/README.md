@@ -1,6 +1,6 @@
 # Recovery349 | Removed profile music stays removed (2026-10-30)
 
-Continued from [Recovery348](RECOVERY348.md) on an isolated branch. [RECOVERY349.md](RECOVERY349.md) fixes the effective Phase81 profile music lookup: an explicit null/empty private music preference now overrides an older public profile URL, and opening a profile no longer silently writes to Supabase. Eight synthetic source regressions are included in the offline Android/iOS alpha gate. Exact-head CI, real isolated Auth/RLS, physical devices and signed iPhone packaging remain separate release gates. No shared live backend, production, Kinfolksworld, paid infrastructure or store changes.
+Continued from [Recovery348](RECOVERY348.md) on an isolated branch. [RECOVERY349.md](RECOVERY349.md) fixes the effective Phase81 profile music lookup: an explicit null/empty private music preference now overrides an older public profile URL, and opening a profile no longer silently writes to Supabase. Ten synthetic source regressions are included in the offline Android/iOS alpha gate. Exact-head CI, real isolated Auth/RLS, physical devices and signed iPhone packaging remain separate release gates. No shared live backend, production, Kinfolksworld, paid infrastructure or store changes.
 
 # Recovery348 | Profile appearance session isolation (2026-10-30)
 
