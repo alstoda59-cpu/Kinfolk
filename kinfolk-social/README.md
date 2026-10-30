@@ -1,3 +1,7 @@
+# Recovery339 | Nonpersistent startup session race protection (2026-10-30)
+
+Continued from [Recovery338](RECOVERY338.md) on an isolated draft branch. [RECOVERY339.md](RECOVERY339.md) revalidates active Supabase session identity and Stay Logged In/tab permission before a startup/Retry local sign-out. A changed account or refreshed token fails closed without signing out the newer session. Eleven synthetic runtime cases are wired into native alpha verification; real isolated auth/RLS and physical-device QA remain unverified. No production, shared live Supabase, Kinfolksworld, paid resources or stores changed.
+
 # Recovery338 | Confirmed-email startup and session recovery (2026-10-30)
 
 Continued from [Recovery337](RECOVERY337.md) on an isolated draft branch. [RECOVERY338.md](RECOVERY338.md) blocks unconfirmed Supabase sessions at the shared account activation entry point, before profile hydration or private content rendering, including startup, retry and legacy recovery paths. Local cleanup avoids signing out a newer or newly confirmed account. Four synthetic runtime cases extend the existing account-switch tests. Real isolated-backend authentication/RLS, signed builds and physical Android/iPhone QA remain unverified. No production, shared live Supabase, Kinfolksworld, paid resources or stores changed.
