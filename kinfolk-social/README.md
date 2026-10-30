@@ -1,3 +1,7 @@
+# Recovery350 | Session-safe profile settings hydration (2026-10-30)
+
+Continued from [Recovery349](RECOVERY349.md) on an isolated branch. [RECOVERY350.md](RECOVERY350.md) prevents stale same-account relogin settings hydration, wrong-profile Settings data and legacy color-save responses from overwriting a newer account activation. Thirteen synthetic source regressions are included in the offline native alpha gate. Exact-head CI, real isolated Supabase signup/email/RLS, physical Android/iPhone QA and signed iPhone packaging remain separate release gates. No production, shared live Supabase, Kinfolksworld, paid infrastructure or app stores changed.
+
 # Recovery349 | Removed profile music stays removed (2026-10-30)
 
 Continued from [Recovery348](RECOVERY348.md) on an isolated branch. [RECOVERY349.md](RECOVERY349.md) fixes the effective Phase81 profile music lookup: an explicit null/empty private music preference now overrides an older public profile URL, and opening a profile no longer silently writes to Supabase. Ten synthetic source regressions are included in the offline Android/iOS alpha gate. Exact-head CI, real isolated Auth/RLS, physical devices and signed iPhone packaging remain separate release gates. No shared live backend, production, Kinfolksworld, paid infrastructure or store changes.
