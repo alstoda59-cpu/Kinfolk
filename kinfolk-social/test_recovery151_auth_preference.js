@@ -9,7 +9,12 @@ const path=require('node:path');
 const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
 const phase=fs.readFileSync(path.join(__dirname,'kinfolk-phase95.js'),'utf8');
 function extract(src,from,to){const a=src.indexOf(from),b=src.indexOf(to,a+from.length);assert.ok(a>=0&&b>a,'source region exists: '+from);return src.slice(a,b)}
-const helper=extract(html,'async function kf129RestorableSession()','window.kf129Retry=');
+// Recovery339 moved the preference predicate before the async restore function.
+// Execute the complete production policy in this VM rather than stubbing it.
+const helper=extract(html,'function kf339RestoreAllowed()','window.kf129Retry=');
+assert.match(helper,/async function kf129RestorableSession\(\)/,'restore function remains covered');
+assert.match(helper,/active\.access_token!==session\.access_token/,'account token changes remain guarded');
+assert.match(helper,/active\.refresh_token!==session\.refresh_token/,'refresh token changes remain guarded');
 const boot=extract(html,'async function boot()','async function hydrateUser()');
 const save=extract(phase,'function saveStay(stay)','function unlock(pass)');
 const adopt=extract(phase,'async function adopt(tokens)','let loginBusy=false');
