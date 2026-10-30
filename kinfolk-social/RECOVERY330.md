@@ -19,6 +19,7 @@ Date: 2026-10-29. Scope: full main Kinfolk Social app only, `kinfolk-social/`; c
 ## Regression and native verification
 - Added nine synthetic Node VM regression cases in `tests/recovery330-auth-form-request-isolation.test.cjs` covering login success/failure, duplicate taps, mode switching, input edits, detached screens, signup callback/metadata, validation and stale signup display name.
 - Integrated the suite into `native/package.json` `alpha:auth:source:test`, included in `alpha:verify`.
+- First Recovery330 source CI run `40979819751` executed 641 synthetic Node tests: 640 passed, 1 legacy static fixture failed because it still expected mutable `mode` rather than the new captured `submitMode`. The fixture was updated to check the same signup-only password bounds against the immutable submission mode; no password policy was weakened. A new exact-head CI run must pass before this can be called verified.
 - Enabled isolated Recovery330 offline-only Android debug and iOS Simulator workflow. It uses intentionally unreachable CI backend credentials, not real isolated auth.
 - CI, native compilation, Vercel preview READY, isolated Supabase real E2E and physical devices must be verified independently at the exact final commit.
 
