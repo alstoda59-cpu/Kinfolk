@@ -50,6 +50,8 @@ on:
       - kinfolk-social/recovery339-restoration-session-race-20261030
       # Recovery340: rerun offline Android/iOS packages with complete legacy auth-event restoration VM.
       - kinfolk-social/recovery340-auth-event-restore-fixture-20261030
+      # Recovery341: re-read even persistent sessions before opening a mobile account.
+      - kinfolk-social/recovery341-persistent-restore-freshness-20261030
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
