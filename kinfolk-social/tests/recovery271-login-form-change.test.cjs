@@ -59,7 +59,7 @@ for(const changed of ['email','password']){
     else h.password.value='another-password';
     h.resolveFetch({ok:true,status:200,json:async()=>({
       access_token:'synthetic-access',refresh_token:'synthetic-refresh',
-      user:{id:'synthetic-id',email:'qa@example.test'}
+      user:{id:'synthetic-id',email:'qa@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'}
     })});
     await task;
     assert.equal(h.adopted,0,'stale token must not be installed');
