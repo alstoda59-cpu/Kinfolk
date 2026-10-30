@@ -1196,6 +1196,7 @@ setTimeout(harden,0);setTimeout(harden,700);setInterval(unlockStuck,1200);
       const request=Symbol('kinfolk-auth-submit');
       form.__kf330Pending=request;
       btn.disabled=true;
+      let succeeded=false;
       const current=()=>form.isConnected&&form.__kf330Pending===request&&
         root.querySelector('#authForm')===form&&form.querySelector('.kf73Primary')===btn&&
         form.querySelector('#kf73Email')===emailField&&form.querySelector('#kf73Password')===passwordField&&
@@ -1208,12 +1209,14 @@ setTimeout(harden,0);setTimeout(harden,700);setInterval(unlockStuck,1200);
           if(!current())return;
           if(error)throw error;
           saveStay(form.querySelector('#kf73Stay')?.checked!==false);
+          succeeded=true;
           msg(form,'Logged in. Opening Kinfolk…',true);
         }else{
           const {data,error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:location.origin,data:{display_name}}});
           if(!current())return;
           if(error)throw error;
           saveStay(form.querySelector('#kf73Stay')?.checked!==false);
+          succeeded=true;
           if(data?.session)msg(form,'Account created. Opening Kinfolk…',true);
           else msg(form,'If this email is eligible, check your inbox for a confirmation link, then log in.',true);
         }
@@ -1223,7 +1226,7 @@ setTimeout(harden,0);setTimeout(harden,700);setInterval(unlockStuck,1200);
         if(form.__kf330Pending===request){
           delete form.__kf330Pending;
           if(form.isConnected&&root.querySelector('#authForm')===form&&
-            form.querySelector('.kf73Primary')===btn)btn.disabled=false;
+            form.querySelector('.kf73Primary')===btn&&!succeeded)btn.disabled=false;
         }
       }
     };
