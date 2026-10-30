@@ -15,7 +15,7 @@ function deferred(){
  let resolve;
  return {promise:new Promise(r=>{resolve=r}),finish(v={error:null}){assert.ok(resolve);resolve(v)}};
 }
-function makeForm(kind,body='Hello',file={name:'sample.png'}){
+function makeForm(kind,body='Hello',file={name:'sample.png',type:'image/png',size:123}){
  const fields={
   ['#'+kind+'Body']:{value:body},
   ['#'+kind+'File']:{files:file?[file]:[]},
@@ -25,7 +25,7 @@ function makeForm(kind,body='Hello',file={name:'sample.png'}){
  return {isConnected:true,dataset:{},fields,querySelector(s){return fields[s]||null}};
 }
 function setup(kind='post',opts={}){
- const state={user:{id:'account-a'}},form=makeForm(kind,opts.body??'Hello',opts.file===undefined?{name:'sample.png'}:opts.file);
+ const state={user:{id:'account-a'}},form=makeForm(kind,opts.body??'Hello',opts.file===undefined?{name:'sample.png',type:'image/png',size:123}:opts.file);
  const formId=kind+'Form',uploads=[],inserts=[],toasts=[];
  const uploadPending=opts.uploadPending||null,insertPending=opts.insertPending||null;
  let closes=0,loads=0,renders=0;
