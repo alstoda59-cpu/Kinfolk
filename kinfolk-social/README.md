@@ -1,3 +1,7 @@
+# Recovery338 | Confirmed-email startup and session recovery (2026-10-30)
+
+Continued from [Recovery337](RECOVERY337.md) on an isolated draft branch. [RECOVERY338.md](RECOVERY338.md) blocks unconfirmed Supabase sessions at the shared account activation entry point, before profile hydration or private content rendering, including startup, retry and legacy recovery paths. Local cleanup avoids signing out a newer or newly confirmed account. Four synthetic runtime cases extend the existing account-switch tests. Real isolated-backend authentication/RLS, signed builds and physical Android/iPhone QA remain unverified. No production, shared live Supabase, Kinfolksworld, paid resources or stores changed.
+
 # Recovery337 | Confirmed-session preference regression (2026-10-30)
 
 Continued from [Recovery336](RECOVERY336.md) on an isolated branch. [RECOVERY337.md](RECOVERY337.md) repairs the legacy Recovery151 synthetic login preference fixture to include verified-email status at both adopted and active session stages, adds two negative confirmation checks, and enables offline Android/iOS native CI. Recovery336 source CI failed after Node and browser checks passed because the old fixture lacked confirmation. Real backend authentication, two-user RLS, signed builds and physical-device QA remain unverified. No production, shared live Supabase, Kinfolksworld, paid resources or stores changed.
