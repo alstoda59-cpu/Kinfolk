@@ -10,7 +10,7 @@ const begin=source.indexOf('    form.onsubmit=async e=>{',source.indexOf("functi
 const end=source.indexOf('    window.__KIN_FOLK_PHASE73__',begin);
 assert.ok(begin>=0&&end>begin,'active Phase73 auth form submit handler exists');
 const handler=source.slice(begin,end);
-assert.match(source.slice(begin-130,begin),/delete form\.__kf330Pending/,'mode switching invalidates old request');
+assert.match(source.slice(begin-450,begin),/delete form\.__kf330Pending/,'mode switching invalidates old request');
 
 function deferred(){
   let resolve,reject;
