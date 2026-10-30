@@ -48,6 +48,8 @@ on:
       - kinfolk-social/recovery338-startup-confirmed-session-guard-20261030
       # Recovery339: recheck session identity before nonpersistent startup sign-out.
       - kinfolk-social/recovery339-restoration-session-race-20261030
+      # Recovery340: rerun offline Android/iOS packages with complete legacy auth-event restoration VM.
+      - kinfolk-social/recovery340-auth-event-restore-fixture-20261030
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
