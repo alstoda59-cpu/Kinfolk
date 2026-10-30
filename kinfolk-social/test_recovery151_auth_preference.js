@@ -51,9 +51,17 @@ async function eventCase({stay=true,tab=false,stale=false,event='SIGNED_IN'}={})
   result=await eventCase({event:'USER_UPDATED'});
   assert.equal(result.activations.length,1,'profile updates preserve authenticated session');
   const stored={},seen=[];
+  // Match the Phase95 production contract at both setSession and getSession.
+  // Negative cases deliberately remove confirmation from one stage at a time.
+  let confirmationStage='confirmed';
+  const confirmedUser=stage=>({
+    id:'synthetic-A',
+    email:'synthetic@example.test',
+    ...(confirmationStage===stage?{}:{email_confirmed_at:'2026-10-29T12:00:00.000Z'})
+  });
   const sb={auth:{
-    setSession:async()=>{seen.push({...stored});return {data:{session:{user:{id:'synthetic-A',email:'synthetic@example.test'}}},error:null}},
-    getSession:async()=>({data:{session:{user:{id:'synthetic-A',email:'synthetic@example.test'}}}})
+    setSession:async()=>{seen.push({...stored});return {data:{session:{user:confirmedUser('adopted-unconfirmed')}},error:null}},
+    getSession:async()=>({data:{session:{user:confirmedUser('active-unconfirmed')}}})
   }};
   const prefNames="const PREF1='kinfolk_stay_logged_in_v1',PREF2='kinfolk_stay_logged_in',TAB='kinfolk_session_tab';";
   const functions=new Function('sb','localStorage','sessionStorage','console','setTimeout','Date',prefNames+save+adopt+';return {saveStay,adopt};')(
@@ -61,12 +69,18 @@ async function eventCase({stay=true,tab=false,stale=false,event='SIGNED_IN'}={})
     {getItem:k=>stored[k]??null,setItem:(k,v)=>{stored[k]=v},removeItem:k=>{delete stored[k]}},
     console,setTimeout,Date
   );
-  const syntheticTokens={access_token:'synthetic',refresh_token:'synthetic',user:{id:'synthetic-A',email:'synthetic@example.test'}};
+  const syntheticTokens={access_token:'synthetic',refresh_token:'synthetic',user:{id:'synthetic-A',email:'synthetic@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'}};
   functions.saveStay(false);await functions.adopt(syntheticTokens);
   assert.equal(seen[0].kinfolk_stay_logged_in_v1,'0','nonpersistent preference exists at setSession');
   assert.equal(seen[0].kinfolk_session_tab,'1','original-tab marker exists at setSession');
   functions.saveStay(true);await functions.adopt(syntheticTokens);
   assert.equal(seen[1].kinfolk_stay_logged_in_v1,'1','persistent preference exists at setSession');
   assert.equal(seen[1].kinfolk_session_tab,undefined,'persistent login removes tab-only marker');
-  console.log('PASS Recovery151: 7 synthetic scenarios, login ordering and storage/event assertions');
+  confirmationStage='adopted-unconfirmed';
+  await assert.rejects(functions.adopt(syntheticTokens),/email still needs to be confirmed/i,
+    'unconfirmed adopted session must not be accepted');
+  confirmationStage='active-unconfirmed';
+  await assert.rejects(functions.adopt(syntheticTokens),/email still needs to be confirmed/i,
+    'unconfirmed active session must not be accepted');
+  console.log('PASS Recovery151: 9 synthetic scenarios, confirmed-session adoption, login ordering and storage/event assertions');
 })().catch(error=>{console.error(error);process.exitCode=1});
