@@ -28,7 +28,7 @@ function harness(){
   };
   const sb={auth:{
     getSession:async()=>({data:{session:null},error:null}),
-    setSession:async()=>{adopted++;return{data:{session:{user:{id:'synthetic-id',email:'qa@example.test'}}},error:null}}
+    setSession:async()=>{adopted++;return{data:{session:{user:{id:'synthetic-id',email:'qa@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'}}},error:null}}
   }};
   vm.runInNewContext(source,{
     window:{kf129ActivateSession:async()=>{activated++}},
