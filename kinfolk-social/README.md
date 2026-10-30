@@ -1,3 +1,7 @@
+# Recovery336 | Confirmed adopted-session browser fixture (2026-10-29)
+
+Continued from [Recovery335](RECOVERY335.md) on an isolated draft branch. [RECOVERY336.md](RECOVERY336.md) repairs the Chromium synthetic login fixture so both adopted and active mock Supabase sessions explicitly carry confirmed-email status, matching the production Phase95 guard. The Recovery335 exact-head Node stage passed 667/667 but browser CI failed on the stale fixture; Recovery336 adds an adopted-session browser assertion. Exact-head CI, native compilation, READY preview, real isolated auth/RLS and physical-device QA remain separate gates. No production, shared live backend, Kinfolksworld, paid resources or stores changed.
+
 # Recovery335 | Adopted-session email confirmation (2026-10-29)
 
 Continued from [Recovery334](RECOVERY334.md) on an isolated branch. [RECOVERY335.md](RECOVERY335.md) now rejects unconfirmed Supabase users after setSession and getSession, even if the original password-token response reported confirmation. Ten synthetic regressions are wired into native alpha verification. Offline Android/iOS compilation, READY Vercel previews, real isolated auth/RLS and physical-device QA remain separate gates. No production, shared live backend, Kinfolksworld, paid infrastructure or stores changed.
