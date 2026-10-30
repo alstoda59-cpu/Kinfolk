@@ -58,6 +58,10 @@ function harness(){
   return {api,ctx,card,writes,messages,themes,timers,
     get stops(){return stops},get ensures(){return ensures}};
 }
+async function waitForWrite(h,count){
+  for(let i=0;i<25&&h.writes.length<count;i++)await Promise.resolve();
+  assert.equal(h.writes.length,count,'expected sequential database write');
+}
 function colorButton(h){return h.card.controls['[data-kf81-save-color]']}
 function musicButton(h){return h.card.controls['[data-kf81-save-music]']}
 function colorResult(id=A,color='#aabbcc'){return {data:{id,accent_color:color},error:null}}
@@ -114,7 +118,7 @@ test('music write waits for confirmed extras before updating public profile',asy
   assert.equal(h.writes[0].table,'kinfolk_profile_extras');
   assert.equal(h.writes[0].payload.user_id,A);
   h.writes[0].resolve(extrasResult());
-  await Promise.resolve();
+  await waitForWrite(h,2);
   assert.equal(h.writes.length,2);
   assert.equal(h.writes[1].table,'profiles');
   assert.equal(h.writes[1].id,A);
@@ -157,20 +161,20 @@ test('music save stops after same-user session epoch changes',async()=>{
 test('duplicate music taps do not overlap private preference writes',async()=>{
   const h=harness(),first=h.api.saveMusic(h.card),second=h.api.saveMusic(h.card);
   assert.equal(h.writes.length,1);
-  h.writes[0].resolve(extrasResult());await Promise.resolve();
+  h.writes[0].resolve(extrasResult());await waitForWrite(h,2);
   h.writes[1].resolve(musicResult());await Promise.all([first,second]);
   assert.equal(h.writes.length,2);
 });
 test('unconfirmed profile music write never claims success or restarts audio',async()=>{
   const h=harness(),pending=h.api.saveMusic(h.card);
-  h.writes[0].resolve(extrasResult());await Promise.resolve();
+  h.writes[0].resolve(extrasResult());await waitForWrite(h,2);
   h.writes[1].resolve(musicResult(B));await pending;
   assert.equal(h.messages.at(-1).good,false);
   assert.equal(h.stops,0);
 });
 test('music restart timer cannot affect a replacement account session',async()=>{
   const h=harness(),pending=h.api.saveMusic(h.card);
-  h.writes[0].resolve(extrasResult());await Promise.resolve();
+  h.writes[0].resolve(extrasResult());await waitForWrite(h,2);
   h.writes[1].resolve(musicResult());await pending;
   h.ctx.kf129Epoch++;
   for(const fn of h.timers)fn();
