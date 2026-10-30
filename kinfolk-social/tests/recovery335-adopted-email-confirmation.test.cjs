@@ -14,7 +14,9 @@ const confirmed='2026-10-29T20:00:00Z';
 const user={id:'synthetic-account',email:'synthetic@example.invalid',email_confirmed_at:confirmed};
 const tokens={access_token:'synthetic-access',refresh_token:'synthetic-refresh',user};
 
-function harness(adoptedConfirmation=confirmed,activeConfirmation=confirmed){
+function harness(adoptedConfirmation,activeConfirmation){
+  if(arguments.length<1)adoptedConfirmation=confirmed;
+  if(arguments.length<2)activeConfirmation=confirmed;
   const adopted={...user,email_confirmed_at:adoptedConfirmation};
   const active={...user,email_confirmed_at:activeConfirmation};
   let getCount=0;
