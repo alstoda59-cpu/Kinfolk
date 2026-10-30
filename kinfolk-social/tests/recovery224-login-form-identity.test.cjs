@@ -11,7 +11,7 @@ function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {
 function fixture(stage='token'){
  const hold=deferred(),prefs=new Map(),tab=new Map(),timers=[];
  let session=null,tokenCalls=0,signouts=0,activations=0,adoptions=0;
- const user={id:'qa-user',email:'first@example.test'};
+ const user={id:'qa-user',email:'first@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'};
  const store=map=>({
    getItem:k=>map.get(k)??null,
    setItem:(k,v)=>map.set(k,String(v)),
