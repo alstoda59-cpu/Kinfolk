@@ -72,6 +72,8 @@ on:
       - kinfolk-social/recovery350-settings-hydration-session-guard-20261030
       # Recovery351: isolate profile playback by auth activation and reject unsafe persisted URLs.
       - kinfolk-social/recovery351-profile-music-url-session-safety-20261030
+      # Recovery352: prevent failed-login cleanup from clearing newer same-user tokens.
+      - kinfolk-social/recovery352-login-rollback-token-identity-20261030
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
