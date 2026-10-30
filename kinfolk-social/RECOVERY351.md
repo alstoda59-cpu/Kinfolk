@@ -22,7 +22,8 @@ Date: 2026-10-30 (America/Los_Angeles). Scope: FULL MAIN Kinfolk Social under `k
 ## Synthetic tests and native verification gate
 
 - Added `tests/recovery351-profile-music-url-session-safety.test.mjs`: eight source-extracted tests for unsafe URLs, YouTube lookalikes, audio path classification, persisted unsafe URL rejection, same-user relogin, queued refresh, old player teardown and late audio playback.
-- Extended the existing Recovery348 save-handler suite with two more synthetic regressions for credential-bearing and malformed HTTPS links (ten new cases total).\n- Added the suite to `native/package.json` `alpha:profile:source:test`, transitively included in `alpha:verify`.
+- Extended the existing Recovery348 save-handler suite with two more synthetic regressions for credential-bearing and malformed HTTPS links (ten new cases total).
+- Added the suite to `native/package.json` `alpha:profile:source:test`, transitively included in `alpha:verify`.
 - Enabled the isolated Recovery351 branch in `.github/workflows/kinfolk-alpha-native.yml` for offline-only Android debug APK and unsigned iOS Simulator compilation. CI uses an unreachable packaging-only Supabase placeholder, not the live backend.
 - Verification must be recorded from exact-head GitHub CI and deployment results. A READY Vercel preview is not real auth/RLS QA, and an iOS Simulator ZIP is not an installable physical-iPhone IPA.
 
