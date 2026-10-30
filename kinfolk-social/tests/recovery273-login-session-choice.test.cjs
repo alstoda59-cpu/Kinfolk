@@ -25,7 +25,7 @@ function fixture({existing=false,stage='token'}={}){
     setSession:async()=>{
       adoptions++;
       if(stage==='adopt')await hold.promise;
-      session={user:{id:'new-id',email:'synthetic@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'}};
+      session={access_token:'synthetic-access',refresh_token:'synthetic-refresh',user:{id:'new-id',email:'synthetic@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'}};
       return {data:{session},error:null};
     },
     signOut:async options=>{assert.equal(options.scope,'local');signouts++;session=null;return {error:null}}
