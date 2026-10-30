@@ -5,6 +5,14 @@
   const $q=(s,r=document)=>r.querySelector(s);
   const hexOk=v=>/^#[0-9a-fA-F]{6}$/.test(v||'');
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  // Persisted profile links are user-controlled. Never turn a non-HTTPS or
+  // credential-bearing URL into an audio request or an Open link.
+  const safeMusicUrl=raw=>{
+    try{
+      const url=new URL(String(raw||'').trim());
+      return url.protocol==='https:'&&!!url.hostname&&!url.username&&!url.password&&!url.port?url.href:'';
+    }catch{return ''}
+  };
 
   const style=document.createElement('style');
   style.id='kf81-style';
@@ -139,9 +147,20 @@
     }).catch(()=>{});
   },true);
 
-  let musicKey='',player=null,ensureBusy=false,pausedKey='';
-  function ytId(u){try{const z=new URL(u);if(z.hostname.includes('youtu.be'))return z.pathname.split('/').filter(Boolean)[0]||'';if(z.hostname.includes('youtube.com'))return z.searchParams.get('v')||(z.pathname.includes('/shorts/')?z.pathname.split('/shorts/')[1]?.split('/')[0]:'')||(z.pathname.includes('/embed/')?z.pathname.split('/embed/')[1]?.split('/')[0]:'')}catch{}return''}
-  function directAudio(u){return /\.(mp3|m4a|aac|ogg|wav)(\?|#|$)/i.test(u||'')}
+  let musicKey='',player=null,ensureBusy=false,ensureAgain=false,pausedKey='',musicSessionEpoch=null;
+  function ytId(u){
+    try{
+      const z=new URL(u),host=z.hostname.toLowerCase();
+      if(z.protocol!=='https:')return '';
+      const short=host==='youtu.be'||host==='www.youtu.be';
+      const youtube=['youtube.com','www.youtube.com','m.youtube.com','music.youtube.com','youtube-nocookie.com','www.youtube-nocookie.com'].includes(host);
+      if(!short&&!youtube)return '';
+      const id=short?z.pathname.split('/').filter(Boolean)[0]:
+        z.searchParams.get('v')||(z.pathname.includes('/shorts/')?z.pathname.split('/shorts/')[1]?.split('/')[0]:'')||(z.pathname.includes('/embed/')?z.pathname.split('/embed/')[1]?.split('/')[0]:'');
+      return /^[a-zA-Z0-9_-]{11}$/.test(id||'')?id:'';
+    }catch{return ''}
+  }
+  function directAudio(u){const safe=safeMusicUrl(u);return !!safe&&/\.(mp3|m4a|aac|ogg|wav)$/i.test(new URL(safe).pathname)}
 
   function stopMusic(){
     if(player?.audio){try{player.audio.pause();player.audio.src=''}catch{}}
@@ -149,7 +168,7 @@
     document.querySelectorAll('.kf51Music audio').forEach(audio=>{try{audio.pause();audio.autoplay=false;audio.muted=true}catch{}});
     document.getElementById('kf81-profile-player')?.remove();
     document.getElementById('kf54YT')?.remove();
-    player=null;musicKey='';
+    player=null;musicKey='';musicSessionEpoch=null;
   }
 
   function attachControl(url,type){
@@ -182,23 +201,24 @@
   }
 
   async function ensureMusic(force=false){
-    if(ensureBusy)return;
+    if(ensureBusy){ensureAgain=true;return}
     if(!state?.user||state.view!=='profile'){if(player)stopMusic();return}
-    const viewerId=state.user.id;
+    const viewerId=state.user.id,epoch=typeof kf129Epoch==='undefined'?null:kf129Epoch;
     const uid=state.profileViewId||viewerId;
     const hero=document.querySelector('.profileHero');if(!hero)return;
     ensureBusy=true;
     try{
-      const url=await musicUrlFor(uid);
-      // Ignore lookups from a profile that has been replaced or signed out.
-      if(!state?.user||state.user.id!==viewerId||state.view!=='profile'||(state.profileViewId||state.user.id)!==uid||document.querySelector('.profileHero')!==hero)return;
+      const url=safeMusicUrl(await musicUrlFor(uid));
+      // A same-user relogin is a new auth activation even when the profile,
+      // account ID and URL look identical. Never mount a previous activation.
+      if(!state?.user||state.user.id!==viewerId||state.view!=='profile'||(state.profileViewId||state.user.id)!==uid||document.querySelector('.profileHero')!==hero||(epoch!==null&&kf129Epoch!==epoch))return;
+      if(player&&musicSessionEpoch!==epoch){stopMusic();pausedKey=''}
       const key=uid+'|'+url;
       const isPaused=pausedKey===viewerId+'|'+key;
       if(!url){if(player)stopMusic();return}
       if(!force&&player&&musicKey===key&&document.getElementById('kf81-profile-player')===player.ctl)return;
       if(player)stopMusic();
-      if(player&&musicKey!==key)stopMusic();
-      musicKey=key;
+      musicKey=key;musicSessionEpoch=epoch;
       document.getElementById('kf54YT')?.remove();
       const oldAudio=document.querySelector('.kf51Music audio');if(oldAudio){try{oldAudio.pause();oldAudio.muted=true;oldAudio.autoplay=false}catch{}}
       const ctl=attachControl(url,directAudio(url)?'audio':ytId(url)?'youtube':'link');if(!ctl)return;
@@ -206,8 +226,9 @@
       if(directAudio(url)){
         const audio=new Audio(url);audio.loop=true;audio.preload='auto';audio.autoplay=!isPaused;audio.setAttribute('playsinline','');
         player={type:'audio',audio,url,ctl};
-        const play=async()=>{try{await audio.play();pausedKey='';status.textContent='Playing';btn.textContent='⏸ Pause';return true}catch{status.textContent='Autoplay blocked. Tap Play.';btn.textContent='▶ Play music';return false}};
-        btn.onclick=async()=>{if(audio.paused)await play();else{pausedKey=viewerId+'|'+key;audio.pause();status.textContent='Paused';btn.textContent='▶ Play music'}};
+        const active=()=>player?.audio===audio&&state?.user?.id===viewerId&&state.view==='profile'&&(state.profileViewId||state.user.id)===uid&&(epoch===null||kf129Epoch===epoch)&&document.querySelector('.profileHero')===hero;
+        const play=async()=>{try{await audio.play();if(!active()){audio.pause();return false}pausedKey='';status.textContent='Playing';btn.textContent='⏸ Pause';return true}catch{if(active()){status.textContent='Autoplay blocked. Tap Play.';btn.textContent='▶ Play music'}return false}};
+        btn.onclick=async()=>{if(!active())return;if(audio.paused)await play();else{pausedKey=viewerId+'|'+key;audio.pause();status.textContent='Paused';btn.textContent='▶ Play music'}};
         if(isPaused){status.textContent='Paused';btn.textContent='▶ Play music'}else await play();
       }else if(ytId(url)){
         const id=ytId(url);const iframe=document.createElement('iframe');iframe.id='kf81YT';iframe.allow='autoplay; encrypted-media';iframe.referrerPolicy='strict-origin-when-cross-origin';iframe.style.cssText='position:fixed;width:2px;height:2px;opacity:.001;pointer-events:none;left:-20px;top:-20px;border:0';document.body.appendChild(iframe);
@@ -218,7 +239,7 @@
       }else{
         player={type:'link',url,ctl};status.textContent='This link opens in its music service.';btn.textContent='Open music';btn.onclick=()=>window.open(url,'_blank','noopener');
       }
-    }finally{ensureBusy=false}
+    }finally{ensureBusy=false;if(ensureAgain){ensureAgain=false;setTimeout(()=>ensureMusic(false),0)}}
   }
 
   window.kf81MountAppearance=mountAppearance;
