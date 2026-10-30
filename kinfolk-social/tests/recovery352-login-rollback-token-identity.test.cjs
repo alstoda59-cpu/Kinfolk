@@ -35,7 +35,7 @@ function harness({user=USER,token=OLD,onRead,readError}={}){
     get signouts(){return signouts},
     scopes
   };
-  const context={sb:{auth},console:{warn(){}},globalThis:null};
+  const context={sb:{auth},console:{warn(){}}};
   vm.runInNewContext(helper,context,{timeout:1000});
   return {...api,rollback:context.__rollback,auth,getState:()=>({active,reads,signouts,scopes})};
 }
