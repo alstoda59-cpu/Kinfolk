@@ -44,6 +44,8 @@ on:
       - kinfolk-social/recovery336-browser-adopted-email-fixture-20261029
       # Recovery337: compile offline mobile packages with confirmed-session preference regression.
       - kinfolk-social/recovery337-auth-preference-confirmed-session-fixture-20261030
+      # Recovery338: compile offline packages with startup email confirmation enforced.
+      - kinfolk-social/recovery338-startup-confirmed-session-guard-20261030
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
