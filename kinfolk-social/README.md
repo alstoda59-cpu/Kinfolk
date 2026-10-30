@@ -1,3 +1,7 @@
+# Recovery340 | Auth-event restore helper regression repair (2026-10-30)
+
+Continued from [Recovery339](RECOVERY339.md) on isolated draft PR #38. [RECOVERY340.md](RECOVERY340.md) records a source CI failure caused by the Recovery151 synthetic VM omitting the newly extracted `kf339RestoreAllowed` helper. The fixture now executes the complete production restoration policy and checks both token-rotation guards. Offline Android/iOS compilation is enabled for the branch. No production app logic was changed; real isolated auth/RLS and physical-device QA remain unverified. No production, shared live Supabase, Kinfolksworld, paid resources or stores changed.
+
 # Recovery339 | Nonpersistent startup session race protection (2026-10-30)
 
 Continued from [Recovery338](RECOVERY338.md) on an isolated draft branch. [RECOVERY339.md](RECOVERY339.md) revalidates active Supabase session identity and Stay Logged In/tab permission before a startup/Retry local sign-out. A changed account or refreshed token fails closed without signing out the newer session. Eleven synthetic runtime cases are wired into native alpha verification; real isolated auth/RLS and physical-device QA remain unverified. No production, shared live Supabase, Kinfolksworld, paid resources or stores changed.
