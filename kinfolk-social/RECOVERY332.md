@@ -25,3 +25,7 @@ Date: 2026-10-29. Scope: full main Kinfolk Social in `kinfolk-social/` only. Iso
 - Missing Community/membership/Channel/Video backend tables; private media, messaging, notifications and teen safety need server-side validation.
 - Signed native packages, approved HTTPS callbacks and physical Android/iPhone QA.
 - No shared live Supabase, production aliases/deployments, Kinfolksworld, paid resources or app stores modified.
+
+## CI follow-up
+- Initial Recovery332 source CI run 40991915666: 649 synthetic Node tests, 648 passed, 1 failed. All five new session-cleanup regressions passed; legacy Recovery214 static assertion still required the old cleanup call text.
+- Updated the Recovery214 fixture to require the new adopted-session-aware cleanup while preserving the existing preference-restoration-before-rollback assertion. Rerun must be checked at the repaired exact commit; full CI success is not assumed.
