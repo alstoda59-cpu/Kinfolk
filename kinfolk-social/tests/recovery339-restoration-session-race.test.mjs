@@ -37,10 +37,10 @@ function harness({sessions=[session(A,'a')],stay=false,tab=false,readErrorAt=0,s
   return {restore,calls,get reads(){return reads}};
 }
 
-test('persistent login restores without a second auth read or sign-out',async()=>{
+test('persistent login restores only after a fresh auth read, without sign-out',async()=>{
   const h=harness({stay:true});
   assert.equal((await h.restore()).access_token,'a');
-  assert.equal(h.reads,1);
+  assert.equal(h.reads,2);
   assert.equal(h.calls.signOut.length,0);
 });
 
