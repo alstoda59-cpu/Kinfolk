@@ -1176,26 +1176,56 @@ setTimeout(harden,0);setTimeout(harden,700);setInterval(unlockStuck,1200);
       form.innerHTML=`<div class="kf73Steps"><i class="on"></i><i class="on"></i><i></i></div><div class="kf73Title">Create your Kinfolk</div><div class="kf73Text">Start with your display name, email and a new password. You can finish customizing your profile after signup.</div><label for="kf73Name">Display name</label><input id="kf73Name" type="text" required maxlength="40" autocomplete="name" placeholder="Your display name"><label for="kf73Email">Email</label><input id="kf73Email" type="email" required autocomplete="email" inputmode="email" placeholder="Email address"><label for="kf73Password">New password</label><div class="kf73Password"><input id="kf73Password" type="password" required minlength="12" maxlength="128" autocomplete="new-password" placeholder="Create a password (12–128 characters)"><button class="kf73Show" type="button">Show</button></div><div class="kf73Meta"><label><input id="kf73Stay" type="checkbox"> Stay logged in</label></div><button type="submit" class="kf73Primary">Create account</button><div class="kf73Divider">or</div><button type="button" class="kf73Switch">Already have an account? Log in</button><div class="kf73Msg"></div><div class="kf73Help">By creating an account, you agree to Kinfolk’s community rules and privacy terms.</div>`;
       form.querySelector('.kf73Switch').onclick=()=>render('login');
     }
+    // Switching login/signup modes invalidates the previous form request.
+    delete form.__kf330Pending;
     commonStay(form);wirePassword(form);
+    // Recovery330: one request owns one exact form, mode, and input snapshot.
+    // Auth requests already sent cannot be cancelled; stale UI results are ignored.
     form.onsubmit=async e=>{
       e.preventDefault();
-      const btn=form.querySelector('.kf73Primary');btn.disabled=true;
-      const email=form.querySelector('#kf73Email').value.trim();
-      const password=form.querySelector('#kf73Password').value;
-      saveStay(form.querySelector('#kf73Stay')?.checked!==false);
+      const btn=form.querySelector('.kf73Primary');
+      if(!btn||btn.disabled||form.__kf330Pending)return;
+      const submitMode=mode;
+      const emailField=form.querySelector('#kf73Email');
+      const passwordField=form.querySelector('#kf73Password');
+      const nameField=submitMode==='signup'?form.querySelector('#kf73Name'):null;
+      if(!emailField||!passwordField||(submitMode==='signup'&&!nameField))return;
+      const email=emailField.value.trim();
+      const password=passwordField.value;
+      const display_name=nameField?.value.trim()||'';
+      const request=Symbol('kinfolk-auth-submit');
+      form.__kf330Pending=request;
+      btn.disabled=true;
+      const current=()=>form.isConnected&&form.__kf330Pending===request&&
+        root.querySelector('#authForm')===form&&form.querySelector('.kf73Primary')===btn&&
+        form.querySelector('#kf73Email')===emailField&&form.querySelector('#kf73Password')===passwordField&&
+        mode===submitMode&&emailField.value.trim()===email&&passwordField.value===password&&
+        (submitMode!=='signup'||(form.querySelector('#kf73Name')===nameField&&nameField.value.trim()===display_name));
       try{
-        if(mode==='signup'&&(password.length<12||password.length>128))throw new Error('Password must be 12–128 characters.');
-        if(mode==='login'){
+        if(submitMode==='signup'&&(password.length<12||password.length>128))throw new Error('Password must be 12–128 characters.');
+        if(submitMode==='login'){
           const {error}=await sb.auth.signInWithPassword({email,password});
+          if(!current())return;
           if(error)throw error;
+          saveStay(form.querySelector('#kf73Stay')?.checked!==false);
           msg(form,'Logged in. Opening Kinfolk…',true);
         }else{
-          const display_name=form.querySelector('#kf73Name').value.trim();
           const {data,error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:location.origin,data:{display_name}}});
+          if(!current())return;
           if(error)throw error;
-          if(data?.session)msg(form,'Account created. Opening Kinfolk…',true);else msg(form,'Account created. Check your email to confirm it, then log in.',true);
+          saveStay(form.querySelector('#kf73Stay')?.checked!==false);
+          if(data?.session)msg(form,'Account created. Opening Kinfolk…',true);
+          else msg(form,'If this email is eligible, check your inbox for a confirmation link, then log in.',true);
         }
-      }catch(err){msg(form,err.message||String(err));btn.disabled=false}
+      }catch(err){
+        if(current())msg(form,err?.message||String(err));
+      }finally{
+        if(form.__kf330Pending===request){
+          delete form.__kf330Pending;
+          if(form.isConnected&&root.querySelector('#authForm')===form&&
+            form.querySelector('.kf73Primary')===btn)btn.disabled=false;
+        }
+      }
     };
     window.__KIN_FOLK_PHASE73__={loaded:true,mode};
   }
