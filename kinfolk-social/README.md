@@ -1,3 +1,7 @@
+# Recovery333 | Verified email password-token guard (2026-10-29)
+
+Continued from Recovery332 on an isolated draft branch. [RECOVERY333.md](RECOVERY333.md) prevents Phase95 password login from adopting Supabase tokens without explicit email confirmation. Eight synthetic Node regressions are wired into native alpha verification; offline Android/iOS builds remain separate from real email, isolated RLS and physical-device QA. No production, shared live backend, Kinfolksworld, paid resources or stores changed.
+
 # Recovery332 | Unexpected adopted-session cleanup (2026-10-29)
 
 Continued from [Recovery331](RECOVERY331.md) on an isolated draft branch. [RECOVERY332.md](RECOVERY332.md) fixes the active Phase95 login path so a Supabase session identity mismatch rolls back the **actually adopted** account, without signing out an unrelated newer session. Five source-backed synthetic regressions are included in native alpha verification; offline Android/iOS builds remain distinct from real backend authentication and physical-device QA. No production, shared live Supabase, Kinfolksworld, paid resources or app-store changes.
