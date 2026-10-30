@@ -25,3 +25,8 @@ Continued from Recovery332 final commit `35fdb61158850173083957d7b88ca194830d323
 - Real signup/email callback/login/logout/session restoration against the authorized isolated Supabase backend with synthetic users.
 - Two-account RLS, private media, Community/Channel schema, messages, notifications, teen safety server-side tests.
 - Physical Android/iPhone QA, approved HTTPS callbacks, signed distribution and store compliance.
+
+## CI follow-up
+- First source CI run `40997341484` failed in the synthetic Node stage: 657 tests, 626 passed and 31 failed. All eight new email-token regressions passed. The failures were preexisting login harnesses that fabricated successful Supabase password tokens without an `email_confirmed_at` field; the new fail-closed check correctly rejected them before their intended downstream assertions.
+- Updated nine legacy synthetic fixture files to represent confirmed accounts while preserving tests for account-switching, identity mismatch, request timeouts, header safety, session adoption and Stay Logged In. No production code or assertions were weakened.
+- Exact-head source/native CI must be rechecked; no success is assumed until GitHub reports it.
