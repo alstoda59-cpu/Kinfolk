@@ -104,7 +104,9 @@
     const {profile,extra}=loaded;
     const card=document.createElement('section');card.className='kf81Card';
     const color=hexOk(profile.accent_color)?profile.accent_color:'#e85a9b';
-    const music=extra.music_url||profile.profile_music_url||'';
+    const music=Object.prototype.hasOwnProperty.call(extra,'music_url')
+      ? (extra.music_url||'')
+      : (profile.profile_music_url||'');
     card.innerHTML=`<h3>Appearance & Music</h3><div class="kf81Muted">Save your profile color and music independently so one setting cannot block the other.</div><div class="kf81Grid"><input class="kf81Color" type="color" value="${esc(color)}" aria-label="Profile color"><input class="kf81Input kf81ColorText" maxlength="7" value="${esc(color)}" aria-label="Profile color hex"></div><button type="button" class="kf81Btn" data-kf81-save-color>Save color</button><div style="height:12px"></div><input class="kf81Input kf81MusicUrl" type="url" value="${esc(music)}" placeholder="YouTube or direct music link"><button type="button" class="kf81Btn" data-kf81-save-music>Save music</button><div class="kf81Muted" style="margin-top:8px">YouTube and direct audio links will auto-start when the browser allows it. If Android/iPhone blocks sound autoplay, Kinfolk shows a Play button instead.</div><div class="kf81Msg"></div>`;
     safetyBox.insertAdjacentElement('afterend',card);
     const picker=$q('.kf81Color',card),text=$q('.kf81ColorText',card);
@@ -149,19 +151,21 @@
     return ctl;
   }
 
+  // Recovery349: a private extras row is authoritative, including an explicit
+  // null/empty value when music was removed. Profile playback is read-only:
+  // never repair a public profile record as a side effect of opening it.
   async function musicUrlFor(uid){
     const p=state?.profiles?.get?.(uid)||(uid===state?.user?.id?state?.profile:null)||{};
     let url=p?.profile_music_url||'';
     if(uid===state?.user?.id){
+      const epoch=typeof kf129Epoch==='undefined'?null:kf129Epoch;
       try{
-        const {data}=await sb.from('kinfolk_profile_extras').select('music_url').eq('user_id',uid).maybeSingle();
-        if(state?.user?.id!==uid)return url;
-        if(data?.music_url)url=data.music_url;
-        if(url&&p?.profile_music_url!==url){
-          const {data:updated}=await sb.from('profiles').update({profile_music_url:url}).eq('id',uid).select().single();
-          if(updated&&state?.user?.id===uid&&state.view==='profile'&&(state.profileViewId||uid)===uid){state.profile=updated;state.profiles?.set?.(uid,updated)}
-        }
+        const {data,error}=await sb.from('kinfolk_profile_extras').select('music_url').eq('user_id',uid).maybeSingle();
+        if(state?.user?.id!==uid||(epoch!==null&&kf129Epoch!==epoch))return '';
+        if(!error&&data&&Object.prototype.hasOwnProperty.call(data,'music_url'))
+          url=data.music_url||'';
       }catch{}
+      if(state?.user?.id!==uid||(epoch!==null&&kf129Epoch!==epoch))return '';
     }
     return url;
   }
