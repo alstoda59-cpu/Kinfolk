@@ -28,48 +28,70 @@
     m.textContent=text;m.style.color=good?'#aef7bd':'#ffb8cf';
   }
 
+  // Recovery348: appearance saves belong to one account activation and one
+  // still-mounted settings card, not merely to a matching user ID.
+  function appearanceCurrent(card,uid,epoch){
+    const sheet=document.getElementById('kf78-sheet');
+    return !!uid&&state?.user?.id===uid
+      &&(epoch===null||kf129Epoch===epoch)
+      &&!!sheet&&sheet.contains(card)&&card.isConnected!==false;
+  }
+
   async function saveColor(card){
     const picker=$q('.kf81Color',card),text=$q('.kf81ColorText',card),btn=$q('[data-kf81-save-color]',card);
+    if(!btn||btn.disabled)return;
     const color=(text?.value||picker?.value||'').trim();
     if(!hexOk(color))return setMsg(card,'Choose a valid 6-digit color, for example #e85a9b.');
-    const uid=state?.user?.id;
-    if(!uid)return setMsg(card,'Log in before saving your color.');
+    const uid=state?.user?.id,epoch=typeof kf129Epoch==='undefined'?null:kf129Epoch;
+    if(!appearanceCurrent(card,uid,epoch))return;
     btn.disabled=true;btn.textContent='Saving color…';
     try{
       const {data,error}=await sb.from('profiles').update({accent_color:color}).eq('id',uid).select().single();
+      if(!appearanceCurrent(card,uid,epoch))return;
       if(error)throw error;
-      if(state?.user?.id!==uid)return;
-      state.profile=data;state.profiles?.set?.(data.id,data);
+      if(!data||data.id!==uid||String(data.accent_color||'').toLowerCase()!==color.toLowerCase())
+        throw new Error('Profile color save could not be confirmed. Please try again.');
+      state.profile=data;state.profiles?.set?.(uid,data);
       window.applyKinfolkTheme?.(color);
       document.documentElement.style.setProperty('--accent',color);
       document.querySelector('.kf51Profile')?.style.setProperty('--kf51-accent',color);
       setMsg(card,'Color saved to your profile.',true);
-      btn.textContent='Saved ✓';
-      setTimeout(()=>{btn.disabled=false;btn.textContent='Save color'},900);
-    }catch(e){if(state?.user?.id===uid)setMsg(card,e.message||'Color could not be saved.');}finally{btn.disabled=false;btn.textContent='Save color';}
+    }catch(e){if(appearanceCurrent(card,uid,epoch))setMsg(card,e.message||'Color could not be saved.');}
+    finally{btn.disabled=false;btn.textContent='Save color';}
   }
 
   async function saveMusic(card){
-    const input=$q('.kf81MusicUrl',card),btn=$q('[data-kf81-save-music]',card),url=(input?.value||'').trim();
+    const input=$q('.kf81MusicUrl',card),btn=$q('[data-kf81-save-music]',card);
+    if(!btn||btn.disabled)return;
+    const url=(input?.value||'').trim();
     if(url&&!/^https:\/\//i.test(url))return setMsg(card,'Use a full https:// music or YouTube link.');
-    const uid=state?.user?.id;
-    if(!uid)return setMsg(card,'Log in before saving profile music.');
+    const uid=state?.user?.id,epoch=typeof kf129Epoch==='undefined'?null:kf129Epoch;
+    if(!appearanceCurrent(card,uid,epoch))return;
     btn.disabled=true;btn.textContent='Saving music…';
     try{
-      const now=new Date().toISOString();
-      const [a,b]=await Promise.all([
-        sb.from('kinfolk_profile_extras').upsert({user_id:uid,music_url:url||null,updated_at:now},{onConflict:'user_id'}),
-        sb.from('profiles').update({profile_music_url:url||null}).eq('id',uid).select().single()
-      ]);
-      const er=a.error||b.error;if(er)throw er;
-      if(state?.user?.id!==uid)return;
-      state.profile=b.data;state.profiles?.set?.(b.data.id,b.data);
+      const value=url||null,now=new Date().toISOString();
+      // Sequential writes avoid updating the public profile after a failed or
+      // stale private-extras write. Both returned rows must confirm the value.
+      const a=await sb.from('kinfolk_profile_extras')
+        .upsert({user_id:uid,music_url:value,updated_at:now},{onConflict:'user_id'})
+        .select('user_id,music_url').single();
+      if(!appearanceCurrent(card,uid,epoch))return;
+      if(a.error)throw a.error;
+      if(!a.data||a.data.user_id!==uid||(a.data.music_url||null)!==value)
+        throw new Error('Music preferences could not be confirmed. Please try again.');
+      const b=await sb.from('profiles').update({profile_music_url:value}).eq('id',uid).select().single();
+      if(!appearanceCurrent(card,uid,epoch))return;
+      if(b.error)throw b.error;
+      if(!b.data||b.data.id!==uid||(b.data.profile_music_url||null)!==value)
+        throw new Error('Profile music could not be fully saved. Please retry.');
+      state.profile=b.data;state.profiles?.set?.(uid,b.data);
       setMsg(card,url?'Profile music saved. Opening your profile will try to play it automatically.':'Profile music removed.',true);
-      btn.textContent='Saved ✓';
       stopMusic();
-      if(state.view==='profile')setTimeout(()=>{if(state?.user?.id===uid&&state.view==='profile')ensureMusic(true)},80);
-      setTimeout(()=>{btn.disabled=false;btn.textContent='Save music'},900);
-    }catch(e){if(state?.user?.id===uid)setMsg(card,e.message||'Music could not be saved.');}finally{btn.disabled=false;btn.textContent='Save music';}
+      if(state.view==='profile')setTimeout(()=>{
+        if(appearanceCurrent(card,uid,epoch)&&state.view==='profile')ensureMusic(true);
+      },80);
+    }catch(e){if(appearanceCurrent(card,uid,epoch))setMsg(card,e.message||'Music could not be saved.');}
+    finally{btn.disabled=false;btn.textContent='Save music';}
   }
 
   async function mountAppearance(){

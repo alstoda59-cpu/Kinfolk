@@ -1,3 +1,7 @@
+# Recovery348 | Profile appearance session isolation (2026-10-30)
+
+Continued from [Recovery347](RECOVERY347.md) on isolated draft PR #46. [RECOVERY348.md](RECOVERY348.md) hardens the effective Phase81 color and profile-music save handlers against account switching, same-user relogin, replaced Settings cards, duplicate saves and unconfirmed backend rows. Fifteen synthetic regressions are included in the offline native profile gate. Real isolated Supabase Auth/RLS, physical Android/iPhone QA and a signed iPhone IPA remain unverified. No shared live backend, production, Kinfolksworld, paid infrastructure or stores changed.
+
 # Recovery347 | Account deletion session and modal safety (2026-10-30)
 
 Continued from [Recovery346](RECOVERY346.md) on an isolated draft branch. [RECOVERY347.md](RECOVERY347.md) fixes the effective Phase115 account deletion handler so logout, relogin, token refresh, account switching or modal replacement stop stale private-media removal and final account deletion before new destructive requests. Twelve source-extracted synthetic regressions are wired into offline Android/iOS safety verification. Exact-head CI, real isolated Supabase Auth/RLS/deletion and physical-device QA are separate gates. No shared live backend, production, Kinfolksworld, paid resources or stores changed.

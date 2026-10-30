@@ -21,13 +21,13 @@ function fixture(deferExtra = false) {
     '[data-kf81-save-music]': { disabled: false, textContent: 'Save music' },
     '.kf81Msg': { textContent: '', style: {} },
   };
-  const sheet = { querySelector(s) { return s === '.kf81Card' ? mounted : null; } };
+  const sheet = { querySelector(s) { return s === '.kf81Card' ? mounted : null; }, contains(card) { return mounted === card && card.isConnected !== false; } };
   const safety = { insertAdjacentElement(position, card) { mounted = card; } };
   const document = {
     head: { appendChild() {} }, documentElement: { style: { setProperty() {} } },
     createElement(tag) {
       if (tag === 'section') return {
-        className: '', innerHTML: '',
+        className: '', innerHTML: '', isConnected: true,
         querySelector(selector) { return controls[selector] || null; },
       };
       return { style: {} };
@@ -50,7 +50,7 @@ function fixture(deferExtra = false) {
           }
           return Promise.resolve({ data: null });
         },
-        upsert(data) { writes.push({ table, data }); return Promise.resolve({ error: null }); },
+        upsert(data) { writes.push({ table, data }); return { select() { return { single() { return Promise.resolve({ data: { user_id: data.user_id, music_url: data.music_url }, error: null }); } }; } }; },
         update(data) { this.payload = data; return this; },
         single() {
           writes.push({ table, id: this.id, data: this.payload });
@@ -92,6 +92,7 @@ test('stale color save cannot replace another account profile or theme', async (
 test('stale music save cannot replace another account profile', async () => {
   const f = fixture(); await f.mount();
   const pending = f.controls['[data-kf81-save-music]'].onclick();
+  for(let i=0;i<20&&!f.writes.some(write=>write.table==='profiles');i++) await Promise.resolve();
   assert.ok(f.writes.some(write => write.table === 'profiles' && write.id === 'alpha'));
   f.state.user = { id: 'beta' }; f.state.profile = { id: 'beta' };
   f.updates.shift()({ data: { id: 'alpha', profile_music_url: 'https://example.com/track.mp3' }, error: null });
@@ -120,6 +121,8 @@ test('same-account color save still updates profile and theme', async () => {
 test('same-account music save still updates profile', async () => {
   const f = fixture(); await f.mount();
   const pending = f.controls['[data-kf81-save-music]'].onclick();
+  for(let i=0;i<20&&!f.updates.length;i++) await Promise.resolve();
+  assert.equal(f.updates.length,1);
   f.updates.shift()({ data: { id: 'alpha', profile_music_url: 'https://example.com/track.mp3' }, error: null });
   await pending;
   assert.equal(f.state.profile.profile_music_url, 'https://example.com/track.mp3');
