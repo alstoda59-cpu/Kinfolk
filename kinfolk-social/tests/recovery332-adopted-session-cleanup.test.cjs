@@ -13,15 +13,15 @@ const helpers=source.slice(start,end)+';globalThis.__helpers={adopt,clearFailedL
 const tokens={access_token:'synthetic-access',refresh_token:'synthetic-refresh',user:{id:'synthetic-requested',email:'synthetic@example.invalid'}};
 
 function sessionHarness(adoptedId='synthetic-unexpected'){
-  let activeId=null,signOutCount=0;
+  let activeId=null,activeToken=null,signOutCount=0;
   const auth={
-    async setSession(){activeId=adoptedId;return {data:{session:{user:{id:adoptedId,email:tokens.user.email,email_confirmed_at:'2026-10-29T20:00:00Z'}}}};},
-    async getSession(){return {data:{session:activeId?{user:{id:activeId,email:tokens.user.email,email_confirmed_at:'2026-10-29T20:00:00Z'}}:null}};},
-    async signOut(){signOutCount++;activeId=null;return {error:null};}
+    async setSession(){activeId=adoptedId;activeToken='synthetic-adopted-access';return {data:{session:{access_token:activeToken,user:{id:adoptedId,email:tokens.user.email,email_confirmed_at:'2026-10-29T20:00:00Z'}}}};},
+    async getSession(){return {data:{session:activeId?{access_token:activeToken,user:{id:activeId,email:tokens.user.email,email_confirmed_at:'2026-10-29T20:00:00Z'}}:null}};},
+    async signOut(){signOutCount++;activeId=null;activeToken=null;return {error:null};}
   };
   const context={sb:{auth},currentAccountId:async()=>activeId,console,setTimeout};
   vm.runInNewContext(helpers,context,{timeout:1000});
-  return {helpers:context.__helpers,auth,get activeId(){return activeId;},set activeId(value){activeId=value;},get signOutCount(){return signOutCount;}};
+  return {helpers:context.__helpers,auth,get activeId(){return activeId;},set activeId(value){activeId=value;if(value==='synthetic-newer-account')activeToken='synthetic-newer-access';},get signOutCount(){return signOutCount;}};
 }
 
 test('adopt tags the exact unexpected session ID on Supabase identity mismatch',async()=>{
@@ -37,7 +37,7 @@ test('mismatched adopted session is cleared locally when still active',async()=>
   const h=sessionHarness();
   let failure;
   try{await h.helpers.adopt(tokens)}catch(err){failure=err}
-  await h.helpers.clearFailedLoginSession(failure.adoptedSessionId||tokens.user.id,null);
+  await h.helpers.clearFailedLoginSession(failure.adoptedSessionId||tokens.user.id,null,failure.adoptedSessionToken);
   assert.equal(h.activeId,null);
   assert.equal(h.signOutCount,1);
 });
@@ -47,7 +47,7 @@ test('rollback does not sign out a newer unrelated account',async()=>{
   let failure;
   try{await h.helpers.adopt(tokens)}catch(err){failure=err}
   h.activeId='synthetic-newer-account';
-  await h.helpers.clearFailedLoginSession(failure.adoptedSessionId||tokens.user.id,null);
+  await h.helpers.clearFailedLoginSession(failure.adoptedSessionId||tokens.user.id,null,failure.adoptedSessionToken);
   assert.equal(h.activeId,'synthetic-newer-account');
   assert.equal(h.signOutCount,0);
 });
@@ -76,8 +76,8 @@ test('effective login handler passes unexpected adopted ID to rollback',async()=
     mode:()=> 'login',unlock(){},show(){},
     currentAccountId:async()=>null,
     tokenLogin:async()=>tokens,
-    adopt:async()=>{const e=Error('Synthetic account mismatch');e.adoptedSessionId='synthetic-unexpected';throw e},
-    clearFailedLoginSession:async(id,original)=>cleared.push({id,original}),
+    adopt:async()=>{const e=Error('Synthetic account mismatch');e.adoptedSessionId='synthetic-unexpected';e.adoptedSessionToken='synthetic-adopted-access';throw e},
+    clearFailedLoginSession:async(id,original,accessToken)=>cleared.push({id,original,accessToken}),
     saveStay:()=>()=>{},friendly:s=>s,window:{},console
   };
   vm.runInNewContext(source.slice(a,b)+';bind();',context,{timeout:1000});
@@ -85,5 +85,6 @@ test('effective login handler passes unexpected adopted ID to rollback',async()=
   assert.equal(cleared.length,1);
   assert.equal(cleared[0].id,'synthetic-unexpected');
   assert.equal(cleared[0].original,null);
+  assert.equal(cleared[0].accessToken,'synthetic-adopted-access');
   assert.equal(button.disabled,false);
 });
