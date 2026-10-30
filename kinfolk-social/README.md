@@ -1,3 +1,7 @@
+# Recovery335 | Adopted-session email confirmation (2026-10-29)
+
+Continued from [Recovery334](RECOVERY334.md) on an isolated branch. [RECOVERY335.md](RECOVERY335.md) now rejects unconfirmed Supabase users after setSession and getSession, even if the original password-token response reported confirmation. Ten synthetic regressions are wired into native alpha verification. Offline Android/iOS compilation, READY Vercel previews, real isolated auth/RLS and physical-device QA remain separate gates. No production, shared live backend, Kinfolksworld, paid infrastructure or stores changed.
+
 # Recovery334 | Browser confirmed-email login regression (2026-10-29)
 
 Continued from Recovery333 on an isolated branch. [RECOVERY334.md](RECOVERY334.md) repairs the shared synthetic browser login fixture after Phase95 began correctly requiring email-confirmed password tokens. This does not relax the production auth guard; source CI, offline Android/iOS builds and real backend/device QA remain distinct. No production, shared live Supabase, Kinfolksworld, paid resources or stores changed.
