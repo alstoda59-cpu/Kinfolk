@@ -32,7 +32,7 @@ const adoptHarness=(session,active=session)=>vm.runInNewContext(adoptSource+'\n 
   }},
   setTimeout:()=>1
 });
-const session=(email)=>({user:{id:'synthetic-id',email}});
+const session=(email)=>({user:{id:'synthetic-id',email,email_confirmed_at:'2026-10-29T12:00:00.000Z'}});
 test('token response with different email cannot be adopted',async()=>{
   await assert.rejects(tokenHarness(response('other@example.test'))('qa@example.test','synthetic-password'),/different email account/);
 });
