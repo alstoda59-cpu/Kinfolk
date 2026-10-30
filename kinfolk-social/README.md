@@ -1,3 +1,7 @@
+# Recovery343 | Group-chat account and modal isolation (2026-10-30)
+
+Continued from [Recovery342](RECOVERY342.md) on isolated draft PR #41. [RECOVERY343.md](RECOVERY343.md) hardens the actual group-chat read/send handler against stale account, same-user relogin, replaced modal, overbroad group message results and duplicate sends. Nine synthetic source regressions are wired into offline Android/iOS alpha verification. Real isolated Supabase group schema, email delivery, two-user RLS and physical-device QA remain unverified. No production, shared live Supabase, Kinfolksworld, paid infrastructure or store changes.
+
 # Recovery342 | Effective disappearing-message privacy and send isolation (2026-10-30)
 
 Continued from [Recovery341](RECOVERY341.md) on an isolated draft branch. [RECOVERY342.md](RECOVERY342.md) fixes the effective disappearing-DM override, which previously bypassed the older DM handler's account/modal and pair-filter protections. Initial/refreshed messages and read receipts are now restricted to the initiating pair, stale same-user relogins and replaced modals cannot reopen messages, and duplicate sends are locked. Seven synthetic source regressions are integrated into native alpha verification. Real isolated Supabase auth/RLS, email delivery and physical Android/iPhone QA remain unverified. No production, shared live Supabase, Kinfolksworld, paid resources or stores changed.
