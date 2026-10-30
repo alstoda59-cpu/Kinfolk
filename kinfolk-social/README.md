@@ -1,3 +1,7 @@
+# Recovery347 | Account deletion session and modal safety (2026-10-30)
+
+Continued from [Recovery346](RECOVERY346.md) on an isolated draft branch. [RECOVERY347.md](RECOVERY347.md) fixes the effective Phase115 account deletion handler so logout, relogin, token refresh, account switching or modal replacement stop stale private-media removal and final account deletion before new destructive requests. Twelve source-extracted synthetic regressions are wired into offline Android/iOS safety verification. Exact-head CI, real isolated Supabase Auth/RLS/deletion and physical-device QA are separate gates. No shared live backend, production, Kinfolksworld, paid resources or stores changed.
+
 # Recovery346 | Post comment and reply account/form isolation (2026-10-30)
 
 Continued from [Recovery345](RECOVERY345.md) on isolated draft PR #44. [RECOVERY346.md](RECOVERY346.md) fixes the **effective** post-comment/reply override so pending writes cannot refresh or reopen comments after logout, relogin, account switch, navigation or form replacement. Reply parents are bound to the initiating account/form; duplicate sends are suppressed. Eleven source-extracted synthetic regressions are wired into offline Android/iOS verification. Exact-head CI, real isolated Supabase signup/email/two-user RLS and physical-device QA remain separate gates. No shared live backend, production, Kinfolksworld, paid infrastructure or stores changed.

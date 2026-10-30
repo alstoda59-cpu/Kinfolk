@@ -62,6 +62,8 @@ on:
       - kinfolk-social/recovery345-post-story-alpha-media-preflight-20261030
       # Recovery346: guard effective comment replies against stale sessions and duplicate sends.
       - kinfolk-social/recovery346-post-comment-session-isolation-20261030
+      # Recovery347: stop destructive account deletion when login, tokens or modal change.
+      - kinfolk-social/recovery347-account-deletion-session-guard-20261030
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
