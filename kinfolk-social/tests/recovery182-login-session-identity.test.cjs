@@ -33,11 +33,11 @@ function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionEr
   const sb={auth:{
     async getSession(){
       const id=ids[Math.min(read++,ids.length-1)];
-      return {data:{session:id===null?null:{user:{id,email:'test@example.test'}}},error:null};
+      return {data:{session:id===null?null:{user:{id,email:'test@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'}}},error:null};
     },
     async setSession(){
       adoptions++;
-      return {data:{session:{user:adoptedId?{id:adoptedId,email:'test@example.test'}:null}},error:setSessionError};
+      return {data:{session:{user:adoptedId?{id:adoptedId,email:'test@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'}:null}},error:setSessionError};
     }
   }};
   const window={};
@@ -45,7 +45,7 @@ function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionEr
   const timers=[];
   vm.runInNewContext(source,{
     window,document,sb,console,AbortController,
-    fetch:async()=>({ok:true,json:async()=>({access_token:'synthetic',refresh_token:'synthetic',user:tokenUserId?{id:tokenUserId,email:'test@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'}:null})}),
+    fetch:async()=>({ok:true,json:async()=>({access_token:'synthetic',refresh_token:'synthetic',user:tokenUserId?{id:tokenUserId,email:'test@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z',email_confirmed_at:'2026-10-29T12:00:00.000Z'}:null})}),
     localStorage:storage(local),sessionStorage:storage(tab),
     MutationObserver:class{observe(){}},
     setInterval(){},
