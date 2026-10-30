@@ -1,3 +1,7 @@
+# Recovery334 | Browser confirmed-email login regression (2026-10-29)
+
+Continued from Recovery333 on an isolated branch. [RECOVERY334.md](RECOVERY334.md) repairs the shared synthetic browser login fixture after Phase95 began correctly requiring email-confirmed password tokens. This does not relax the production auth guard; source CI, offline Android/iOS builds and real backend/device QA remain distinct. No production, shared live Supabase, Kinfolksworld, paid resources or stores changed.
+
 # Recovery333 | Verified email password-token guard (2026-10-29)
 
 Continued from Recovery332 on an isolated draft branch. [RECOVERY333.md](RECOVERY333.md) prevents Phase95 password login from adopting Supabase tokens without explicit email confirmation. Eight synthetic Node regressions are wired into native alpha verification; offline Android/iOS builds remain separate from real email, isolated RLS and physical-device QA. No production, shared live backend, Kinfolksworld, paid resources or stores changed.
