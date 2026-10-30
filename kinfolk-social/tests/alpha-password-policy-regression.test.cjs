@@ -27,7 +27,7 @@ test('Supabase signup wrapper enforces the same range',()=>{
   for(const n of [11,129])assert.equal(rejects('x'.repeat(n)),true);
 });
 test('legacy login accepts preexisting passwords regardless of signup length',()=>{
-  const rejects=rejector(legacy,/if\((mode==='signup'&&\(password\.length<\d+\|\|password\.length>\d+\))\)throw/,['mode','password']);
+  const rejects=rejector(legacy,/if\((submitMode==='signup'&&\(password\.length<\d+\|\|password\.length>\d+\))\)throw/,['submitMode','password']);
   for(const n of [3,11,12,128,200])assert.equal(rejects('login','x'.repeat(n)),false);
   for(const n of [11,129])assert.equal(rejects('signup','x'.repeat(n)),true);
   assert.match(legacy,/required autocomplete="current-password" placeholder="Password"/);
