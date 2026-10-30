@@ -69,7 +69,7 @@ test('login is sent once and confirms only its active form',async()=>{
   assert.match(h.messages[0].message,/Logged in/);
   assert.equal(h.messages[0].good,true);
   assert.deepEqual(h.stays,[true]);
-  assert.equal(h.fields['.kf73Primary'].disabled,false);
+  assert.equal(h.fields['.kf73Primary'].disabled,true,'successful login remains locked until navigation');
 });
 
 test('failed login restores button and permits retry',async()=>{
@@ -100,7 +100,7 @@ test('switching to signup suppresses old login response and never unlocks new su
   assert.equal(currentButton.disabled,true);
   h.calls[1].resolve({data:{session:null},error:null});
   await current;
-  assert.equal(currentButton.disabled,false);
+  assert.equal(currentButton.disabled,true,'successful signup remains locked until navigation');
   assert.equal(h.messages.length,1);
   assert.match(h.messages[0].message,/confirmation link/);
 });
