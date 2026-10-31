@@ -17,6 +17,8 @@ Date: 2026-10-31 America/Los_Angeles. FULL MAIN Kinfolk Social only, `kinfolk-so
 ## Tests and CI boundary
 - Added `tests/recovery364-signup-response-identity.test.mjs` executing the exact production inline signup identity predicate and error handler with synthetic values. Covers missing/wrong/case-insensitive response emails, order of user/session/confirmation guards, real observed Auth code, throttling and preserved birthday/username messages.
 - Wired the new test into `native/package.json` `alpha:auth:source:test`. Draft PR #61 targets Recovery363. Unmerged.
+- Initial Recovery364 exact-head CI `41181083684` reported **FAILURE**: 855/866 tests passed; 11 older synthetic browser/signup fixtures omitted the returned signup user email. The new Phase79 identity check correctly rejected those incomplete responses; new Recovery364 source regressions passed. This was a fixture compatibility failure, not proof of a broken real signup.
+- Updated `tests/recovery178-signup-stay.test.cjs` and `tests/recovery258-phase79-title.test.cjs` with explicit matching signup response emails where success was intended; preserved adversarial session-mismatch fixtures and added a full synthetic submit test proving a missing returned email cannot display verification.
 - Exact final-head CI must be verified separately before claiming green. No real browser/isolated Supabase signup was attempted by Recovery364, because owner-controlled test inbox has not been approved/provided.
 - No shared live Supabase schema, data, auth or policies modified; no nonproduction backend writes; no production Vercel deployment or alias modifications; no Kinfolksworld, paid services, store submission or device QA.
 
