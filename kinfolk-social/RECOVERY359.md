@@ -16,6 +16,7 @@ Date: 2026-10-30 America/Los_Angeles. Scope: **FULL MAIN Kinfolk Social** under 
 
 ## Tests and packaging
 - Updated historical Recovery277 synthetic session fixtures to supply tokens, retaining ID/email checks.
+- Initial source CI at `2e176620` exposed 15 older synthetic signup tests with tokenless session fixtures. Updated Recovery179/180/181/205/213 test harnesses to supply the **same synthetic token** in signup and active sessions without weakening the production token check. These fixtures retain their original account-switch, storage-failure and navigation assertions. Final-commit CI must be rechecked; the intermediate failure is not a product runtime test.
 - Added `tests/recovery359-signup-session-token.test.mjs` with eight source-executed synthetic tests: exact token success, same-account relogin, asynchronous token rotation, missing tokens, wrong identity, case-insensitive email, backend error, and save/cleanup ordering.
 - Added the suite to `native/package.json` `alpha:auth:source:test` and enabled the isolated branch in the Android/iOS native CI workflow.
 - Source CI and native compilation must be checked at the exact final commit. Android CI debug APK and iOS Simulator builds use offline backend isolation and do not prove physical-device or backend-connected readiness.
