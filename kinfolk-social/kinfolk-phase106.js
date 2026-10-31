@@ -23,7 +23,7 @@ async function addOne(albumId,file,accountId,form){
   requireAlbumSession(accountId,form);
   await requireOwnedAlbum(albumId,accountId,form);
   const path=accountId+'/albums/'+albumId+'/'+crypto.randomUUID()+'-'+safe(file.name);
-  let uploaded=false,linked=false;
+  let uploaded=false,linked=false,insertAttempted=false,confirmedNoRows=false;
   try{
     const up=await sb.storage.from('kinfolk-media').upload(path,file,{upsert:false,contentType:file.type,cacheControl:'3600'});
     if(up.error)throw up.error;
@@ -31,10 +31,19 @@ async function addOne(albumId,file,accountId,form){
     requireAlbumSession(accountId,form);
     // An error-free PostgREST response is not proof that RLS committed a row.
     // Ask for the exact affected-row count before reporting a linked photo.
+    // Once the INSERT is sent, even an error or dropped response can follow a
+    // committed row. Never delete its storage object on uncertain outcomes.
+    insertAttempted=true;
     const ins=await sb.from('album_photos').insert({album_id:albumId,owner_id:accountId,storage_path:path,caption:''},{count:'exact'});
-    if(ins.error)throw ins.error;
+    if(ins.error){
+      console.warn('Kinfolk album photo insert outcome could not be confirmed',ins.error);
+      throw new Error('Album photo save could not be confirmed. Refresh the album before retrying.');
+    }
     if(ins.count!==1){
-      if(ins.count===0)throw new Error('Album photo was not saved. Please try again.');
+      if(ins.count===0){
+        confirmedNoRows=true;
+        throw new Error('Album photo was not saved. Please try again.');
+      }
       // Missing/ambiguous counts may follow a committed insert. Preserve the
       // uploaded file rather than deleting media that could be referenced.
       linked=true;
@@ -44,8 +53,10 @@ async function addOne(albumId,file,accountId,form){
     requireAlbumSession(accountId,form);
     return path;
   }catch(error){
-    // Never delete a photo after its database row was committed.
-    if(uploaded&&!linked)await cleanupAlbumUpload(path);
+    // Only clean up before INSERT, or after an authoritative zero-row result.
+    // Network exceptions, PostgREST errors and missing counts are ambiguous:
+    // deleting their media could break a successfully committed album photo.
+    if(uploaded&&!linked&&(!insertAttempted||confirmedNoRows))await cleanupAlbumUpload(path);
     throw error;
   }
 }async function hardCreate(e){
