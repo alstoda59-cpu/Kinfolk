@@ -4,7 +4,7 @@ import {ALPHA_REF} from '../scripts/alpha-backend-config.mjs';
 import {verifyIsolatedRealSignup} from '../scripts/verify-real-signup-smoke.mjs';
 
 const config={projectRef:ALPHA_REF,url:'https://'+ALPHA_REF+'.supabase.co',key:'sb_publishable_synthetic_only_test_key',offlineStub:false};
-const email='kinfolkalpha+0123456789abcdef01234567@example.invalid';
+const email='kinfolkalpha+0123456789abcdef01234567@example.com';
 const password='wRfXpt7Z0H!2';
 const userId='11111111-1111-4111-8111-111111111111';
 const settings={disable_signup:false,external:{email:true},mailer_autoconfirm:false};
