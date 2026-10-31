@@ -21,6 +21,16 @@ function harness(behavior){
       };
     }},
     from:table=>{
+      if(table==='photo_albums')return {
+        select:columns=>{
+          assert.equal(columns,'id,owner_id');
+          return {eq:(column,id)=>{
+            assert.equal(column,'id');
+            assert.equal(id,'album-1');
+            return {maybeSingle:async()=>({error:null,data:{id:'album-1',owner_id:'account-A'}})};
+          }};
+        }
+      };
       assert.equal(table,'album_photos');
       return {insert:async (row,options)=>{
         assert.equal(options?.count,'exact');
@@ -42,7 +52,7 @@ test('album upload uses the original account for storage and database owner',asy
   const h=harness('ok');
   const path=await h.addOne('album-1',photo,'account-A',h.form);
   assert.match(path,/^account-A\/albums\/album-1\//);
-  assert.equal(h.calls[1][1],'account-A');
+  assert.equal(h.calls.find(x=>x[0]==='insert')[1],'account-A');
   assert.equal(h.calls.filter(x=>x[0]==='remove').length,0);
 });
 test('switching accounts during storage upload prevents cross-account photo insert',async()=>{
