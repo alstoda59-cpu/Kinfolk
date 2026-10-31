@@ -345,3 +345,33 @@ test('verification resend accepts case-only changes to the same email',async()=>
   assert.equal(h.resends.length,1);
   assert.equal(h.resends[0].email,'synthetic@example.invalid');
 });
+
+test('obfuscated existing-user signup cannot display verification or offer resend',async()=>{
+  for(const identities of [undefined,null,[],{}]){
+    const h=harness('Create Account',{signUp:async()=>({
+      data:{user:{id:'synthetic-id',email:'synthetic@example.invalid',identities},session:null},error:null
+    })});
+    await h.submit(h.event());
+    assert.equal(h.signups.length,1);
+    assert.equal(h.form.querySelector('#kf221Verification'),null);
+    assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/could not verify a new email account/i);
+    assert.equal(h.btn.disabled,false);
+  }
+});
+
+test('signup refuses email identities from other providers, users or addresses',async()=>{
+  const valid={provider:'email',user_id:'synthetic-id',identity_data:{email:'synthetic@example.invalid'}};
+  for(const identities of [
+    [{...valid,provider:'google'}],
+    [{...valid,user_id:'another-id'}],
+    [{...valid,identity_data:{email:'different@example.invalid'}}],
+    [{...valid,identity_data:null}]
+  ]){
+    const h=harness('Create Account',{signUp:async()=>({
+      data:{user:{id:'synthetic-id',email:'synthetic@example.invalid',identities},session:null},error:null
+    })});
+    await h.submit(h.event());
+    assert.equal(h.form.querySelector('#kf221Verification'),null);
+    assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/could not verify a new email account/i);
+  }
+});
