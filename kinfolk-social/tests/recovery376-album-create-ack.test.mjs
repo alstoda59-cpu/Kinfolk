@@ -104,7 +104,11 @@ test('account switch after insert prevents photo upload or stale success',async(
 });
 
 test('same-user session reactivation after album insert prevents stale upload or success',async()=>{
-  const h=harness({reactivateAfterCommit:true});await h.run();failed(h);
+  const h=harness({reactivateAfterCommit:true});await h.run();
+  assert.equal(byType(h,'photo-upload').length,0);
+  assert.equal(byType(h,'close').length,0);
+  assert.equal(byType(h,'render').length,0);
+  assert.equal(h.button.disabled,true); // The old session's editor must not be unlocked.
   assert.equal(byType(h,'insert').length,1);
   assert.equal(h.notices.length,0);
 });

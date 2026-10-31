@@ -74,8 +74,8 @@ test('insert errors preserve media because a response error does not prove rollb
 });
 test('album form checks original account and foreground-only polling',()=>{
   assert.match(source,/const accountId=state\?\.user\?\.id/);
-  assert.match(source,/await addOne\(q\.data\.id,files\[i\],accountId,f\)/);
-  assert.match(source,/await addOne\(id,files\[i\],accountId,f\)/);
+  assert.match(source,/await addOne\(q\.data\.id,files\[i\],accountId,f,activation\)/);
+  assert.match(source,/await addOne\(id,files\[i\],accountId,f,activation\)/);
   const match=source.match(/setInterval\(\(\)=>\{if\(document\.visibilityState!=='hidden'\)enforce\(\)\},2000\)/);
   assert.ok(match,'fallback binding must pause when hidden and run every two seconds');
 });
