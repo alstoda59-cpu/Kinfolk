@@ -39,6 +39,7 @@ function fixture(stage){
     addEventListener:(type,fn)=>{if(type==='submit')submit=fn}
   };
   const auth={
+    async getUser(){return {data:{user:{id:'qa',email:'synthetic@example.invalid',email_confirmed_at:'2026-10-30T00:00:00Z'}},error:null}},
     async signUp(){
       signupCalls++;
       if(stage==='signup'||stage==='signup-error')await wait.promise;
