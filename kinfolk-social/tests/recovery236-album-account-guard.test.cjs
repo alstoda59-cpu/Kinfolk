@@ -22,11 +22,12 @@ function harness(behavior){
     }},
     from:table=>{
       assert.equal(table,'album_photos');
-      return {insert:async row=>{
+      return {insert:async (row,options)=>{
+        assert.equal(options?.count,'exact');
         calls.push(['insert',row.owner_id,row.storage_path]);
         if(behavior==='switch-insert')state.user.id='account-B';
-        if(behavior==='deny-insert')return {error:new Error('synthetic insert denied')};
-        return {error:null};
+        if(behavior==='deny-insert')return {error:new Error('synthetic insert denied'),count:null};
+        return {error:null,count:1};
       }};
     }
   };

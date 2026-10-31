@@ -18,6 +18,15 @@ with sync_playwright() as p:
             errors=[]
             page.on('pageerror',lambda e:errors.append(str(e)))
             page.set_content(ns['test_html'](),wait_until='load')
+            # Phase95 binds asynchronously after the shell renders. Clicking
+            # before its capture handler exists can exercise the legacy path
+            # instead of the login lifecycle this regression intends to test.
+            page.wait_for_function("""() => {
+                const f=document.querySelector('#authForm');
+                return f?.__kf95CaptureInstalled===true &&
+                    typeof f.__kf95Handler==='function' &&
+                    f.querySelector('.kf73Title')?.textContent.includes('Welcome back');
+            }""")
             page.locator('#kf73Email').fill('old@example.test')
             page.locator('#kf73Password').fill('password9')
             page.evaluate("""() => {

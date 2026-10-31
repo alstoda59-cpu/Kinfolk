@@ -17,8 +17,17 @@ async function addOne(albumId,file,accountId,form){
     if(up.error)throw up.error;
     uploaded=true;
     requireAlbumSession(accountId,form);
-    const ins=await sb.from('album_photos').insert({album_id:albumId,owner_id:accountId,storage_path:path,caption:''});
+    // An error-free PostgREST response is not proof that RLS committed a row.
+    // Ask for the exact affected-row count before reporting a linked photo.
+    const ins=await sb.from('album_photos').insert({album_id:albumId,owner_id:accountId,storage_path:path,caption:''},{count:'exact'});
     if(ins.error)throw ins.error;
+    if(ins.count!==1){
+      if(ins.count===0)throw new Error('Album photo was not saved. Please try again.');
+      // Missing/ambiguous counts may follow a committed insert. Preserve the
+      // uploaded file rather than deleting media that could be referenced.
+      linked=true;
+      throw new Error('Album photo save could not be confirmed. Refresh the album before retrying.');
+    }
     linked=true;
     requireAlbumSession(accountId,form);
     return path;

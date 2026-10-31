@@ -1,3 +1,7 @@
+# Recovery373 | Album-photo insert acknowledgment (2026-10-31)
+
+Continued from [Recovery372](RECOVERY372.md) on an isolated branch. [Recovery373](RECOVERY373.md) requires exactly one affected album-photo row before reporting upload success; zero-row results clean unlinked media, while ambiguous acknowledgments preserve potentially referenced files. Seven synthetic source-executed regressions are included in Android/iPhone offline media verification. The isolated alpha backend has zero users and is missing both album tables, so real uploads, email confirmation, two-user RLS and physical-device QA remain unverified. No shared live backend, production, Kinfolksworld, paid resources or stores changed.
+
 # Recovery372 | Hard deadline for mobile password-token login (2026-10-31)
 
 Continued from [Recovery371](RECOVERY371.md) on an isolated branch. [Recovery372](RECOVERY372.md) bounds the effective Phase95 password-token fetch **and response-body read** to 15 seconds, even if an abort-ignoring fetch wrapper or body reader resolves late. Ten synthetic regressions are included in the offline Android/iOS auth source gate. Real isolated signup/email confirmation and two-user RLS, backend-connected media/messaging, signed native packages and physical-device QA remain unverified. No shared live backend, production, Kinfolksworld, paid resources or stores changed.
