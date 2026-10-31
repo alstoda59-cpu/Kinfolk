@@ -1,0 +1,30 @@
+name: Kinfolk isolated synthetic signup smoke
+on:
+  push:
+    branches:
+      - "kinfolk-social/recovery362-real-signup-smoke-20261031"
+permissions:
+  contents: read
+concurrency:
+  group: kinfolk-real-signup-smoke-recovery362
+  cancel-in-progress: false
+jobs:
+  signup-smoke:
+    # One explicit smoke run, not a new synthetic Auth user on every source push.
+    if: contains(github.event.head_commit.message, '[signup-smoke]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      KINFOLK_ALPHA_REAL_SIGNUP_OPT_IN: "1"
+      KINFOLK_ALPHA_TEST_EMAIL: ${{ secrets.KINFOLK_ALPHA_TEST_EMAIL }}
+      KINFOLK_ALPHA_TEST_INBOX_APPROVED: ${{ vars.KINFOLK_ALPHA_TEST_INBOX_APPROVED }}
+      KINFOLK_ALPHA_SUPABASE_URL: "https://viantpfagtbgyyzavmtv.supabase.co"
+      KINFOLK_ALPHA_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.KINFOLK_ALPHA_SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Synthetic isolation tests, no network or account creation
+        run: node --test kinfolk-social/native/tests/alpha-real-signup-smoke.test.mjs
+      - name: Opt-in REAL signup against isolated Alpha Test Auth only
+        run: node kinfolk-social/native/scripts/verify-real-signup-smoke.mjs
