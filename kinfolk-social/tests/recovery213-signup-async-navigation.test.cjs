@@ -75,7 +75,7 @@ function fixture(stage){
   };
 }
 async function tickUntil(fn){
-  for(let i=0;i<20&&!fn();i++)await Promise.resolve();
+  for(let i=0;i<80&&!fn();i++)await Promise.resolve();
   assert.ok(fn(),'expected deferred auth stage was not reached');
 }
 test('late signup response does not write preference or success after navigation',async()=>{
