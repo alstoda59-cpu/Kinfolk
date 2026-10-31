@@ -1,3 +1,7 @@
+# Recovery377 | Isolated album schema and privacy RLS (2026-10-31)
+
+Continued from [Recovery376](RECOVERY376.md) on an isolated branch. [Recovery377](RECOVERY377.md) adds a reviewed, unapplied isolated-alpha SQL migration for photo albums, linked photos, owner and visibility RLS, and narrow authenticated storage reads. Six static contract tests join the offline native media source gate. This is substantive backend implementation source, **not** deployed schema or two-account enforcement evidence. No live backend, production, Kinfolksworld, paid resources or stores changed. Public launch remains blocked.
+
 # Recovery376 | Album creation requires a verified owned row (2026-10-31)
 
 Continued from [Recovery375](RECOVERY375.md) on an isolated branch. [Recovery376](RECOVERY376.md) requires exact one-row, matching-owner acknowledgment before Create Album uploads any photos or reports success. Uncertain database results instruct the member to refresh before retrying. Source-executed synthetic tests are added to the offline native media gate; real Supabase email/RLS/media, signed native devices and public launch remain unverified. No production, shared live backend, Kinfolksworld, paid resources or stores changed.
