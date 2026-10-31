@@ -4,12 +4,12 @@ import {ALPHA_REF} from '../scripts/alpha-backend-config.mjs';
 import {verifyIsolatedRealSignup} from '../scripts/verify-real-signup-smoke.mjs';
 
 const config={projectRef:ALPHA_REF,url:'https://'+ALPHA_REF+'.supabase.co',key:'sb_publishable_synthetic_only_test_key',offlineStub:false};
-const email='owner-test+kinfolkalpha@actualmailbox.com';
-const password='wRfXpt7Z0H!2';
+const email='synthetic@kinfolk-alpha-fixture.dev';
+const password='synthetic-only-password-for-offline-test';
 const userId='11111111-1111-4111-8111-111111111111';
 const settings={disable_signup:false,external:{email:true},mailer_autoconfirm:false};
 const response=(status,data)=>({status,headers:{get:()=> 'application/json'},json:async()=>data});
-function mockFetch({settingsData=settings,signupData={user:{id:userId,email_confirmed_at:null},session:null},loginStatus=400,loginData={error_code:'email_not_confirmed'}}={}){
+function mockFetch({settingsData=settings,signupData={user:{id:userId,email,email_confirmed_at:null,identities:[{provider:'email',user_id:userId,identity_data:{email}}]},session:null},loginStatus=400,loginData={error_code:'email_not_confirmed'}}={}){
   const calls=[];
   const fetchImpl=async(url,options)=>{
     calls.push({url,method:options.method,body:options.body&&JSON.parse(options.body)});
@@ -45,7 +45,7 @@ test('missing email confirmation settings prevent account creation',async()=>{
   assert.deepEqual(m.calls.map(c=>c.method),['GET']);
 });
 test('unconfirmed signup may not return a session or confirmed identity',async()=>{
-  const m=mockFetch({signupData:{user:{id:userId,email_confirmed_at:'2026-10-31T00:00:00Z'},session:{access_token:'no'}}});
+  const m=mockFetch({signupData:{user:{id:userId,email,email_confirmed_at:'2026-10-31T00:00:00Z',identities:[{provider:'email',user_id:userId,identity_data:{email}}]},session:{access_token:'no'}}});
   await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password}),/confirmed user or session/);
   assert.equal(m.calls.length,2);
 });
