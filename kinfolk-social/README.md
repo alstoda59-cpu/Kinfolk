@@ -1,3 +1,7 @@
+# Recovery356 | Login preference rollback ownership (2026-10-30)
+
+Continued from [Recovery355](RECOVERY355.md) on an isolated branch. [RECOVERY356.md](RECOVERY356.md) fixes the effective Phase95 Stay Logged In rollback so a failed older login cannot overwrite a newer account's preference, including same-value newer writes and cross-tab changes. Seven source-executed synthetic regressions are wired into the offline Android/iOS auth gate. Real isolated Supabase signup/email confirmation, two-user RLS, backend-connected native packages and physical-device QA remain unverified. No shared live backend, production, Kinfolksworld, paid resources or stores changed.
+
 # Recovery355 | Fail-closed account deletion RPC acknowledgments (2026-10-30)
 
 Continued from [Recovery354](RECOVERY354.md) on an isolated branch. [RECOVERY355.md](RECOVERY355.md) requires an explicit positive backend `CHECK` acknowledgment before removing any private account media, and an explicit positive `DELETE` acknowledgment before sign-out or redirect. Ten synthetic source-executed regressions cover missing, false and malformed responses plus pre-enumeration of every storage bucket before any media removal. The isolated alpha project also lacks the wallpaper bucket. The isolated alpha backend still lacks the deletion RPC; real deletion, email verification, two-user RLS, physical Android/iPhone QA and signed packaging remain unverified. No production, shared live Supabase, Kinfolksworld, paid infrastructure or store changes.

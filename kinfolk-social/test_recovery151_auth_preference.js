@@ -16,7 +16,8 @@ assert.match(helper,/async function kf129RestorableSession\(\)/,'restore functio
 assert.match(helper,/active\.access_token!==session\.access_token/,'account token changes remain guarded');
 assert.match(helper,/active\.refresh_token!==session\.refresh_token/,'refresh token changes remain guarded');
 const boot=extract(html,'async function boot()','async function hydrateUser()');
-const save=extract(phase,'function saveStay(stay)','function unlock(pass)');
+// Include the production write-version state, not only the saveStay function.
+const save=extract(phase,'let preferenceWriteVersion=0;','function unlock(pass)');
 const adopt=extract(phase,'async function adopt(tokens)','let loginBusy=false');
 const login=phase.indexOf('const tokens=await tokenLogin(email,password);');
 const pref=phase.indexOf('const restoreStay=saveStay(stay);');
