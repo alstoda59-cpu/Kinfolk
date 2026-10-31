@@ -1,3 +1,7 @@
+# Recovery376 | Album creation requires a verified owned row (2026-10-31)
+
+Continued from [Recovery375](RECOVERY375.md) on an isolated branch. [Recovery376](RECOVERY376.md) requires exact one-row, matching-owner acknowledgment before Create Album uploads any photos or reports success. Uncertain database results instruct the member to refresh before retrying. Source-executed synthetic tests are added to the offline native media gate; real Supabase email/RLS/media, signed native devices and public launch remain unverified. No production, shared live backend, Kinfolksworld, paid resources or stores changed.
+
 # Recovery375 | Album insert uncertainty preserves media (2026-10-31)
 
 Continued from [Recovery374](RECOVERY374.md) on an isolated branch. [Recovery375](RECOVERY375.md) fixes the effective Phase106 album upload cleanup so network/PostgREST errors after a possible database INSERT never delete potentially referenced media. Storage cleanup is limited to pre-insert failures and explicit zero-row acknowledgments. Synthetic source regressions cover thrown insert failures and error responses. Real isolated Supabase email/RLS/media, signed native packages and physical devices remain unverified. No production, shared live backend, Kinfolksworld, paid resources or stores changed.
