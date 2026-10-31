@@ -1,3 +1,7 @@
+# Recovery375 | Album insert uncertainty preserves media (2026-10-31)
+
+Continued from [Recovery374](RECOVERY374.md) on an isolated branch. [Recovery375](RECOVERY375.md) fixes the effective Phase106 album upload cleanup so network/PostgREST errors after a possible database INSERT never delete potentially referenced media. Storage cleanup is limited to pre-insert failures and explicit zero-row acknowledgments. Synthetic source regressions cover thrown insert failures and error responses. Real isolated Supabase email/RLS/media, signed native packages and physical devices remain unverified. No production, shared live backend, Kinfolksworld, paid resources or stores changed.
+
 # Recovery374 | Album ownership preflight (2026-10-31)
 
 Continued from [Recovery373](RECOVERY373.md) on an isolated branch. [Recovery374](RECOVERY374.md) verifies the exact album ID and initiating account owner before any photo storage upload, and rejects missing, foreign-owned or stale-session album lookups. Six additional synthetic regressions are included in the existing offline Android/iPhone media source gate. The isolated backend still lacks album tables and has no synthetic accounts, so real RLS, uploads, email delivery and device QA are not established. No production, shared live backend, Kinfolksworld, paid resources or stores changed.
