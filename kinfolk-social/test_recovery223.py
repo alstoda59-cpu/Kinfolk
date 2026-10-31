@@ -51,8 +51,11 @@ with sync_playwright() as p:
             page.locator('.kf73Primary').click()
             assert page.evaluate('window.__signup223Calls')==1
             assert 'previous account creation request' in page.locator('.kf73Msg').inner_text().lower()
+            # Both synthetic success responses must carry the exact requested email.
+            # Otherwise the Phase79 fail-closed identity guard would reject them
+            # before this test could exercise the intended stale-form race.
             response=({'data':None,'error':{'message':'Synthetic signup rejected'}} if rejection
-                      else {'data':{'session':None,'user':{'id':'synthetic'}},'error':None})
+                      else {'data':{'session':None,'user':{'id':'synthetic','email':'old@example.test'}},'error':None})
             page.evaluate('(result)=>window.__resolvers223[0](result)',response)
             page.wait_for_timeout(200)
             assert page.locator('#kf221Verification').count()==0,'old result must not mount verification'
@@ -62,7 +65,7 @@ with sync_playwright() as p:
             page.locator('.kf73Primary').click()
             page.wait_for_function('window.__signup223Calls===2')
             page.evaluate("""() => window.__resolvers223[1]({
-                data:{user:{id:'new-user'},session:null},error:null
+                data:{user:{id:'new-user',email:'new@example.test'},session:null},error:null
             })""")
             page.locator('#kf221Verification').wait_for(state='visible')
             assert 'new@example.test' in page.locator('#kf221Verification').inner_text()
