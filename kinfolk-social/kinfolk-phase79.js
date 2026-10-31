@@ -73,25 +73,39 @@
     }
   }
 
-  // Only persist signup preferences for the exact new email identity.
-  // Checking ID alone misses an email changed on that account while getSession
-  // is pending. Fail closed on missing email, including during cleanup.
+  // A locally cached session is not sufficient proof of a confirmed signup.
+  // Verify the exact token with Auth, then re-read the local session because
+  // another login/logout can happen while the network request is pending.
+  // This helper also gates local-only cleanup after preference storage failure.
   async function signupSessionIsCurrent(session,submittedEmail){
-    if(typeof sb==='undefined'||typeof sb?.auth?.getSession!=='function')throw new Error('Kinfolk could not verify the signup session. Sign in again to set Stay Logged In.');
+    if(typeof sb==='undefined'||typeof sb?.auth?.getSession!=='function'||
+       typeof sb?.auth?.getUser!=='function'){
+      throw new Error('Kinfolk could not verify the signup session. Sign in again to set Stay Logged In.');
+    }
     const expected=session?.user?.id;
     const expectedToken=session?.access_token;
     const email=String(submittedEmail||'').trim().toLowerCase();
-    // The same account may log in again while getSession is pending. A matching
-    // user ID and email do not prove that the signup's session is still active.
-    // Fail closed for adapters that omit either access token.
-    if(!expected||typeof expectedToken!=='string'||!expectedToken.trim()||!email||
+    if(typeof expected!=='string'||!expected.trim()||
+       typeof expectedToken!=='string'||!expectedToken.trim()||!email||
        typeof session?.user?.email!=='string'||session.user.email.trim().toLowerCase()!==email)return false;
-    const {data,error}=await sb.auth.getSession();
-    if(error)throw error;
-    const activeSession=data?.session;
-    const active=activeSession?.user;
-    return activeSession?.access_token===expectedToken&&active?.id===expected&&
-      typeof active.email==='string'&&active.email.trim().toLowerCase()===email;
+    const matchesActive=activeSession=>activeSession?.access_token===expectedToken&&
+      activeSession?.user?.id===expected&&
+      typeof activeSession.user.email==='string'&&
+      activeSession.user.email.trim().toLowerCase()===email;
+    const first=await sb.auth.getSession();
+    if(first?.error)throw first.error;
+    if(!matchesActive(first?.data?.session))return false;
+    // Supabase getUser(jwt) validates the supplied access token with Auth.
+    // Never authorize persistence from getSession's locally stored user alone.
+    const verified=await sb.auth.getUser(expectedToken);
+    if(verified?.error)throw verified.error;
+    const user=verified?.data?.user;
+    if(user?.id!==expected||typeof user?.email!=='string'||
+       user.email.trim().toLowerCase()!==email||
+       typeof user?.email_confirmed_at!=='string'||!user.email_confirmed_at.trim())return false;
+    const last=await sb.auth.getSession();
+    if(last?.error)throw last.error;
+    return matchesActive(last?.data?.session);
   }
 
   // A session returned by signUp is not proof of email verification. Supabase
