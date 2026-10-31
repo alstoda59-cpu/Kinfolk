@@ -32,7 +32,7 @@ function fixture(signupResult) {
       if (type === 'submit') { assert.equal(capture, true); submit = fn; }
     },
   };
-  const sb = { auth: { async getSession() { return {data:{session:sessionReads++===0?null:(signupResult.data?.session||null)},error:null}; }, async signUp(args) { calls.push(args); return signupResult; } } };
+  const sb = { auth: { async getSession() { return {data:{session:sessionReads++===0?null:(signupResult.data?.session||null)},error:null}; }, async getUser(token) { const session=signupResult.data?.session; return {data:{user:session?.access_token===token?session.user:null},error:null}; }, async signUp(args) { calls.push(args); return signupResult; } } };
   const context = {
     window: {}, document, sb, URL, Date,
     location: { origin: 'https://isolated-qa.supabase.co' },
