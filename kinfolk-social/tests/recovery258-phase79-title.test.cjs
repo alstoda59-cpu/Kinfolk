@@ -43,7 +43,7 @@ function harness(titleText='Create Account',authOverrides={}){
   const resendTimeouts=[],signupTimeouts=[];
   const sb={auth:{
     async getSession(){return {data:{session:null},error:null}},
-    async signUp(payload){signups.push(payload);return authOverrides.signUp?authOverrides.signUp(payload):{data:{user:{id:'synthetic-id',email:'synthetic@example.invalid'},session:null},error:null}},
+    async signUp(payload){signups.push(payload);return authOverrides.signUp?authOverrides.signUp(payload):{data:{user:{id:'synthetic-id',email:'synthetic@example.invalid',identities:[{provider:'email',user_id:'synthetic-id',identity_data:{email:'synthetic@example.invalid'}}]},session:null},error:null}},
     async resend(payload){resends.push(payload);return authOverrides.resend?authOverrides.resend(payload):{error:null}}
   }};
   const document={
@@ -195,7 +195,7 @@ test('signup refuses a same-id session whose email differs from the submitted ad
 
 test('signup accepts case-normalized matching response email and uses neutral verification copy',async()=>{
   const h=harness('Create Account',{signUp:async()=>({
-    data:{user:{id:'synthetic-id',email:'SYNTHETIC@EXAMPLE.INVALID'},session:null},error:null
+    data:{user:{id:'synthetic-id',email:'SYNTHETIC@EXAMPLE.INVALID',identities:[{provider:'email',user_id:'synthetic-id',identity_data:{email:'synthetic@example.invalid'}}]},session:null},error:null
   })});
   await h.submit(h.event());
   const panel=h.form.querySelector('#kf221Verification');
