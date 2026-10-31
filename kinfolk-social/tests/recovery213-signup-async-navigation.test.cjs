@@ -43,13 +43,13 @@ function fixture(stage){
       signupCalls++;
       if(stage==='signup'||stage==='signup-error')await wait.promise;
       if(stage==='signup-error')return {data:null,error:Error('Synthetic signup rejected')};
-      return {data:{user:{id:'qa',email:'synthetic@example.invalid'},session:{access_token:'synthetic-signup-token',user:{id:'qa',email:'synthetic@example.invalid'}}},error:null};
+      return {data:{user:{id:'qa',email:'synthetic@example.invalid',email_confirmed_at:'2026-10-30T00:00:00Z'},session:{access_token:'synthetic-signup-token',user:{id:'qa',email:'synthetic@example.invalid',email_confirmed_at:'2026-10-30T00:00:00Z'}}},error:null};
     },
     async getSession(){
       sessionChecks++;
       if(sessionChecks===1)return {data:{session:null},error:null};
       if(stage==='session')await wait.promise;
-      return {data:{session:{access_token:'synthetic-signup-token',user:{id:'qa',email:'synthetic@example.invalid'}}},error:null};
+      return {data:{session:{access_token:'synthetic-signup-token',user:{id:'qa',email:'synthetic@example.invalid',email_confirmed_at:'2026-10-30T00:00:00Z'}}},error:null};
     },
     async signOut(){
       signouts++;
