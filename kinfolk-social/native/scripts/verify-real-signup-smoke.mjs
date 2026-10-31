@@ -9,7 +9,7 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 export async function verifyIsolatedRealSignup(config,{fetchImpl=globalThis.fetch,email,password,timeoutMs=10000}={}){
   if(config?.projectRef!==ALPHA_REF||config?.offlineStub||config?.url!=='https://'+ALPHA_REF+'.supabase.co'||!/^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(config.key||'')) throw Error('Only the isolated alpha publishable client may create a test signup');
   if(!/^kinfolkalpha\+[a-f0-9]{16,32}@example\.invalid$/.test(email||'')) throw Error('Only explicitly synthetic example.invalid addresses are permitted');
-  if(typeof password!=='string'||password.length<5||password.length>12)throw Error('Synthetic signup password must meet Kinfolk limits');
+  if(typeof password!=='string'||password.length<12||password.length>128)throw Error('Synthetic signup password must meet Kinfolk limits');
   if(typeof fetchImpl!=='function')throw Error('Fetch is required');
   const base=config.url+'/auth/v1';
   const headers={apikey:config.key,accept:'application/json','content-type':'application/json'};
@@ -25,7 +25,10 @@ export async function verifyIsolatedRealSignup(config,{fetchImpl=globalThis.fetc
   const settings=await request('/settings');
   if(settings.status!==200)throw Error('Isolated Auth settings HTTP '+settings.status);
   assertEmailSignupReady(settings.data);
-  const signup=await request('/signup','POST',{email,password});
+  // Match Phase79's actual registration metadata. The isolated signup trigger requires a birthday.
+  const username='kinfolkalpha'+email.match(/\+([a-f0-9]{16,32})@/)[1].slice(0,10);
+  const data={display_name:'Kinfolk Alpha Test',profile_display_name:'Kinfolk Alpha Test',signup_birthdate:'2000-01-01',username,preferred_language:'en',profile_private:'true'};
+  const signup=await request('/signup','POST',{email,password,data});
   if(signup.status!==200&&signup.status!==201)throw Error('Isolated Auth signup rejected: HTTP '+signup.status+' ('+String(signup.data?.error_code||signup.data?.code||'unknown')+')');
   const user=signup.data?.user??signup.data;
   if(!UUID.test(user?.id||''))throw Error('Signup did not return a user ID');
