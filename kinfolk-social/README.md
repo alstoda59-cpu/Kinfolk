@@ -1,6 +1,6 @@
 # Recovery377 | Isolated album schema and privacy RLS (2026-10-31)
 
-Continued from [Recovery376](RECOVERY376.md) on an isolated branch. [Recovery377](RECOVERY377.md) adds a reviewed, unapplied isolated-alpha SQL migration for photo albums, linked photos, owner and visibility RLS, and narrow authenticated storage reads. Six static contract tests join the offline native media source gate. This is substantive backend implementation source, **not** deployed schema or two-account enforcement evidence. No live backend, production, Kinfolksworld, paid resources or stores changed. Public launch remains blocked.
+Continued from [Recovery376](RECOVERY376.md) on an isolated branch. [Recovery377](RECOVERY377.md) adds a reviewed, applied isolated-alpha SQL migration for photo albums, linked photos, owner and visibility RLS, and narrow authenticated storage reads. Seven static contract tests join the offline native media source gate. The isolated backend now has both album tables with RLS and private storage read controls; this is **not** two-account enforcement or device proof. No live backend, production, Kinfolksworld, paid resources or stores changed. Public launch remains blocked.
 
 # Recovery376 | Album creation requires a verified owned row (2026-10-31)
 

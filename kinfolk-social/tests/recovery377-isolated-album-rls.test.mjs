@@ -41,6 +41,11 @@ test('photo rows are tied to parent owner and owner-prefixed storage path',()=>{
   assert.match(sql,/a\.id=album_photos\.album_id and a\.owner_id=album_photos\.owner_id/);
   assert.match(sql,/create policy alpha_album_photo_insert/);
 });
+test('follow-up index covers the composite album owner foreign key',()=>{
+  const idx=readFileSync(new URL('../migrations/ALPHA_only_album_photo_fk_index.sql',import.meta.url),'utf8');
+  assert.match(idx,/viantpfagtbgyyzavmtv/);
+  assert.match(idx,/create index album_photos_album_owner_fk_idx\\s+on public\\.album_photos\\(album_id,owner_id\\)/);
+});
 test('signed album media reads require a linked public album, not a public bucket',()=>{
   assert.match(sql,/on storage\.objects for select to authenticated/);
   assert.match(sql,/ph\.storage_path=storage\.objects\.name/);
