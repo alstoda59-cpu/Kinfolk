@@ -43,7 +43,7 @@ function harness(titleText='Create Account',authOverrides={}){
   const resendTimeouts=[],signupTimeouts=[];
   const sb={auth:{
     async getSession(){return {data:{session:null},error:null}},
-    async signUp(payload){signups.push(payload);return authOverrides.signUp?authOverrides.signUp(payload):{data:{user:{id:'synthetic-id'},session:null},error:null}},
+    async signUp(payload){signups.push(payload);return authOverrides.signUp?authOverrides.signUp(payload):{data:{user:{id:'synthetic-id',email:'synthetic@example.invalid'},session:null},error:null}},
     async resend(payload){resends.push(payload);return authOverrides.resend?authOverrides.resend(payload):{error:null}}
   }};
   const document={
@@ -145,7 +145,7 @@ test('signup response without a created user never claims email verification suc
 
 test('a session belonging to a different account cannot inherit signup persistence',async()=>{
   const h=harness('Create Account',{signUp:async()=>({
-    data:{user:{id:'created-account'},session:{user:{id:'different-account'}}},error:null
+    data:{user:{id:'created-account',email:'synthetic@example.invalid'},session:{user:{id:'different-account'}}},error:null
   })});
   await h.submit(h.event());
   assert.equal(h.form.querySelector('#kf221Verification'),null);
@@ -155,11 +155,22 @@ test('a session belonging to a different account cannot inherit signup persisten
 
 test('a signup session without a user identity fails closed',async()=>{
   const h=harness('Create Account',{signUp:async()=>({
-    data:{user:{id:'created-account'},session:{user:null}},error:null
+    data:{user:{id:'created-account',email:'synthetic@example.invalid'},session:{user:null}},error:null
   })});
   await h.submit(h.event());
   assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/session did not match/i);
   assert.equal(h.form.querySelector('#kf221Verification'),null);
+});
+
+test('signup without a returned email cannot falsely show a verification panel',async()=>{
+  const h=harness('Create Account',{signUp:async()=>({
+    data:{user:{id:'synthetic-id'},session:null},error:null
+  })});
+  await h.submit(h.event());
+  assert.equal(h.signups.length,1);
+  assert.equal(h.form.querySelector('#kf221Verification'),null);
+  assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/different email account/i);
+  assert.equal(h.btn.disabled,false);
 });
 
 test('signup refuses a returned user email belonging to another address',async()=>{
