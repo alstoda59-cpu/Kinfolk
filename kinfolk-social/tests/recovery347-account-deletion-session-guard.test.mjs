@@ -166,3 +166,43 @@ test('an Auth user mismatch stops before CHECK and never deletes media',async()=
   assert.equal(h.calls.removes.length,0);
   assert.equal(h.button.disabled,false);
 });
+
+
+// Recovery355: a successful RPC transport response is not proof that the
+// backend approved destructive media removal or actually deleted the account.
+for(const [label,response] of [
+  ['null',null],['empty object',{}],['explicit false',{ready:false}],['truthy string',{ready:'true'}]
+]){
+  test('backend CHECK '+label+' cannot authorize any private media removal',async()=>{
+    const h=harness();
+    h.ctx.mediaPaths={'kinfolk-media':['private.jpg']};
+    h.ctx.checkGate=deferred();
+    const task=h.ctx.runDeletion();
+    await flush();
+    h.ctx.checkGate.resolve({data:response,error:null});
+    await task;
+    assert.deepEqual(h.calls.rpc,['CHECK']);
+    assert.equal(h.calls.lists.length,0);
+    assert.equal(h.calls.removes.length,0);
+    assert.equal(h.calls.signOut,0);
+    assert.equal(h.button.disabled,false);
+    assert.match(h.status.textContent,/not explicitly approved/i);
+  });
+}
+for(const [label,response] of [
+  ['null',null],['empty object',{}],['explicit false',{deleted:false}],['truthy string',{deleted:'true'}]
+]){
+  test('backend DELETE '+label+' cannot report account deletion success',async()=>{
+    const h=harness();
+    h.ctx.deleteGate=deferred();
+    const task=h.ctx.runDeletion();
+    await flush();
+    assert.deepEqual(h.calls.rpc,['CHECK','DELETE']);
+    h.ctx.deleteGate.resolve({data:response,error:null});
+    await task;
+    assert.equal(h.calls.signOut,0);
+    assert.equal(h.calls.redirects.length,0);
+    assert.equal(h.button.disabled,false);
+    assert.match(h.status.textContent,/not confirmed by the backend/i);
+  });
+}
