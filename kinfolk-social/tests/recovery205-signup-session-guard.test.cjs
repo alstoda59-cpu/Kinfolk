@@ -38,13 +38,13 @@ function fixture({sessionCheck='missing'}={}){
     addEventListener:(type,fn)=>{if(type==='submit')submit=fn}
   };
   const auth={
-    signUp:async()=>{signups++;return {data:{user:{id:'signup-user',email:'synthetic@example.invalid'},session:{access_token:'synthetic-signup-token',user:{id:'signup-user',email:'synthetic@example.invalid'}}},error:null}}
+    signUp:async()=>{signups++;return {data:{user:{id:'signup-user',email:'synthetic@example.invalid',email_confirmed_at:'2026-10-30T00:00:00Z'},session:{access_token:'synthetic-signup-token',user:{id:'signup-user',email:'synthetic@example.invalid',email_confirmed_at:'2026-10-30T00:00:00Z'}}},error:null}}
   };
   if(sessionCheck!=='missing'){
     auth.getSession=async()=>{
       if(sessionReads++===0)return {data:{session:null},error:null};
       if(sessionCheck==='error')return {data:null,error:Error('Synthetic session check failure')};
-      return {data:{session:{access_token:'synthetic-signup-token',user:{id:sessionCheck==='matching'?'signup-user':'other-user',email:'synthetic@example.invalid'}}},error:null};
+      return {data:{session:{access_token:'synthetic-signup-token',user:{id:sessionCheck==='matching'?'signup-user':'other-user',email:'synthetic@example.invalid',email_confirmed_at:'2026-10-30T00:00:00Z'}}},error:null};
     };
   }
   vm.runInNewContext(source,{
