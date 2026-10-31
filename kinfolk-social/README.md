@@ -1,3 +1,7 @@
+# Recovery371 | Mobile login preflight deadline (2026-10-31)
+
+Continued from [Recovery370](RECOVERY370.md) on an isolated branch. [Recovery371](RECOVERY371.md) bounds the effective Phase95 pre-login Auth session lookup to 15 seconds, rejects malformed/missing session identities, and prevents a late lookup from authorizing an expired login attempt. Nine synthetic source-executed regression tests are included in offline Android/iOS auth verification. Real isolated email confirmation and two-user RLS, backend-connected media/messaging, signed native packages and physical-device QA remain unverified. No shared live backend, production, Kinfolksworld, paid resources or stores changed.
+
 # Recovery370 | Mobile signup preflight deadline (2026-10-31)
 
 Continued from [Recovery369](RECOVERY369.md) on an isolated branch. [Recovery370](RECOVERY370.md) fixes the effective Phase79 Create Account flow so a hung pre-signup Auth session lookup fails closed after 15 seconds instead of spinning forever. Seven source-executed synthetic regressions are included in the Android/iOS offline auth gate. Real isolated email confirmation and two-account RLS, backend-connected functionality, signed native packages and physical-device QA remain unverified. No shared live backend, production, Kinfolksworld, paid infrastructure or stores changed.
