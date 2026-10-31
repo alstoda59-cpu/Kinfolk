@@ -31,6 +31,8 @@ test('functional verifier checks generated package after backend gate',async()=>
   const pkg=JSON.parse(await readFile(new URL('../package.json',import.meta.url),'utf8'));
   assert.match(script,/requireFunctionalAlphaBackend\(\)/);
   assert.match(script,/import\('\.\/verify-alpha-package\.mjs'\)/);
+  assert.match(script,/requireFunctionalRlsProof\(config\)/);
+  assert.doesNotMatch(script,/await import\('\.\/verify-two-user-rls\.mjs'\)/);
   assert.equal(pkg.scripts['alpha:verify:functional'],'node scripts/verify-functional-alpha.mjs');
   assert.match(pkg.scripts['alpha:verify'],/alpha-functional-backend-gate\.test\.mjs/);
 });
