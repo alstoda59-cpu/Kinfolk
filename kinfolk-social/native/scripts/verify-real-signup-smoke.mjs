@@ -1,6 +1,6 @@
 // Opt-in real Auth smoke test. Creates ONE unconfirmed synthetic user in the ISOLATED alpha project.
 // Never call this from ordinary source CI or a live-app browser. Does not test email delivery.
-import {randomUUID, randomBytes} from 'node:crypto';
+import {randomBytes} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 import {ALPHA_REF, alphaBackendConfig} from './alpha-backend-config.mjs';
 import {assertEmailSignupReady} from './verify-isolated-auth.mjs';
@@ -8,7 +8,7 @@ import {assertEmailSignupReady} from './verify-isolated-auth.mjs';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export async function verifyIsolatedRealSignup(config,{fetchImpl=globalThis.fetch,email,password,timeoutMs=10000}={}){
   if(config?.projectRef!==ALPHA_REF||config?.offlineStub||config?.url!=='https://'+ALPHA_REF+'.supabase.co'||!/^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(config.key||'')) throw Error('Only the isolated alpha publishable client may create a test signup');
-  if(!/^kinfolkalpha\+[a-f0-9]{16,32}@example\.com$/.test(email||'')) throw Error('Only explicitly synthetic example.com addresses are permitted');
+  if(!/^[^\s@]{1,64}@[a-z0-9-]+(?:\.[a-z0-9-]+)+$/i.test(email||'')||/@(?:example\.(?:com|org|net)|[^@]+\.(?:invalid|test))$/i.test(email)) throw Error('An explicitly approved test inbox is required; reserved or invalid domains are refused');
   if(typeof password!=='string'||password.length<12||password.length>128)throw Error('Synthetic signup password must meet Kinfolk limits');
   if(typeof fetchImpl!=='function')throw Error('Fetch is required');
   const base=config.url+'/auth/v1';
@@ -26,7 +26,7 @@ export async function verifyIsolatedRealSignup(config,{fetchImpl=globalThis.fetc
   if(settings.status!==200)throw Error('Isolated Auth settings HTTP '+settings.status);
   assertEmailSignupReady(settings.data);
   // Match Phase79's actual registration metadata. The isolated signup trigger requires a birthday.
-  const username='kinfolkalpha'+email.match(/\+([a-f0-9]{16,32})@/)[1].slice(0,10);
+  const username='kinfolkalpha'+randomBytes(6).toString('hex');
   const data={display_name:'Kinfolk Alpha Test',profile_display_name:'Kinfolk Alpha Test',signup_birthdate:'2000-01-01',username,preferred_language:'en',profile_private:'true'};
   const signup=await request('/signup','POST',{email,password,data});
   if(signup.status!==200&&signup.status!==201)throw Error('Isolated Auth signup rejected: HTTP '+signup.status+' ('+String(signup.data?.error_code||signup.data?.code||'unknown')+')');
@@ -43,7 +43,8 @@ export async function verifyIsolatedRealSignup(config,{fetchImpl=globalThis.fetc
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
   if(process.env.KINFOLK_ALPHA_REAL_SIGNUP_OPT_IN!=='1')throw Error('Explicit isolated synthetic signup opt-in required');
-  const email='kinfolkalpha+'+randomUUID().replaceAll('-','').slice(0,24)+'@example.com';
+  if(process.env.KINFOLK_ALPHA_TEST_INBOX_APPROVED!=='1')throw Error('Owner must explicitly approve the deliverable test inbox before Auth signup');
+  const email=String(process.env.KINFOLK_ALPHA_TEST_EMAIL||'').trim().toLowerCase();
   const password=randomBytes(9).toString('base64url');
   const result=await verifyIsolatedRealSignup(alphaBackendConfig(process.env),{email,password});
   console.log('PASS isolated synthetic signup and unconfirmed-login block; email delivery/callback NOT verified; nonproduction test user retained ('+result.projectRef+')');
