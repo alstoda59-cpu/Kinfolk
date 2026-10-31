@@ -1,6 +1,6 @@
 # Recovery355 | Fail-closed account deletion RPC acknowledgments (2026-10-30)
 
-Continued from [Recovery354](RECOVERY354.md) on an isolated branch. [RECOVERY355.md](RECOVERY355.md) requires an explicit positive backend `CHECK` acknowledgment before removing any private account media, and an explicit positive `DELETE` acknowledgment before sign-out or redirect. Eight synthetic source-executed regressions cover missing, false and malformed responses. The isolated alpha backend still lacks the deletion RPC; real deletion, email verification, two-user RLS, physical Android/iPhone QA and signed packaging remain unverified. No production, shared live Supabase, Kinfolksworld, paid infrastructure or store changes.
+Continued from [Recovery354](RECOVERY354.md) on an isolated branch. [RECOVERY355.md](RECOVERY355.md) requires an explicit positive backend `CHECK` acknowledgment before removing any private account media, and an explicit positive `DELETE` acknowledgment before sign-out or redirect. Ten synthetic source-executed regressions cover missing, false and malformed responses plus pre-enumeration of every storage bucket before any media removal. The isolated alpha project also lacks the wallpaper bucket. The isolated alpha backend still lacks the deletion RPC; real deletion, email verification, two-user RLS, physical Android/iPhone QA and signed packaging remain unverified. No production, shared live Supabase, Kinfolksworld, paid infrastructure or store changes.
 
 # Recovery354 | Exact-token verification before and after mobile login activation (2026-10-30)
 
