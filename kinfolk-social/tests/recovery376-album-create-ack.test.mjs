@@ -13,7 +13,7 @@ const handler=source.slice(start,end);
 
 function harness(options={}){
   const {owner='synthetic-A',id='synthetic-album',
-    error=null,throwAfterCommit=false,switchAfterCommit=false}=options;
+    error=null,throwAfterCommit=false,switchAfterCommit=false,reactivateAfterCommit=false}=options;
   const count=Object.hasOwn(options,'count')?options.count:1;
   const button={disabled:false,textContent:'Create album'};
   const inputs={
@@ -25,7 +25,7 @@ function harness(options={}){
   };
   const form={id:'albumForm',isConnected:true,querySelector:s=>s==='button'?button:inputs[s]};
   const state={user:{id:'synthetic-A'},profileTab:'home'};
-  const calls=[],notices=[];
+  const calls=[],notices=[];let ctx;
   const document={getElementById:id=>id==='albumForm'?form:null,contains:el=>el===button};
   const sb={from:table=>{
     assert.equal(table,'photo_albums');
@@ -33,6 +33,7 @@ function harness(options={}){
       calls.push({type:'insert',row,requestedCount:opts?.count});
       return {select:()=>({single:async()=>{
         if(switchAfterCommit)state.user.id='synthetic-B';
+        if(reactivateAfterCommit)ctx.kf129Epoch++;
         if(throwAfterCommit)throw new Error('synthetic response lost after commit');
         return {error,count,data:{id,owner_id:owner}};
       }})};
@@ -42,14 +43,18 @@ function harness(options={}){
     if(state.user?.id!==account||editor!==form||!editor.isConnected)
       throw new Error('Account or album editor changed during upload.');
   };
-  const create=vm.runInNewContext('let busy=false;'+handler+';hardCreate',{
-    state,document,sb,requireAlbumSession,validate:()=>{},
+  ctx={
+    state,document,sb,kf129Epoch:1,requireAlbumSession:(account,editor,activation)=>{
+      requireAlbumSession(account,editor);
+      if(ctx.kf129Epoch!==activation)throw new Error('Account or album editor changed during upload.');
+    },validate:()=>{},
     addOne:async()=>{calls.push({type:'photo-upload'})},
     closeModal:()=>calls.push({type:'close'}),
     renderApp:async()=>calls.push({type:'render'}),
     tell:(message,kind)=>notices.push({message,kind}),
     console:{warn:()=>{}}
-  },{timeout:2000});
+  };
+  const create=vm.runInNewContext('let busy=false;'+handler+';hardCreate',ctx,{timeout:2000});
   return {run:()=>create({preventDefault(){}}),calls,notices,state,button};
 }
 const byType=(h,type)=>h.calls.filter(x=>x.type===type);
@@ -95,5 +100,15 @@ test('account switch after insert prevents photo upload or stale success',async(
   const h=harness({switchAfterCommit:true});await h.run();
   assert.equal(byType(h,'photo-upload').length,0);
   assert.equal(byType(h,'render').length,0);
+  assert.equal(h.notices.length,0);
+});
+
+test('same-user session reactivation after album insert prevents stale upload or success',async()=>{
+  const h=harness({reactivateAfterCommit:true});await h.run();
+  assert.equal(byType(h,'photo-upload').length,0);
+  assert.equal(byType(h,'close').length,0);
+  assert.equal(byType(h,'render').length,0);
+  assert.equal(h.button.disabled,true); // The old session's editor must not be unlocked.
+  assert.equal(byType(h,'insert').length,1);
   assert.equal(h.notices.length,0);
 });
