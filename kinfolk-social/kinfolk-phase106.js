@@ -73,7 +73,7 @@ async function addOne(albumId,file,accountId,form){
     requireAlbumSession(accountId,f);
     const title=f.querySelector('#albumTitle')?.value.trim()||'';
     const description=f.querySelector('#albumDesc')?.value.trim()||'';
-    const visibility=f.querySelector('#albumVisibility')?.value||'public';
+    const visibility=f.querySelector('#albumVisibility')?.value==='public'?'public':'private';
     const files=[...(f.querySelector('#albumFiles')?.files||[])];
     if(!title)throw new Error('Give your album a name.');
     validate(files);
@@ -146,4 +146,72 @@ async function addOne(albumId,file,accountId,form){
       btn.disabled=false;btn.textContent=old;
     }
   }
-}function bind(form,handler){if(!form)return;const file=form.querySelector('input[type=file]');if(file)file.accept=ACCEPT;form.onsubmit=handler;const btn=form.querySelector('button');if(!btn)return;btn.type='button';btn.dataset.kf106='1';const run=e=>{e.preventDefault();e.stopImmediatePropagation();handler(e)};btn.onpointerup=run;btn.ontouchend=run;btn.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopImmediatePropagation();handler(e)}}}const hardAddOpen=id=>{modal('Add photos','<form id="albumAddForm"><input class="field" id="albumAddFiles" type="file" accept="'+ACCEPT+'" multiple required><div class="muted" style="margin:6px 0">JPG, PNG, WebP or GIF · up to 5 MB each · '+LIMIT+' at a time</div><div id="albumAddProgress" class="muted" style="margin:8px 0"></div><button class="btn primary full" type="button">Upload photos</button></form>');setTimeout(()=>bind(document.getElementById('albumAddForm'),e=>hardAddSubmit(id,e)),10)};function enforce(){window.addPhotosToAlbum=hardAddOpen;const a=document.getElementById('albumForm');if(a)bind(a,hardCreate);const add=document.getElementById('albumAddForm');if(add&&add.dataset.kf106Album){const id=add.dataset.kf106Album;bind(add,e=>hardAddSubmit(id,e))}}let t;new MutationObserver(()=>{clearTimeout(t);t=setTimeout(enforce,15)}).observe(document.documentElement,{subtree:true,childList:true});setInterval(()=>{if(document.visibilityState!=='hidden')enforce()},2000);setTimeout(enforce,0);console.log('Kinfolk Phase106 album form guard ready')})();
+}
+let albumViewRequest=0;
+// The album modal may outlive a login, a same-user session activation, or a
+// replacement modal. Never append signed private media after any of those.
+async function guardedViewAlbum(id){
+  const viewerId=state?.user?.id,activation=kf129Epoch,request=++albumViewRequest;
+  const current=()=>!!viewerId&&state?.user?.id===viewerId&&kf129Epoch===activation&&request===albumViewRequest;
+  if(!current())return;
+  let albumResult,photoResult;
+  try{
+    [albumResult,photoResult]=await Promise.all([
+      sb.from('photo_albums').select('*').eq('id',id).single(),
+      sb.from('album_photos').select('*').eq('album_id',id).order('created_at',{ascending:true})
+    ]);
+  }catch(error){if(current())tell('Album could not be loaded.');return}
+  if(!current())return;
+  if(albumResult?.error||photoResult?.error){
+    tell(albumResult?.error?.message||photoResult?.error?.message||'Album could not be loaded.');
+    return;
+  }
+  const album=albumResult?.data,photos=photoResult?.data;
+  if(!album||album.id!==id||!Array.isArray(photos)){
+    tell('Album response could not be verified.');
+    return;
+  }
+  const owner=album.owner_id===viewerId;
+  modal(album.title,
+    '<div class="muted" style="margin-bottom:10px">'+esc(album.description||'')+' · '+esc(album.visibility||'private')+'</div>'+
+    '<div class="photoGrid" id="albumPhotoGrid"></div>'+
+    (owner?'<div class="divider"></div><button id="albumAddPhotosAction" class="btn primary full" type="button">＋ Add photos</button>':'')
+  );
+  const modalRequest=kf300MessageRequest,root=document.getElementById('albumPhotoGrid');
+  if(!root)return;
+  const active=()=>current()&&kf300MessageRequest===modalRequest&&root.isConnected&&document.getElementById('albumPhotoGrid')===root;
+  if(owner){
+    const add=document.getElementById('albumAddPhotosAction');
+    if(add)add.onclick=()=>{if(active())window.addPhotosToAlbum(id)};
+  }
+  let rendered=0;
+  for(const photo of photos){
+    if(!active())return;
+    // A mismatched result must never cause a signed URL request.
+    if(!photo||photo.album_id!==id||photo.owner_id!==album.owner_id||!photo.id||!photo.storage_path)continue;
+    let url;
+    try{url=await signed('kinfolk-media',photo.storage_path)}
+    catch(error){if(!active())return;continue}
+    if(!active())return;
+    if(typeof url!=='string'||!/^https?:\/\//i.test(url))continue;
+    try{if(!['http:','https:'].includes(new URL(url).protocol))continue}catch{continue}
+    const wrap=document.createElement('div');
+    wrap.className='photoCommentWrap';
+    const open=document.createElement('button');
+    open.type='button';open.className='photoTile';
+    open.onclick=()=>{if(active())window.open(url,'_blank','noopener,noreferrer')};
+    const img=document.createElement('img');
+    img.src=url;img.loading='lazy';img.alt='Album photo';
+    open.appendChild(img);
+    const comments=document.createElement('button');
+    comments.type='button';comments.className='btn small';
+    comments.textContent='◯ Comments & replies';
+    comments.onclick=()=>{if(active())window.openMediaComments('photo',photo.id)};
+    wrap.append(open,comments);
+    if(!active())return;
+    root.appendChild(wrap);
+    rendered++;
+  }
+  if(active()&&!rendered)root.textContent='No photos yet.';
+}
+function bind(form,handler){if(!form)return;const file=form.querySelector('input[type=file]');if(file)file.accept=ACCEPT;form.onsubmit=handler;const btn=form.querySelector('button');if(!btn)return;btn.type='button';btn.dataset.kf106='1';const run=e=>{e.preventDefault();e.stopImmediatePropagation();handler(e)};btn.onpointerup=run;btn.ontouchend=run;btn.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopImmediatePropagation();handler(e)}}}const hardAddOpen=id=>{modal('Add photos','<form id="albumAddForm"><input class="field" id="albumAddFiles" type="file" accept="'+ACCEPT+'" multiple required><div class="muted" style="margin:6px 0">JPG, PNG, WebP or GIF · up to 5 MB each · '+LIMIT+' at a time</div><div id="albumAddProgress" class="muted" style="margin:8px 0"></div><button class="btn primary full" type="button">Upload photos</button></form>');setTimeout(()=>bind(document.getElementById('albumAddForm'),e=>hardAddSubmit(id,e)),10)};function enforce(){window.addPhotosToAlbum=hardAddOpen;window.viewAlbum=guardedViewAlbum;const a=document.getElementById('albumForm');if(a)bind(a,hardCreate);const add=document.getElementById('albumAddForm');if(add&&add.dataset.kf106Album){const id=add.dataset.kf106Album;bind(add,e=>hardAddSubmit(id,e))}}let t;new MutationObserver(()=>{clearTimeout(t);t=setTimeout(enforce,15)}).observe(document.documentElement,{subtree:true,childList:true});setInterval(()=>{if(document.visibilityState!=='hidden')enforce()},2000);setTimeout(enforce,0);console.log('Kinfolk Phase106 album form guard ready')})();
