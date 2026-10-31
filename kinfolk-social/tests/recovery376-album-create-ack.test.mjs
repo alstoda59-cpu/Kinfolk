@@ -12,8 +12,9 @@ assert.ok(start>=0&&end>start,'effective album create handler must exist');
 const handler=source.slice(start,end);
 
 function harness(options={}){
-  const {count=1,owner='synthetic-A',id='synthetic-album',
+  const {owner='synthetic-A',id='synthetic-album',
     error=null,throwAfterCommit=false,switchAfterCommit=false}=options;
+  const count=Object.hasOwn(options,'count')?options.count:1;
   const button={disabled:false,textContent:'Create album'};
   const inputs={
     '#albumTitle':{value:'A family album'},
@@ -90,6 +91,8 @@ test('thrown response failure after possible commit never starts uploads',async(
   const h=harness({throwAfterCommit:true});await h.run();failed(h);
 });
 test('account switch after insert prevents photo upload or stale success',async()=>{
-  const h=harness({switchAfterCommit:true});await h.run();failed(h);
+  const h=harness({switchAfterCommit:true});await h.run();
+  assert.equal(byType(h,'photo-upload').length,0);
+  assert.equal(byType(h,'render').length,0);
   assert.equal(h.notices.length,0);
 });
