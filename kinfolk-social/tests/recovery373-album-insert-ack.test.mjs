@@ -13,7 +13,7 @@ const helper=source.slice(start,end);
 
 function harness(options={}){
   const count=Object.prototype.hasOwnProperty.call(options,'count')?options.count:1;
-  const {error=null,switchAfterInsert=false}=options;
+  const {error=null,switchAfterInsert=false,albumOwner='synthetic-owner-A',albumId='synthetic-album',missingAlbum=false,albumError=null,switchDuringLookup=false}=options;
   const form={id:'albumAddForm',isConnected:true};
   const state={user:{id:'synthetic-owner-A'}};
   const calls=[];
@@ -33,6 +33,20 @@ function harness(options={}){
       };
     }},
     from:table=>{
+      if(table==='photo_albums')return {
+        select:columns=>{
+          assert.equal(columns,'id,owner_id');
+          return {eq:(column,id)=>{
+            assert.equal(column,'id');
+            assert.equal(id,'synthetic-album');
+            return {maybeSingle:async()=>{
+              calls.push({type:'album-lookup'});
+              if(switchDuringLookup)state.user.id='synthetic-owner-B';
+              return {error:albumError,data:missingAlbum?null:{id:albumId,owner_id:albumOwner}};
+            }};
+          }};
+        }
+      };
       assert.equal(table,'album_photos');
       return {insert:async(row,options)=>{
         calls.push({type:'insert',row,requestedCount:options?.count});
@@ -89,4 +103,36 @@ test('account switch after confirmed insert never deletes linked media',async()=
   const h=harness({switchAfterInsert:true});
   await assert.rejects(h.run(),/Account or album editor changed/);
   assert.equal(byType(h,'remove').length,0);
+});
+
+test('ownership lookup happens before storage upload or insert',async()=>{
+  const h=harness();
+  await h.run();
+  assert.deepEqual(h.calls.map(call=>call.type).slice(0,3),['album-lookup','upload','insert']);
+});
+test('foreign-owned album cannot cause speculative storage writes',async()=>{
+  const h=harness({albumOwner:'synthetic-owner-B'});
+  await assert.rejects(h.run(),/not owned by this account/);
+  assert.equal(byType(h,'upload').length,0);
+  assert.equal(byType(h,'insert').length,0);
+});
+test('missing album fails before any storage writes',async()=>{
+  const h=harness({missingAlbum:true});
+  await assert.rejects(h.run(),/Album is unavailable/);
+  assert.equal(byType(h,'upload').length,0);
+});
+test('mismatched album identifier fails before upload',async()=>{
+  const h=harness({albumId:'different-album'});
+  await assert.rejects(h.run(),/Album is unavailable/);
+  assert.equal(byType(h,'upload').length,0);
+});
+test('album lookup errors do not create orphan media',async()=>{
+  const h=harness({albumError:new Error('synthetic album RLS denied')});
+  await assert.rejects(h.run(),/synthetic album RLS denied/);
+  assert.equal(byType(h,'upload').length,0);
+});
+test('account switch during ownership lookup stops upload',async()=>{
+  const h=harness({switchDuringLookup:true});
+  await assert.rejects(h.run(),/Account or album editor changed/);
+  assert.equal(byType(h,'upload').length,0);
 });

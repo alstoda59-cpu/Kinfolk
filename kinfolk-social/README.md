@@ -1,3 +1,7 @@
+# Recovery374 | Album ownership preflight (2026-10-31)
+
+Continued from [Recovery373](RECOVERY373.md) on an isolated branch. [Recovery374](RECOVERY374.md) verifies the exact album ID and initiating account owner before any photo storage upload, and rejects missing, foreign-owned or stale-session album lookups. Six additional synthetic regressions are included in the existing offline Android/iPhone media source gate. The isolated backend still lacks album tables and has no synthetic accounts, so real RLS, uploads, email delivery and device QA are not established. No production, shared live backend, Kinfolksworld, paid resources or stores changed.
+
 # Recovery373 | Album-photo insert acknowledgment (2026-10-31)
 
 Continued from [Recovery372](RECOVERY372.md) on an isolated branch. [Recovery373](RECOVERY373.md) requires exactly one affected album-photo row before reporting upload success; zero-row results clean unlinked media, while ambiguous acknowledgments preserve potentially referenced files. Seven synthetic source-executed regressions are included in Android/iPhone offline media verification. The isolated alpha backend has zero users and is missing both album tables, so real uploads, email confirmation, two-user RLS and physical-device QA remain unverified. No shared live backend, production, Kinfolksworld, paid resources or stores changed.

@@ -2,6 +2,17 @@
   if(!accountId||state?.user?.id!==accountId||document.getElementById(form.id)!==form||form.isConnected===false)
     throw new Error('Account or album editor changed during upload. Reopen your album and try again.');
 }
+// Confirm album ownership before creating any storage object. A guessed album
+// ID must never trigger a speculative upload, even if the eventual INSERT RLS
+// would reject it. Recheck the initiating account after the network read.
+async function requireOwnedAlbum(albumId,accountId,form){
+  requireAlbumSession(accountId,form);
+  const q=await sb.from('photo_albums').select('id,owner_id').eq('id',albumId).maybeSingle();
+  requireAlbumSession(accountId,form);
+  if(q.error)throw q.error;
+  if(!q.data||q.data.id!==albumId||q.data.owner_id!==accountId)
+    throw new Error('Album is unavailable or not owned by this account. Reopen your album.');
+}
 async function cleanupAlbumUpload(path){
   try{
     const {error}=await sb.storage.from('kinfolk-media').remove([path]);
@@ -10,6 +21,7 @@ async function cleanupAlbumUpload(path){
 }
 async function addOne(albumId,file,accountId,form){
   requireAlbumSession(accountId,form);
+  await requireOwnedAlbum(albumId,accountId,form);
   const path=accountId+'/albums/'+albumId+'/'+crypto.randomUUID()+'-'+safe(file.name);
   let uploaded=false,linked=false;
   try{
