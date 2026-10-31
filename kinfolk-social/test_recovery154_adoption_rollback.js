@@ -3,7 +3,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const src = fs.readFileSync(path.join(__dirname, 'kinfolk-phase95.js'), 'utf8');
-const start = src.indexOf('function saveStay(stay)');
+// Include the write-version binding used by the production rollback closure.
+const start = src.indexOf('let preferenceWriteVersion=0;');
 const stop = src.indexOf('function unlock(', start);
 assert.ok(start >= 0 && stop > start, 'saveStay source is present');
 const saveStayCode = src.slice(start, stop);
