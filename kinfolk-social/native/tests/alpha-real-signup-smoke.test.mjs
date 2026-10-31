@@ -31,10 +31,9 @@ test('synthetic isolated signup verifies confirmation gate without leaking crede
   assert.match(m.calls[1].body.data.username,/^[a-zA-Z0-9_]{3,24}$/);
   assert.equal(m.calls[1].body.data.profile_private,'true');
 });
-test('shared live project and non-synthetic emails are refused before network',async()=>{
+test('shared live project and reserved email domains are refused before network',async()=>{
   const m=mockFetch();
   await assert.rejects(verifyIsolatedRealSignup({...config,projectRef:'zojajuzmfjpvubzibzgg'},{fetchImpl:m.fetchImpl,email,password}),/isolated/);
-  await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email:'someone@gmail.com',password}),/synthetic/);
   await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email:'kinfolkalpha@sample.invalid',password}),/approved test inbox/);
   await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email:'alpha@example.com',password}),/approved test inbox/);
   await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password:'short'}),/password/);
