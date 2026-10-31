@@ -32,6 +32,21 @@ export async function verifyIsolatedRealSignup(config,{fetchImpl=globalThis.fetc
   if(signup.status!==200&&signup.status!==201)throw Error('Isolated Auth signup rejected: HTTP '+signup.status+' ('+String(signup.data?.error_code||signup.data?.code||'unknown')+')');
   const user=signup.data?.user??signup.data;
   if(!UUID.test(user?.id||''))throw Error('Signup did not return a user ID');
+  // Supabase may return a user-shaped, deliberately obfuscated response for an
+  // existing email. HTTP 200 + a UUID cannot prove a *new* signup. Require
+  // the requested email and a matching new email identity before probing login.
+  // Fail closed if the backend omits identity evidence rather than claiming
+  // that account creation succeeded.
+  const normalizeEmail=value=>typeof value==='string'?value.trim().toLowerCase():null;
+  const requestedEmail=normalizeEmail(email);
+  if(!requestedEmail||normalizeEmail(user.email)!==requestedEmail){
+    throw Error('Signup did not return the requested email identity');
+  }
+  if(!Array.isArray(user.identities)||!user.identities.some(identity=>
+    identity?.provider==='email'&&identity.user_id===user.id&&
+    normalizeEmail(identity.identity_data?.email)===requestedEmail)){
+    throw Error('Signup did not prove a new email identity');
+  }
   if(user?.email_confirmed_at||signup.data?.session||signup.data?.access_token)throw Error('Unconfirmed signup unexpectedly returned a confirmed user or session');
   // Verify the new account cannot log in with its password before email confirmation.
   const login=await request('/token?grant_type=password','POST',{email,password});
