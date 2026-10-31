@@ -28,12 +28,12 @@ const runCase = async ({ initialLocal = [], initialTab = [], stay, adoptFails = 
   const adopt = async () => {
     attempts++;
     if (adoptFails) throw Error('simulated session adoption failure');
-    return { user: { id: 'synthetic-user' } };
+    return { user: { id: 'synthetic-user' }, access_token: 'synthetic-access' };
   };
-  const perform = new Function('saveStay', 'adopt', 'currentAccountId', 'clearFailedLoginSession', 'startingAccount', 'stay', 'tokens', 'console',
+  const perform = new Function('saveStay', 'adopt', 'verifyActiveLoginToken', 'clearFailedLoginSession', 'startingAccount', 'stay', 'tokens', 'console',
     'return (async () => {' + adoptionCode + ';return session})()');
   let error = null, session = null;
-  try { session = await perform(saveStay, adopt, async () => activeId, async () => {}, null, stay, {user:{id:'synthetic-user'}}, { warn() {} }); }
+  try { session = await perform(saveStay, adopt, async session => { if (activeId !== session.user.id || session.access_token !== 'synthetic-access') throw Error('The active session changed during login. Please log in again.'); }, async () => {}, null, stay, {user:{id:'synthetic-user'}}, { warn() {} }); }
   catch (err) { error = err; }
   return { local, tab, attempts, error, session };
 };
@@ -61,7 +61,7 @@ const runCase = async ({ initialLocal = [], initialTab = [], stay, adoptFails = 
   assert.equal(r.local.get('p1'), '1');
   assert.equal(r.local.get('p2'), '1');
   r = await runCase({ initialLocal: [['p1','1'],['p2','1']], stay: false, activeId: 'different-account' });
-  assert.match(r.error?.message || '', /active account changed/i);
+  assert.match(r.error?.message || '', /active session changed/i);
   assert.equal(r.local.get('p1'), '1', 'account switch restores original stay preference');
   assert.equal(r.local.get('p2'), '1');
   assert.equal(r.tab.has('tab'), false);

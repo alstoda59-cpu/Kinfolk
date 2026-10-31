@@ -39,7 +39,7 @@ test('activation receives the same verified session object',async()=>{
 test('login handler awaits verified activation and preserves rollback on failure',()=>{
   const handler=source.slice(end);
   const activate=handler.indexOf('await activateLoginSession(session);');
-  const recheck=handler.indexOf('if(await currentAccountId()!==session?.user?.id)',activate);
+  const recheck=handler.indexOf('await verifyActiveLoginToken(session);',activate);
   assert.ok(activate>=0&&recheck>activate,'activation result checked before final account verification');
   assert.match(handler,/catch\(activationError\)\{try\{restoreStay\(\)\}/);
   assert.match(handler,/await clearFailedLoginSession\(session\?\.user\?\.id,startingAccount,session\?\.access_token\)/);

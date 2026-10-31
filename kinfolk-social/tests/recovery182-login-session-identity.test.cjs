@@ -33,11 +33,11 @@ function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionEr
   const sb={auth:{
     async getSession(){
       const id=ids[Math.min(read++,ids.length-1)];
-      return {data:{session:id===null?null:{user:{id,email:'test@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'}}},error:null};
+      return {data:{session:id===null?null:{user:{id,email:'test@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'},access_token:'synthetic'}},error:null};
     },
     async setSession(){
       adoptions++;
-      return {data:{session:{user:adoptedId?{id:adoptedId,email:'test@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'}:null}},error:setSessionError};
+      return {data:{session:{user:adoptedId?{id:adoptedId,email:'test@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'}:null,access_token:'synthetic'}},error:setSessionError};
     }
   }};
   const window={};
@@ -76,14 +76,14 @@ test('matching active session activates login and persists selected choice',asyn
 });
 test('account switch during password request prevents adopting stale tokens',async()=>{
   const f=fixture({ids:[null,'other']});
-  assert.match(await f.submit(),/active account changed/);
+  assert.match(await f.submit(),/active (account|session) changed/);
   assert.equal(f.adoptions,0);
   assert.equal(f.activated,0);
   assert.equal(f.local.get('kinfolk_stay_logged_in_v1'),'1');
 });
 test('different account after setSession is not activated',async()=>{
   const f=fixture({ids:[null,null,'other']});
-  assert.match(await f.submit(),/active account changed/);
+  assert.match(await f.submit(),/active (account|session) changed/);
   assert.equal(f.adoptions,1);
   assert.equal(f.activated,0);
   assert.equal(f.local.get('kinfolk_stay_logged_in_v1'),'1');
@@ -91,7 +91,7 @@ test('different account after setSession is not activated',async()=>{
 });
 test('account switch after verification cannot activate old session',async()=>{
   const f=fixture({ids:[null,null,'login','other']});
-  assert.match(await f.submit(),/active account changed/);
+  assert.match(await f.submit(),/active (account|session) changed/);
   assert.equal(f.activated,0);
   assert.equal(f.local.get('kinfolk_stay_logged_in_v1'),'1');
 });
@@ -135,7 +135,7 @@ test('activation rejection reports error and restores Stay Logged In',async()=>{
 });
 test('account switch during activation reports error and restores preference',async()=>{
   const f=fixture({ids:[null,null,'login','login','other']});
-  assert.match(await f.submit(),/active account changed while opening Kinfolk/);
+  assert.match(await f.submit(),/active session changed during login/);
   assert.equal(f.activated,1);
   assert.equal(f.local.get('kinfolk_stay_logged_in_v1'),'1');
   assert.equal(f.tab.has('kinfolk_session_tab'),false);
