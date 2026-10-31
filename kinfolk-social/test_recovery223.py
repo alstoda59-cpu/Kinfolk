@@ -20,7 +20,7 @@ def fill_signup(page,email):
 with sync_playwright() as p:
     for engine in os.environ.get('KINFOLK_TEST_ENGINES','chromium,webkit').split(','):
         browser=getattr(p,engine).launch(headless=True)
-        for rejection in (False,True):
+        for rejection,wrong_identity in ((False,False),(True,False),(False,True)):
             page=browser.new_page(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
             page.route('**/*',lambda route:route.abort())
             errors=[]
@@ -51,8 +51,11 @@ with sync_playwright() as p:
             page.locator('.kf73Primary').click()
             assert page.evaluate('window.__signup223Calls')==1
             assert 'previous account creation request' in page.locator('.kf73Msg').inner_text().lower()
+            # Both synthetic success responses must carry the exact requested email.
+            # Otherwise the Phase79 fail-closed identity guard would reject them
+            # before this test could exercise the intended stale-form race.
             response=({'data':None,'error':{'message':'Synthetic signup rejected'}} if rejection
-                      else {'data':{'session':None,'user':{'id':'synthetic'}},'error':None})
+                      else {'data':{'session':None,'user':{'id':'synthetic','email':'old@example.test'}},'error':None})
             page.evaluate('(result)=>window.__resolvers223[0](result)',response)
             page.wait_for_timeout(200)
             assert page.locator('#kf221Verification').count()==0,'old result must not mount verification'
@@ -61,12 +64,17 @@ with sync_playwright() as p:
             assert page.evaluate('window.__signup223Calls')==1
             page.locator('.kf73Primary').click()
             page.wait_for_function('window.__signup223Calls===2')
-            page.evaluate("""() => window.__resolvers223[1]({
-                data:{user:{id:'new-user'},session:null},error:null
-            })""")
-            page.locator('#kf221Verification').wait_for(state='visible')
-            assert 'new@example.test' in page.locator('#kf221Verification').inner_text()
+            page.evaluate("""(wrongIdentity) => window.__resolvers223[1]({
+                data:{user:{id:'new-user',email:wrongIdentity?'another@example.test':'new@example.test'},session:null},error:null
+            })""",wrong_identity)
+            if wrong_identity:
+                page.wait_for_function("document.querySelector('.kf73Msg')?.textContent.includes('different email account')")
+                assert page.locator('#kf221Verification').count()==0,'mismatched signup email must not show verification'
+                assert 'different email account' in page.locator('.kf73Msg').inner_text()
+            else:
+                page.locator('#kf221Verification').wait_for(state='visible')
+                assert 'new@example.test' in page.locator('#kf221Verification').inner_text()
             assert not errors,errors
             page.close()
-        print('PASS Recovery223',engine,'old signup success/error ignored after returning to signup; retry works')
+        print('PASS Recovery223',engine,'stale signup ignored; valid retry verifies; mismatched email fails closed')
         browser.close()
