@@ -13,25 +13,25 @@ const end=source.indexOf('function updateSignupPrivacy(',start);
 assert.ok(start>=0&&end>start,'Phase79 signup session helper found');
 const snippet=source.slice(start,end);
 const email='test.account@example.invalid';
-const session={user:{id:'synthetic-user-a',email}};
+const session={access_token:'synthetic-signup-token-a',user:{id:'synthetic-user-a',email}};
 function helper(active,{error=null,available=true}={}){
   const sb=available?{auth:{getSession:async()=>({data:{session:active},error})}}:undefined;
   return vm.runInNewContext('(()=>{'+snippet+';return signupSessionIsCurrent})()', {sb});
 }
-test('matching signup account ID and email can retain session choice',async()=>{
+test('matching signup account ID, email and access token can retain session choice',async()=>{
   assert.equal(await helper(session)(session,email),true);
 });
 test('case differences in confirmed email are accepted',async()=>{
-  assert.equal(await helper({user:{id:'synthetic-user-a',email:'TEST.ACCOUNT@example.invalid'}})(session,email),true);
+  assert.equal(await helper({access_token:session.access_token,user:{id:'synthetic-user-a',email:'TEST.ACCOUNT@example.invalid'}})(session,email),true);
 });
 test('same ID with a changed active email is rejected',async()=>{
-  assert.equal(await helper({user:{id:'synthetic-user-a',email:'other@example.invalid'}})(session,email),false);
+  assert.equal(await helper({access_token:session.access_token,user:{id:'synthetic-user-a',email:'other@example.invalid'}})(session,email),false);
 });
 test('different active account ID is rejected',async()=>{
-  assert.equal(await helper({user:{id:'synthetic-user-b',email}})(session,email),false);
+  assert.equal(await helper({access_token:session.access_token,user:{id:'synthetic-user-b',email}})(session,email),false);
 });
 test('missing active or returned signup email is rejected',async()=>{
-  assert.equal(await helper({user:{id:'synthetic-user-a'}})(session,email),false);
+  assert.equal(await helper({access_token:session.access_token,user:{id:'synthetic-user-a'}})(session,email),false);
   assert.equal(await helper(session)({user:{id:'synthetic-user-a'}},email),false);
 });
 test('wrong submitted email or missing submitted email is rejected',async()=>{
