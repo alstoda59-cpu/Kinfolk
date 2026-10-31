@@ -145,7 +145,7 @@ test('signup response without a created user never claims email verification suc
 
 test('a session belonging to a different account cannot inherit signup persistence',async()=>{
   const h=harness('Create Account',{signUp:async()=>({
-    data:{user:{id:'created-account',email:'synthetic@example.invalid'},session:{user:{id:'different-account'}}},error:null
+    data:{user:{id:'created-account',email:'synthetic@example.invalid',identities:[{provider:'email',user_id:'created-account',identity_data:{email:'synthetic@example.invalid'}}]},session:{user:{id:'different-account'}}},error:null
   })});
   await h.submit(h.event());
   assert.equal(h.form.querySelector('#kf221Verification'),null);
@@ -155,7 +155,7 @@ test('a session belonging to a different account cannot inherit signup persisten
 
 test('a signup session without a user identity fails closed',async()=>{
   const h=harness('Create Account',{signUp:async()=>({
-    data:{user:{id:'created-account',email:'synthetic@example.invalid'},session:{user:null}},error:null
+    data:{user:{id:'created-account',email:'synthetic@example.invalid',identities:[{provider:'email',user_id:'created-account',identity_data:{email:'synthetic@example.invalid'}}]},session:{user:null}},error:null
   })});
   await h.submit(h.event());
   assert.match(h.form.querySelector('.kf73Msg')?.textContent||'',/session did not match/i);
@@ -185,7 +185,7 @@ test('signup refuses a returned user email belonging to another address',async()
 
 test('signup refuses a same-id session whose email differs from the submitted address',async()=>{
   const h=harness('Create Account',{signUp:async()=>({
-    data:{user:{id:'synthetic-id',email:'synthetic@example.invalid'},session:{user:{id:'synthetic-id',email:'other@example.invalid'}}},error:null
+    data:{user:{id:'synthetic-id',email:'synthetic@example.invalid',identities:[{provider:'email',user_id:'synthetic-id',identity_data:{email:'synthetic@example.invalid'}}]},session:{user:{id:'synthetic-id',email:'other@example.invalid'}}},error:null
   })});
   await h.submit(h.event());
   assert.equal(h.form.querySelector('#kf221Verification'),null);
