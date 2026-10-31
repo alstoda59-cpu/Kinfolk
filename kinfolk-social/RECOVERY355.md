@@ -14,11 +14,11 @@ In `kinfolk-phase115.js`, deletion previously treated an HTTP-successful `CHECK`
 - Require `check.data?.ready === true` **before** listing or removing any private media.
 - Require `del.data?.deleted === true` before displaying success, signing out or redirecting.
 - On missing/malformed acknowledgments, show an actionable error and allow retry. Do not claim account deletion succeeded.
-- Preserve existing exact account/session/token/modal guards, three storage buckets and dark mobile UI. This does not repair a missing backend function or make client-side media deletion atomic.
+- Pre-enumerate all three configured storage buckets before deleting the first object. A missing or inaccessible later bucket can no longer cause partial deletion of earlier buckets during enumeration. Existing exact account/session/token/modal guards and dark mobile UI are preserved. This still does not make client-side deletion atomic: a later removal or final RPC failure can leave partial effects.
 
 ## Tests and packaging
 
-- Extended `tests/recovery347-account-deletion-session-guard.test.mjs` with **eight** source-executed synthetic cases: null, empty, explicit false and truthy string for each of `CHECK` and `DELETE`. The preflight tests assert zero media enumeration/removal; final-response tests assert zero sign-outs or redirects.
+- Extended `tests/recovery347-account-deletion-session-guard.test.mjs` with **ten** source-executed synthetic cases: null, empty, explicit false and truthy string for each of `CHECK` and `DELETE`. Eight acknowledgment tests assert no media enumeration/removal for rejected CHECK and no sign-out/redirect for rejected DELETE. Two additional tests cover missing later storage buckets and successful all-bucket preflight before the first removal.
 - Existing source CI runs all `*.test.mjs` tests. Existing `native/package.json` safety source gate already includes this test file; no duplicated runner.
 - Added this isolated branch to `.github/workflows/kinfolk-alpha-native.yml` for offline-only Android debug APK and unsigned iOS Simulator compilation. Native CI still uses unreachable packaging-only backend markers, **not** a functional connected alpha.
 
@@ -26,4 +26,4 @@ In `kinfolk-phase115.js`, deletion previously treated an HTTP-successful `CHECK`
 
 At documentation time, source/native CI must be checked at the exact final commit. Intermediate Vercel READY is a deployment state, not a backend test; final-commit READY is not assumed. No real synthetic account signup/email verification, two-account RLS, uploads, messaging, teen-safety or physical Android/iPhone QA has been completed.
 
-The isolated alpha backend lacks the deletion RPC, so functional deletion remains blocked. Real account deletion must be tested with synthetic accounts only after a reviewed backend implementation is separately authorized. No shared live Supabase schema/data/auth/security, production deployment/alias, Kinfolksworld, paid infrastructure or app stores changed. Kinfolk is **not launch-ready**.
+The isolated alpha backend lacks the deletion RPC and the optional `kinfolk-wallpapers` storage bucket (read-only inspection found only `kinfolk-media` and `kinfolk-video`). Functional deletion remains blocked. The missing wallpaper bucket now fails before any media is removed, rather than after earlier buckets have been emptied. Real account deletion must be tested with synthetic accounts only after a reviewed backend implementation is separately authorized. No shared live Supabase schema/data/auth/security, production deployment/alias, Kinfolksworld, paid infrastructure or app stores changed. Kinfolk is **not launch-ready**.
