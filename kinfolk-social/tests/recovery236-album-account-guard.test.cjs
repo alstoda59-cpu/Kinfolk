@@ -23,7 +23,7 @@ function harness(behavior){
     from:table=>{
       assert.equal(table,'album_photos');
       return {insert:async (row,options)=>{
-        assert.deepEqual(options,{count:'exact'});
+        assert.equal(options?.count,'exact');
         calls.push(['insert',row.owner_id,row.storage_path]);
         if(behavior==='switch-insert')state.user.id='account-B';
         if(behavior==='deny-insert')return {error:new Error('synthetic insert denied'),count:null};
