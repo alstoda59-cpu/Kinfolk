@@ -1,3 +1,7 @@
+# Recovery358 | Cross-tab Stay Logged In rollback ownership (2026-10-30)
+
+Continued from [Recovery357](RECOVERY357.md) on an isolated branch. [Recovery358](RECOVERY358.md) prevents a failed login in one tab from undoing a newer identical-value Stay Logged In choice in another tab by adding a shared write-owner marker and rollback tombstone to the effective Phase95 handler. Five source-executed synthetic regressions are wired into the offline Android/iOS auth gate. CI/native status and real Supabase signup/email/RLS, physical devices and signed packaging remain separate release gates. No shared live backend, production, Kinfolksworld, paid resources or stores changed.
+
 # Recovery357 | One-shot failed-login preference rollback and source-CI repair (2026-10-30)
 
 Continued from isolated [Recovery356](RECOVERY356.md), without a merge or redesign. [Recovery357](RECOVERY357.md) prevents a stale Stay Logged In rollback callback from running twice over a later same-value preference, repairs three historical synthetic VM fixtures that omitted the production write-version state, and gates offline Android/iOS builds on the new regression. Real isolated Supabase Auth/email/RLS, backend-connected native packages and physical devices remain unverified. No live backend, production, Kinfolksworld, paid resources or stores changed.

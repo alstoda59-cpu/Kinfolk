@@ -41,7 +41,7 @@ const runCase = async ({ initialLocal = [], initialTab = [], stay, adoptFails = 
 (async () => {
   let r = await runCase({ stay: false, adoptFails: true });
   assert.match(r.error?.message || '', /adoption failure/);
-  assert.equal(r.local.size, 0, 'missing prior preference keys are removed on rollback');
+  assert.equal([...r.local.keys()].filter(key=>key!=='kinfolk_stay_login_write_owner_v1').length, 0, 'missing prior preference keys are removed on rollback');
   assert.equal(r.tab.size, 0, 'missing prior tab flag is removed on rollback');
   r = await runCase({ initialLocal: [['p1','1'],['p2','1']], stay: false, adoptFails: true });
   assert.equal(r.local.get('p1'), '1');

@@ -84,6 +84,8 @@ on:
       - kinfolk-social/recovery356-login-preference-rollback-20261030
       # Recovery357: repair historical VM regression extraction for versioned Stay Logged In state.
       - kinfolk-social/recovery357-auth-preference-ci-20261030
+      # Recovery358: validate cross-tab preference ownership before offline native compilation.
+      - kinfolk-social/recovery358-cross-tab-preference-ownership-20261030
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'

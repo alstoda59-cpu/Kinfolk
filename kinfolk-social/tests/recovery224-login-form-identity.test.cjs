@@ -4,6 +4,8 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const source=fs.readFileSync('kinfolk-social/kinfolk-phase95.js','utf8');
+// Ignore internal cross-tab ownership metadata when counting saved user preferences.
+const userPrefs=map=>[...map.keys()].filter(key=>key!=='kinfolk_stay_login_write_owner_v1').length;
 
 // Full Phase95 login handler, synthetic SDK/storage/DOM. No real network, users,
 // database writes, mobile WebView or account credentials.
@@ -92,7 +94,7 @@ test('old login token success cannot activate after Login -> Signup -> Login',as
  f.hold.resolve();await first;
  assert.equal(f.activations,0);
  assert.equal(f.adoptions,0);
- assert.equal(f.prefs.size,0,'old login cannot persist preference');
+ assert.equal(userPrefs(f.prefs),0,'old login cannot persist preference');
  assert.match(f.fields['.kf73Msg'].textContent,/previous login attempt/i);
  await f.submit();
  assert.equal(f.tokenCalls,2);
@@ -108,7 +110,7 @@ test('old login token error cannot repaint a new login screen',async()=>{
  f.hold.resolve();await first;
  assert.equal(f.fields['.kf73Msg'].textContent,note);
  assert.equal(f.activations,0);
- assert.equal(f.prefs.size,0);
+ assert.equal(userPrefs(f.prefs),0);
  await f.submit();
  assert.equal(f.activations,1);
 });
@@ -122,7 +124,7 @@ test('navigation during session adoption restores preference and signs out only 
  assert.equal(f.adoptions,1,'new login blocked during adoption');
  f.hold.resolve();await first;
  assert.equal(f.activations,0,'stale adoption must not open main app');
- assert.equal(f.prefs.size,0,'stale adoption restores previous preference');
+ assert.equal(userPrefs(f.prefs),0,'stale adoption restores previous preference');
  assert.equal(f.signouts,1,'stale adopted session cleaned up locally');
  assert.equal(f.session,null);
  await f.submit();

@@ -4,6 +4,8 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const source=fs.readFileSync('kinfolk-social/kinfolk-phase95.js','utf8');
+// Ignore internal cross-tab ownership metadata when counting saved user preferences.
+const userPrefs=map=>[...map.keys()].filter(key=>key!=='kinfolk_stay_login_write_owner_v1').length;
 
 // Full committed login handler, synthetic DOM/Auth/storage only. No real accounts.
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve}}
@@ -71,7 +73,7 @@ test('existing signed-in account cannot be silently replaced by login',async()=>
   assert.equal(h.activations,0);
   assert.equal(h.signouts,0);
   assert.equal(h.session.user.id,'existing-id');
-  assert.equal(h.prefs.size,0);
+  assert.equal(userPrefs(h.prefs),0);
   assert.match(h.fields['.kf73Msg'].textContent,/already signed in/i);
 });
 
@@ -84,7 +86,7 @@ test('changing Stay Logged In during token request rejects stale choice',async()
   await pending;
   assert.equal(h.adoptions,0);
   assert.equal(h.activations,0);
-  assert.equal(h.prefs.size,0);
+  assert.equal(userPrefs(h.prefs),0);
   assert.equal(h.signouts,0);
   assert.match(h.fields['.kf73Msg'].textContent,/login details changed/i);
 });
@@ -100,7 +102,7 @@ test('changing Stay Logged In during adoption restores preference and clears new
   assert.equal(h.activations,0);
   assert.equal(h.signouts,1);
   assert.equal(h.session,null);
-  assert.equal(h.prefs.size,0);
+  assert.equal(userPrefs(h.prefs),0);
   assert.equal(h.tab.size,0);
   assert.match(h.fields['.kf73Msg'].textContent,/login details changed/i);
 });

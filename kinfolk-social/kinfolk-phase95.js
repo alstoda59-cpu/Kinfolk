@@ -1,7 +1,10 @@
 (()=>{if(window.__kinfolkPhase95)return;window.__kinfolkPhase95=true;const SUPABASE_URL='https://zojajuzmfjpvubzibzgg.supabase.co',ANON_KEY='sb_publishable_1te_hrDXQciMD7Gp1EXmRw_dvQmszvi',PREF1='kinfolk_stay_logged_in_v1',PREF2='kinfolk_stay_logged_in',TAB='kinfolk_session_tab';const friendly=(raw,status)=>{const m=String(raw||''),l=m.toLowerCase();if(l.includes('invalid login')||l.includes('invalid credentials'))return'Email or password is incorrect.';if(l.includes('email not confirmed'))return'Your email still needs to be confirmed. Check your inbox, then try again.';if(l.includes('rate limit')||l.includes('too many'))return'Too many login attempts. Wait a moment and try again.';if(l.includes('failed to fetch')||l.includes('network'))return'Kinfolk could not reach the login service. Check your connection and try again.';if(l.includes('login timed out'))return'Kinfolk login timed out. Check your connection and try again.';if(!m&&status>=500)return'Kinfolk login is temporarily unavailable. Try again in a moment.';return m||'Could not log in. Please try again.'};const mode=form=>{const t=(form.querySelector('.kf73Title')?.textContent||'').trim().toLowerCase();return t.includes('welcome back')?'login':(t.includes('create your kinfolk')||t.includes('create account'))?'signup':null};function show(form,text,good=false){let box=form.querySelector('.kf73Msg');if(!box){box=document.createElement('div');box.className='kf73Msg';form.appendChild(box)}box.style.display='block';box.style.color=good?'#c9ffd9':'#ffd9e7';box.textContent=text}// Recovery356: a failed older login cannot overwrite newer Stay Logged In choices.
 let preferenceWriteVersion=0;
+// Shared between tabs: same-value writes must still invalidate an older rollback.
+const PREF_OWNER='kinfolk_stay_login_write_owner_v1';
 function saveStay(stay){
   const version=++preferenceWriteVersion;
+  const owner=version+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   let before;
   let rollbackAttempted=false;
   const saved=[stay?'1':'0',stay?'1':'0',stay?null:'1'];
@@ -11,6 +14,7 @@ function saveStay(stay){
       // A newer save, another tab, or a changed session marker owns these keys.
       // Never roll back a different login's preference after async auth failure.
       if(version!==preferenceWriteVersion)return;
+      if(localStorage.getItem(PREF_OWNER)!==owner)return;
       if(localStorage.getItem(PREF1)!==saved[0]||
          localStorage.getItem(PREF2)!==saved[1]||
          sessionStorage.getItem(TAB)!==saved[2])return;
@@ -21,9 +25,13 @@ function saveStay(stay){
     for(const [key,value] of [[PREF1,before[0]],[PREF2,before[1]]])
       value===null?localStorage.removeItem(key):localStorage.setItem(key,value);
     before[2]===null?sessionStorage.removeItem(TAB):sessionStorage.setItem(TAB,before[2]);
+    // Do not resurrect an earlier owner's marker (ABA across tabs).
+    localStorage.setItem(PREF_OWNER,owner+'-rolled-back');
   };
   try{
     before=[localStorage.getItem(PREF1),localStorage.getItem(PREF2),sessionStorage.getItem(TAB)];
+    // Invalidate other tabs' pending rollbacks before writing even equal values.
+    localStorage.setItem(PREF_OWNER,owner);
     localStorage.setItem(PREF1,saved[0]);
     localStorage.setItem(PREF2,saved[1]);
     if(saved[2]===null)sessionStorage.removeItem(TAB);
