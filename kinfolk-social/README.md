@@ -1,3 +1,7 @@
+# Recovery354 | Exact-token verification before and after mobile login activation (2026-10-30)
+
+Continued from [Recovery353](RECOVERY353.md) on an isolated branch. [RECOVERY354.md](RECOVERY354.md) fixes the effective Phase95 login handler so a newer same-user access token cannot be silently accepted by an older login after adoption or asynchronous account activation. Eight new source-extracted tests and two effective-handler cases are integrated into the offline Android/iOS auth gate, with older synthetic fixtures corrected. Exact-head CI, real isolated Supabase signup/email/RLS, physical devices and signed iPhone packaging remain separate gates. No shared live backend, production, Kinfolksworld, paid infrastructure or stores changed.
+
 # Recovery353 | Token-scoped cleanup of rejected adopted sessions (2026-10-30)
 
 Continued from [Recovery352](RECOVERY352.md) on an isolated branch. [RECOVERY353.md](RECOVERY353.md) fixes the effective Phase95 login adoption path so wrong-email or unconfirmed adopted sessions carry their actual access token into local-only cleanup; a newer same-account token cannot be silently adopted or signed out by the older attempt. Seven source-extracted synthetic regressions are included in the offline Android/iOS auth gate. Real isolated Supabase signup/email/RLS, physical-device QA and signed iPhone packaging remain unverified. No production, shared live backend, Kinfolksworld, paid resources or stores changed.
