@@ -8,7 +8,7 @@ import {assertEmailSignupReady} from './verify-isolated-auth.mjs';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export async function verifyIsolatedRealSignup(config,{fetchImpl=globalThis.fetch,email,password,timeoutMs=10000}={}){
   if(config?.projectRef!==ALPHA_REF||config?.offlineStub||config?.url!=='https://'+ALPHA_REF+'.supabase.co'||!/^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(config.key||'')) throw Error('Only the isolated alpha publishable client may create a test signup');
-  if(!/^kinfolkalpha\+[a-f0-9]{16,32}@example\.invalid$/.test(email||'')) throw Error('Only explicitly synthetic example.invalid addresses are permitted');
+  if(!/^kinfolkalpha\+[a-f0-9]{16,32}@example\.com$/.test(email||'')) throw Error('Only explicitly synthetic example.com addresses are permitted');
   if(typeof password!=='string'||password.length<12||password.length>128)throw Error('Synthetic signup password must meet Kinfolk limits');
   if(typeof fetchImpl!=='function')throw Error('Fetch is required');
   const base=config.url+'/auth/v1';
@@ -43,7 +43,7 @@ export async function verifyIsolatedRealSignup(config,{fetchImpl=globalThis.fetc
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
   if(process.env.KINFOLK_ALPHA_REAL_SIGNUP_OPT_IN!=='1')throw Error('Explicit isolated synthetic signup opt-in required');
-  const email='kinfolkalpha+'+randomUUID().replaceAll('-','').slice(0,24)+'@example.invalid';
+  const email='kinfolkalpha+'+randomUUID().replaceAll('-','').slice(0,24)+'@example.com';
   const password=randomBytes(9).toString('base64url');
   const result=await verifyIsolatedRealSignup(alphaBackendConfig(process.env),{email,password});
   console.log('PASS isolated synthetic signup and unconfirmed-login block; email delivery/callback NOT verified; nonproduction test user retained ('+result.projectRef+')');
