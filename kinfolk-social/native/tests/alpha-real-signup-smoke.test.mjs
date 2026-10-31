@@ -27,11 +27,15 @@ test('synthetic isolated signup verifies confirmation gate without leaking crede
   assert.deepEqual(m.calls.map(x=>x.method),['GET','POST','POST']);
   assert.ok(m.calls.every(x=>x.url.startsWith(config.url+'/auth/v1/')));
   assert.equal(m.calls[1].body.email,email);
+  assert.equal(m.calls[1].body.data.signup_birthdate,'2000-01-01');
+  assert.match(m.calls[1].body.data.username,/^[a-zA-Z0-9_]{3,24}$/);
+  assert.equal(m.calls[1].body.data.profile_private,'true');
 });
 test('shared live project and non-synthetic emails are refused before network',async()=>{
   const m=mockFetch();
   await assert.rejects(verifyIsolatedRealSignup({...config,projectRef:'zojajuzmfjpvubzibzgg'},{fetchImpl:m.fetchImpl,email,password}),/isolated/);
   await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email:'someone@gmail.com',password}),/synthetic/);
+  await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password:'short'}),/password/);
   assert.equal(m.calls.length,0);
 });
 test('missing email confirmation settings prevent account creation',async()=>{
