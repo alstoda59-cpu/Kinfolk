@@ -67,10 +67,10 @@ test('account switch after committed photo insert does not delete referenced med
   assert.equal(h.calls.filter(x=>x[0]==='insert').length,1);
   assert.equal(h.calls.filter(x=>x[0]==='remove').length,0);
 });
-test('rejected photo database insert removes uncommitted uploaded media',async()=>{
+test('insert errors preserve media because a response error does not prove rollback',async()=>{
   const h=harness('deny-insert');
-  await assert.rejects(h.addOne('album-1',photo,'account-A',h.form),/synthetic insert denied/);
-  assert.equal(h.calls.filter(x=>x[0]==='remove').length,1);
+  await assert.rejects(h.addOne('album-1',photo,'account-A',h.form),/could not be confirmed/);
+  assert.equal(h.calls.filter(x=>x[0]==='remove').length,0);
 });
 test('album form checks original account and foreground-only polling',()=>{
   assert.match(source,/const accountId=state\?\.user\?\.id/);
