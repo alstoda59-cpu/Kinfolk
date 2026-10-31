@@ -1,3 +1,7 @@
+# Recovery359 | Token-bound signup persistence and cleanup (2026-10-30)
+
+Continued from [Recovery358](RECOVERY358.md) on an isolated branch. [Recovery359](RECOVERY359.md) requires exact signup access-token identity before saving Stay Logged In or performing local cleanup after storage failure, preventing same-account relogin races. Eight source-executed synthetic regressions are wired into offline Android/iOS verification. Real isolated Supabase signup/email/RLS, backend-connected packages, signed iPhone builds and physical devices remain separate release gates. No live backend, production, Kinfolksworld, paid resources or stores changed.
+
 # Recovery358 | Cross-tab Stay Logged In rollback ownership (2026-10-30)
 
 Continued from [Recovery357](RECOVERY357.md) on an isolated branch. [Recovery358](RECOVERY358.md) prevents a failed login in one tab from undoing a newer identical-value Stay Logged In choice in another tab by adding a shared write-owner marker and rollback tombstone to the effective Phase95 handler. Five source-executed synthetic regressions are wired into the offline Android/iOS auth gate. CI/native status and real Supabase signup/email/RLS, physical devices and signed packaging remain separate release gates. No shared live backend, production, Kinfolksworld, paid resources or stores changed.
