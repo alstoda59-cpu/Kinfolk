@@ -1,3 +1,7 @@
+# Recovery357 | One-shot failed-login preference rollback and source-CI repair (2026-10-30)
+
+Continued from isolated [Recovery356](RECOVERY356.md), without a merge or redesign. [Recovery357](RECOVERY357.md) prevents a stale Stay Logged In rollback callback from running twice over a later same-value preference, repairs three historical synthetic VM fixtures that omitted the production write-version state, and gates offline Android/iOS builds on the new regression. Real isolated Supabase Auth/email/RLS, backend-connected native packages and physical devices remain unverified. No live backend, production, Kinfolksworld, paid resources or stores changed.
+
 # Recovery356 | Login preference rollback ownership (2026-10-30)
 
 Continued from [Recovery355](RECOVERY355.md) on an isolated branch. [RECOVERY356.md](RECOVERY356.md) fixes the effective Phase95 Stay Logged In rollback so a failed older login cannot overwrite a newer account's preference, including same-value newer writes and cross-tab changes. Seven source-executed synthetic regressions are wired into the offline Android/iOS auth gate. Real isolated Supabase signup/email confirmation, two-user RLS, backend-connected native packages and physical-device QA remain unverified. No shared live backend, production, Kinfolksworld, paid resources or stores changed.

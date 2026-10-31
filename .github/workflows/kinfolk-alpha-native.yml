@@ -82,6 +82,8 @@ on:
       - kinfolk-social/recovery355-delete-rpc-ack-20261030
       # Recovery356: prevent stale login failures from undoing newer Stay Logged In choices.
       - kinfolk-social/recovery356-login-preference-rollback-20261030
+      # Recovery357: repair historical VM regression extraction for versioned Stay Logged In state.
+      - kinfolk-social/recovery357-auth-preference-ci-20261030
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'

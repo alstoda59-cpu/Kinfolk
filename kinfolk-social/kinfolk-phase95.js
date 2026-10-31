@@ -3,9 +3,10 @@ let preferenceWriteVersion=0;
 function saveStay(stay){
   const version=++preferenceWriteVersion;
   let before;
+  let rollbackAttempted=false;
   const saved=[stay?'1':'0',stay?'1':'0',stay?null:'1'];
   const restore=(force=false)=>{
-    if(!before)return;
+    if(!before||rollbackAttempted)return;
     if(!force){
       // A newer save, another tab, or a changed session marker owns these keys.
       // Never roll back a different login's preference after async auth failure.
@@ -14,6 +15,9 @@ function saveStay(stay){
          localStorage.getItem(PREF2)!==saved[1]||
          sessionStorage.getItem(TAB)!==saved[2])return;
     }
+    // A rollback belongs to one failed attempt. Never replay it over a later
+    // same-value choice made in another tab after the first rollback.
+    rollbackAttempted=true;
     for(const [key,value] of [[PREF1,before[0]],[PREF2,before[1]]])
       value===null?localStorage.removeItem(key):localStorage.setItem(key,value);
     before[2]===null?sessionStorage.removeItem(TAB):sessionStorage.setItem(TAB,before[2]);
