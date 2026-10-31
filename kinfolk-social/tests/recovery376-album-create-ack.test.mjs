@@ -89,6 +89,7 @@ test('PostgREST error after possible commit warns to refresh, not blindly retry'
 });
 test('thrown response failure after possible commit never starts uploads',async()=>{
   const h=harness({throwAfterCommit:true});await h.run();failed(h);
+  assert.match(h.notices[0].message,/Refresh your albums before retrying/);
 });
 test('account switch after insert prevents photo upload or stale success',async()=>{
   const h=harness({switchAfterCommit:true});await h.run();
