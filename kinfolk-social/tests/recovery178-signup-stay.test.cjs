@@ -68,7 +68,7 @@ test('unconfirmed signup does not enable persistent login', async () => {
 });
 
 test('signup with a real session honors Stay Logged In', async () => {
-  const f = fixture({ data: { user: { id: 'new-user' }, session: { user: {id:'new-user',email:'authorized@example.test'}, access_token: 'synthetic' } }, error: null });
+  const f = fixture({ data: { user: { id: 'new-user', email:'authorized@example.test', email_confirmed_at:'2026-10-30T00:00:00Z' }, session: { user: {id:'new-user',email:'authorized@example.test',email_confirmed_at:'2026-10-30T00:00:00Z'}, access_token: 'synthetic' } }, error: null });
   const msg = await f.submit();
   assert.equal(f.calls.length, 1);
   assert.equal(f.writes.length, 2);
