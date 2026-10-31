@@ -12,7 +12,7 @@ function sourcePaths(command) {
   assert.deepEqual(tokens.slice(0, 2), ['node', '--test'], 'source suite must invoke node --test');
   assert.ok(tokens.length > 2, 'source suite cannot be empty');
   for (const token of tokens.slice(2)) {
-    assert.match(token, /^\.\.\/tests\/[\w.-]+\.(?:cjs|mjs)$/, 'unexpected source test argument');
+    assert.match(token, /^(?:\.\.\/tests\/[\w.-]+|tests\/alpha-[\w.-]+)\.(?:cjs|mjs)$/, 'unexpected source test argument');
   }
   return tokens.slice(2);
 }
@@ -35,6 +35,8 @@ test('password reset and password change regressions run in the native auth suit
   const auth = sourcePaths(pkg.scripts['alpha:auth:source:test']);
   assert.ok(auth.includes('../tests/recovery323-password-reset-form-isolation.test.cjs'),
     'Recovery324 overlap case is part of the Recovery323 test file');
+  assert.ok(auth.includes('tests/alpha-real-signup-smoke.test.mjs'),
+    'isolated signup smoke regression must run with native auth');
   assert.ok(auth.includes('../tests/recovery325-password-change-session-guard.test.cjs'),
     'password-change session protection must be verified with native auth');
   assert.ok(!auth.includes('../tests/recovery324-password-reset-overlap.test.cjs'),
