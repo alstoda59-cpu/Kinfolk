@@ -474,11 +474,30 @@
   // change the active session, so a stale signup screen must not switch users.
   async function requireNoActiveSignupAccount(){
     if(typeof sb==='undefined'||typeof sb?.auth?.getSession!=='function')throw new Error('Kinfolk cannot verify the current account. Try again in a moment.');
-    const {data,error}=await sb.auth.getSession();
-    if(error)throw error;
-    if(!data||!Object.prototype.hasOwnProperty.call(data,'session'))throw new Error('Kinfolk cannot verify the current account. Try again in a moment.');
-    if(data.session)throw new Error('A Kinfolk account is already signed in. Log out before creating another account.');
-    return true;
+    const check=async()=>{
+      const {data,error}=await sb.auth.getSession();
+      if(error)throw error;
+      if(!data||!Object.prototype.hasOwnProperty.call(data,'session'))throw new Error('Kinfolk cannot verify the current account. Try again in a moment.');
+      if(data.session)throw new Error('A Kinfolk account is already signed in. Log out before creating another account.');
+      return true;
+    };
+    // Recovery370: the preflight precedes signUp and must not spin forever if
+    // mobile Auth storage/refresh hangs. A timed-out check cannot authorize a
+    // signup even if its original getSession later resolves successfully.
+    // Older offline VM harnesses omit browser timers; keep their direct path.
+    if(typeof setTimeout!=='function'||typeof clearTimeout!=='function')return check();
+    const timedOut=Symbol('signup-preflight-timeout');
+    let timerId;
+    try{
+      const result=await Promise.race([
+        check(),
+        new Promise(resolve=>{timerId=setTimeout(()=>resolve(timedOut),15000)})
+      ]);
+      if(result===timedOut)throw new Error('Kinfolk could not check the current login in time. Please try again before creating an account.');
+      return result;
+    }finally{
+      if(timerId!==undefined)clearTimeout(timerId);
+    }
   }
   async function handleSignup(e){
     const form=e.target;
