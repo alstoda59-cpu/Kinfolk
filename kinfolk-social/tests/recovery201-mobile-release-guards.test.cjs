@@ -25,9 +25,11 @@ test('mobile reels retain keyboard, playback, and accessibility controls',()=>{
 test('login preference code preserves persistent and tab-scoped session choices',()=>{
  assert.match(auth,/PREF1='kinfolk_stay_logged_in_v1'/);
  assert.match(auth,/TAB='kinfolk_session_tab'/);
- assert.match(auth,/localStorage\.setItem\(PREF1,stay\?'1':'0'\)/);
- assert.match(auth,/if\(stay\)sessionStorage\.removeItem\(TAB\);else sessionStorage\.setItem\(TAB,'1'\)/);
- assert.match(auth,/const restore=\(\)=>/,'failed preference updates must be reversible');
+ assert.match(auth,/const saved=\[stay\?'1':'0',stay\?'1':'0',stay\?null:'1'\]/);
+ assert.match(auth,/localStorage\.setItem\(PREF1,saved\[0\]\)/);
+ assert.match(auth,/sessionStorage\.setItem\(TAB,saved\[2\]\)/);
+ assert.match(auth,/const restore=\(force=false\)=>/,'failed preference updates must be reversible');
+ assert.match(auth,/version!==preferenceWriteVersion/,'stale login rollback must not undo a newer choice');
 });
 test('login waits for an authenticated session before account adoption',()=>{
  assert.match(auth,/sb\.auth\.getSession\(\)/);
