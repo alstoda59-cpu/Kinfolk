@@ -65,7 +65,7 @@ with sync_playwright() as p:
             page.locator('.kf73Primary').click()
             page.wait_for_function('window.__signup223Calls===2')
             page.evaluate("""(wrongIdentity) => window.__resolvers223[1]({
-                data:{user:{id:'new-user',email:wrongIdentity?'another@example.test':'new@example.test'},session:null},error:null
+                data:{user:{id:'new-user',email:wrongIdentity?'another@example.test':'new@example.test',identities:[{provider:'email',user_id:'new-user',identity_data:{email:'new@example.test'}}]},session:null},error:null
             })""",wrong_identity)
             if wrong_identity:
                 page.wait_for_function("document.querySelector('.kf73Msg')?.textContent.includes('different email account')")
