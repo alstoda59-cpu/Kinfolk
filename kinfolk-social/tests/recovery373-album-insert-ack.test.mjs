@@ -13,7 +13,7 @@ const helper=source.slice(start,end);
 
 function harness(options={}){
   const count=Object.prototype.hasOwnProperty.call(options,'count')?options.count:1;
-  const {error=null,switchAfterInsert=false,albumOwner='synthetic-owner-A',albumId='synthetic-album',missingAlbum=false,albumError=null,switchDuringLookup=false}=options;
+  const {error=null,throwDuringInsert=false,switchAfterInsert=false,albumOwner='synthetic-owner-A',albumId='synthetic-album',missingAlbum=false,albumError=null,switchDuringLookup=false}=options;
   const form={id:'albumAddForm',isConnected:true};
   const state={user:{id:'synthetic-owner-A'}};
   const calls=[];
@@ -51,6 +51,7 @@ function harness(options={}){
       return {insert:async(row,options)=>{
         calls.push({type:'insert',row,requestedCount:options?.count});
         if(switchAfterInsert)state.user.id='synthetic-owner-B';
+        if(throwDuringInsert)throw new Error('synthetic network dropped after insert');
         return {error,count};
       }};
     }
@@ -94,10 +95,17 @@ test('unexpected multirow acknowledgment is not reported as success',async()=>{
   await assert.rejects(h.run(),/could not be confirmed/);
   assert.equal(byType(h,'remove').length,0);
 });
-test('explicit insert rejection still cleans uncommitted media',async()=>{
-  const h=harness({error:new Error('synthetic RLS denied'),count:null});
-  await assert.rejects(h.run(),/synthetic RLS denied/);
-  assert.equal(byType(h,'remove').length,1);
+test('PostgREST insert error preserves possibly committed media',async()=>{
+  const h=harness({error:new Error('synthetic RLS or transport failure'),count:null});
+  await assert.rejects(h.run(),/could not be confirmed/);
+  assert.equal(byType(h,'remove').length,0);
+  assert.equal(byType(h,'upload').length,1);
+});
+test('thrown insert network failure preserves possibly committed media',async()=>{
+  const h=harness({throwDuringInsert:true});
+  await assert.rejects(h.run(),/synthetic network dropped after insert/);
+  assert.equal(byType(h,'remove').length,0);
+  assert.equal(byType(h,'insert').length,1);
 });
 test('account switch after confirmed insert never deletes linked media',async()=>{
   const h=harness({switchAfterInsert:true});
