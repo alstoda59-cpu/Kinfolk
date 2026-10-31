@@ -40,7 +40,7 @@ function harness(){
       storage:{from:bucket=>({
         list(prefix){
           calls.lists.push({bucket,prefix});
-          if(ctx.listGate&&bucket==='kinfolk-media')return ctx.listGate.promise;
+          if(ctx.listGate&&bucket===(ctx.listGateBucket||'kinfolk-media'))return ctx.listGate.promise;
           if(ctx.mediaPaths?.[bucket])return Promise.resolve({data:ctx.mediaPaths[bucket].map((name,i)=>({name,id:String(i+1)})),error:null});
           return Promise.resolve({data:[],error:null});
         },
@@ -128,7 +128,7 @@ test('account switch during storage removal prevents further buckets or final DE
   h.switchAccount();h.ctx.removeGate.resolve({error:null});
   await task;
   assert.deepEqual(h.calls.rpc,['CHECK']);
-  assert.equal(h.calls.lists.length,1);
+  assert.equal(h.calls.lists.length,3);
 });
 test('duplicate Delete taps and modal closing cannot overlap an active request',async()=>{
   const h=harness();h.ctx.checkGate=deferred();
@@ -165,4 +165,75 @@ test('an Auth user mismatch stops before CHECK and never deletes media',async()=
   assert.deepEqual(h.calls.rpc,[]);
   assert.equal(h.calls.removes.length,0);
   assert.equal(h.button.disabled,false);
+});
+
+
+// Recovery355: a successful RPC transport response is not proof that the
+// backend approved destructive media removal or actually deleted the account.
+for(const [label,response] of [
+  ['null',null],['empty object',{}],['explicit false',{ready:false}],['truthy string',{ready:'true'}]
+]){
+  test('backend CHECK '+label+' cannot authorize any private media removal',async()=>{
+    const h=harness();
+    h.ctx.mediaPaths={'kinfolk-media':['private.jpg']};
+    h.ctx.checkGate=deferred();
+    const task=h.ctx.runDeletion();
+    await flush();
+    h.ctx.checkGate.resolve({data:response,error:null});
+    await task;
+    assert.deepEqual(h.calls.rpc,['CHECK']);
+    assert.equal(h.calls.lists.length,0);
+    assert.equal(h.calls.removes.length,0);
+    assert.equal(h.calls.signOut,0);
+    assert.equal(h.button.disabled,false);
+    assert.match(h.status.textContent,/not explicitly approved/i);
+  });
+}
+for(const [label,response] of [
+  ['null',null],['empty object',{}],['explicit false',{deleted:false}],['truthy string',{deleted:'true'}]
+]){
+  test('backend DELETE '+label+' cannot report account deletion success',async()=>{
+    const h=harness();
+    h.ctx.deleteGate=deferred();
+    const task=h.ctx.runDeletion();
+    await flush();
+    assert.deepEqual(h.calls.rpc,['CHECK','DELETE']);
+    h.ctx.deleteGate.resolve({data:response,error:null});
+    await task;
+    assert.equal(h.calls.signOut,0);
+    assert.equal(h.calls.redirects.length,0);
+    assert.equal(h.button.disabled,false);
+    assert.match(h.status.textContent,/not confirmed by the backend/i);
+  });
+}
+
+test('a missing later storage bucket stops deletion before removing earlier media',async()=>{
+  const h=harness();
+  h.ctx.mediaPaths={'kinfolk-media':['private.jpg'],'kinfolk-video':['clip.mp4']};
+  h.ctx.listGate=deferred();
+  h.ctx.listGateBucket='kinfolk-wallpapers';
+  const task=h.ctx.runDeletion();
+  await flush();
+  assert.equal(h.calls.lists.length,3,'all buckets are inspected before any removal');
+  assert.equal(h.calls.removes.length,0);
+  h.ctx.listGate.resolve({data:null,error:{message:'Synthetic wallpaper bucket missing'}});
+  await task;
+  assert.deepEqual(h.calls.rpc,['CHECK']);
+  assert.equal(h.calls.removes.length,0,'earlier bucket media must remain intact');
+  assert.equal(h.calls.signOut,0);
+  assert.match(h.status.textContent,/wallpaper bucket missing/i);
+});
+
+test('all bucket enumeration completes before the first storage remove',async()=>{
+  const h=harness();
+  h.ctx.mediaPaths={'kinfolk-media':['private.jpg'],'kinfolk-video':['clip.mp4']};
+  h.ctx.removeGate=deferred();
+  const task=h.ctx.runDeletion();
+  await flush();
+  assert.equal(h.calls.lists.length,3);
+  assert.equal(h.calls.removes.length,1);
+  h.ctx.removeGate.resolve({error:null});
+  await task;
+  assert.equal(h.calls.removes.length,2);
+  assert.deepEqual(h.calls.rpc,['CHECK','DELETE']);
 });

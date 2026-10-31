@@ -49,12 +49,19 @@ async function doDelete(){
     const check=await sb.rpc('kinfolk_delete_my_account',{p_confirm:'CHECK'});
     if(check.error)throw check.error;
     await verifySession();
-    if(check.data&&check.data.ready===false)throw new Error('Account deletion is not ready.');
-    setText('kf115-status','Removing your private Kinfolk media…');
+    if(check.data?.ready!==true)throw new Error('Account deletion was not explicitly approved by the backend. No private media was removed.');
+    // Resolve every required storage bucket before removing any object. A late
+    // missing/denied bucket must not leave earlier buckets partially deleted.
+    setText('kf115-status','Checking private Kinfolk media folders…');
+    const stagedMedia=[];
     for(const bucket of BUCKETS){
       await verifySession();
       const paths=await collect(bucket,uid);
       await verifySession();
+      stagedMedia.push({bucket,paths});
+    }
+    setText('kf115-status','Removing your private Kinfolk media…');
+    for(const {bucket,paths} of stagedMedia){
       for(let i=0;i<paths.length;i+=100){
         await verifySession();
         const {error}=await sb.storage.from(bucket).remove(paths.slice(i,i+100));
@@ -66,7 +73,7 @@ async function doDelete(){
     setText('kf115-status','Deleting your account…');
     const del=await sb.rpc('kinfolk_delete_my_account',{p_confirm:'DELETE'});
     if(del.error)throw del.error;
-    if(del.data?.deleted===false)throw new Error('Account deletion was not completed.');
+    if(del.data?.deleted!==true)throw new Error('Account deletion was not confirmed by the backend. Check your account status before retrying.');
     // The server may have removed the auth user; never sign out a newer login.
     if(!current())return;
     setText('kf115-status','Account deleted. Signing out…');
