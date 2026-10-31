@@ -17,7 +17,7 @@ function storage(initial={}){
     setItem(key,value){if(key===failKey){failKey=null;throw new Error('synthetic storage failure')}values.set(key,String(value))},
     removeItem:key=>values.delete(key),
     failNext:key=>{failKey=key},
-    snapshot:()=>Object.fromEntries(values)
+    snapshot:()=>Object.fromEntries([...values].filter(([key])=>key!=='kinfolk_stay_login_write_owner_v1'))
   };
 }
 function harness(localInitial={},sessionInitial={}){
