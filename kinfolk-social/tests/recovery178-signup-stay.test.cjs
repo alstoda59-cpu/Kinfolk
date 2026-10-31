@@ -59,7 +59,7 @@ function fixture(signupResult) {
 }
 
 test('unconfirmed signup does not enable persistent login', async () => {
-  const f = fixture({ data: { user: { id: 'new-user' }, session: null }, error: null });
+  const f = fixture({ data: { user: { id: 'new-user', email:'authorized@example.test' }, session: null }, error: null });
   const msg = await f.submit();
   assert.equal(f.calls.length, 1);
   assert.deepEqual(f.writes, []);
