@@ -20,25 +20,26 @@ function harness(){
   const stay={checked:true};
   const button={disabled:false,textContent:'Log in'};
   const messages=[],calls=[];
-  let activeId=null,failActivation=false;
+  let activeId=null,activeToken=null,failActivation=false,swapAfterAdopt=false,swapDuringActivation=false;
   const fields={'.kf73Title':title,'#kf73Email':email,'#kf73Password':password,'#kf73Stay':stay,'.kf73Primary':button};
   const form={isConnected:true,dataset:{},onsubmit:null,querySelector:key=>fields[key]||null,addEventListener(){}};
-  const session={user:{id:'synthetic-user-a',email:'synthetic@example.invalid'}};
+  const session={user:{id:'synthetic-user-a',email:'synthetic@example.invalid'},access_token:'synthetic-access'};
   const context={
     document:{querySelector:()=>form,getElementById:id=>id==='authForm'?form:null},
     mode:()=>title.textContent==='Welcome back'?'login':'signup',
     unlock:()=>{},show:(_form,message,good)=>messages.push({message,good:!!good}),
     currentAccountId:async()=>activeId,
     tokenLogin:async()=>{calls.push('token');return {user:session.user,access_token:'synthetic-access',refresh_token:'synthetic-refresh'}},
-    adopt:async()=>{calls.push('adopt');activeId=session.user.id;return session},
-    activateLoginSession:async()=>{calls.push('activate');if(failActivation)throw Error('Synthetic activation failure')},
+    adopt:async()=>{calls.push('adopt');activeId=session.user.id;activeToken=swapAfterAdopt?'synthetic-newer-token':session.access_token;return session},
+    activateLoginSession:async()=>{calls.push('activate');if(failActivation)throw Error('Synthetic activation failure');if(swapDuringActivation)activeToken='synthetic-newer-token'},
     saveStay:()=>()=>{calls.push('restoreStay')},
-    clearFailedLoginSession:async()=>{calls.push('rollback');activeId=null},
+    clearFailedLoginSession:async(id,_starting,token)=>{calls.push('rollback');if(activeId===id&&activeToken===token){activeId=null;activeToken=null}},
+    verifyActiveLoginToken:async s=>{if(activeId!==s?.user?.id||activeToken!==s?.access_token)throw Error('The active session changed during login. Please log in again.')},
     friendly:s=>String(s),window:{},console
   };
   vm.runInNewContext(handler,context,{timeout:1000});
   const submit=()=>form.onsubmit({preventDefault(){},stopImmediatePropagation(){}});
-  return {form,title,button,messages,calls,submit,setFailActivation:value=>{failActivation=value}};
+  return {form,title,button,messages,calls,submit,setFailActivation:value=>{failActivation=value},setSwapAfterAdopt:value=>{swapAfterAdopt=value},setSwapDuringActivation:value=>{swapDuringActivation=value}};
 }
 
 test('successful verified Phase95 login leaves submit locked until navigation',async()=>{
@@ -72,4 +73,27 @@ test('failed account activation rolls back, unlocks the form and permits retry',
   assert.equal(h.calls.filter(call=>call==='token').length,2);
   assert.equal(h.button.disabled,true);
   assert.equal(h.messages.at(-1).good,true);
+});
+
+test('newer same-user token after adoption cannot activate the older login',async()=>{
+  const h=harness();
+  h.setSwapAfterAdopt(true);
+  await h.submit();
+  assert.equal(h.calls.includes('activate'),false);
+  assert.equal(h.calls.includes('rollback'),true);
+  assert.equal(h.form.__kf95CompletedTitle,undefined);
+  assert.equal(h.button.disabled,false);
+  assert.match(h.messages.at(-1).message,/active session changed/i);
+});
+
+test('newer same-user token during activation cannot report successful login',async()=>{
+  const h=harness();
+  h.setSwapDuringActivation(true);
+  await h.submit();
+  assert.equal(h.calls.includes('activate'),true);
+  assert.equal(h.calls.includes('rollback'),true);
+  assert.equal(h.form.__kf95CompletedTitle,undefined);
+  assert.equal(h.button.disabled,false);
+  assert.equal(h.messages.at(-1).good,false);
+  assert.match(h.messages.at(-1).message,/active session changed/i);
 });
