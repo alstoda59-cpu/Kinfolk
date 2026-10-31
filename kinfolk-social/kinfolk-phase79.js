@@ -547,6 +547,15 @@
       // non-string emails cannot prove which account Supabase actually created.
       const matchesSubmittedEmail=value=>typeof value==='string'&&value.trim().toLowerCase()===email.toLowerCase();
       if(!matchesSubmittedEmail(data.user.email))throw new Error('Signup returned a different email account. Sign in again.');
+      // Supabase can deliberately return an obfuscated user for an existing email
+      // when confirmation is enabled. A matching user.email alone is not proof
+      // of a new registration. Require a real email identity owned by this user
+      // before showing verification, offering resend or saving a login choice.
+      if(!Array.isArray(data.user.identities)||!data.user.identities.some(identity=>
+        identity?.provider==='email'&&identity.user_id===data.user.id&&
+        matchesSubmittedEmail(identity.identity_data?.email))){
+        throw new Error('Kinfolk could not verify a new email account. If you already have an account, log in or reset your password.');
+      }
       if(data.session&&(data.session.user?.id!==data.user.id||!matchesSubmittedEmail(data.session.user?.email)))throw new Error('Signup session did not match the new account. Sign in again.');
       // The user may have navigated to login while signup was in flight.
       // Do not persist signup preferences or update a replaced form.
