@@ -86,6 +86,8 @@ on:
       - kinfolk-social/recovery357-auth-preference-ci-20261030
       # Recovery358: validate cross-tab preference ownership before offline native compilation.
       - kinfolk-social/recovery358-cross-tab-preference-ownership-20261030
+      # Recovery359: compile offline Android/iOS after token-bound signup preference checks.
+      - kinfolk-social/recovery359-signup-session-token-20261030
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
