@@ -1,3 +1,7 @@
+# Recovery370 | Mobile signup preflight deadline (2026-10-31)
+
+Continued from [Recovery369](RECOVERY369.md) on an isolated branch. [Recovery370](RECOVERY370.md) fixes the effective Phase79 Create Account flow so a hung pre-signup Auth session lookup fails closed after 15 seconds instead of spinning forever. Seven source-executed synthetic regressions are included in the Android/iOS offline auth gate. Real isolated email confirmation and two-account RLS, backend-connected functionality, signed native packages and physical-device QA remain unverified. No shared live backend, production, Kinfolksworld, paid infrastructure or stores changed.
+
 # Recovery360 | Confirmed-email gate for returned signup sessions (2026-10-30)
 
 Continued from [Recovery359](RECOVERY359.md) on an isolated branch. [Recovery360](RECOVERY360.md) prevents a returned but unconfirmed signup session from persisting Stay Logged In or claiming that private Kinfolk access is ready. Six source-executed synthetic cases are included in offline Android/iOS auth verification. Real isolated Supabase signup/email/RLS, backend-connected packages, signed iPhone builds and physical-device QA remain separate release gates. No live backend, production, Kinfolksworld, paid resources or stores changed.
