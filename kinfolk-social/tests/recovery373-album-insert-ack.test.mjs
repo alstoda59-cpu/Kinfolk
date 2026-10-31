@@ -11,7 +11,9 @@ const end=source.indexOf('async function hardCreate(',start);
 assert.ok(start>=0&&end>start,'effective album upload helper must exist');
 const helper=source.slice(start,end);
 
-function harness({count=1,error=null,switchAfterInsert=false}={}){
+function harness(options={}){
+  const count=Object.prototype.hasOwnProperty.call(options,'count')?options.count:1;
+  const {error=null,switchAfterInsert=false}=options;
   const form={id:'albumAddForm',isConnected:true};
   const state={user:{id:'synthetic-owner-A'}};
   const calls=[];
