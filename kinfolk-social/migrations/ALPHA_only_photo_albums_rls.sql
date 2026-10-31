@@ -64,7 +64,7 @@ create policy alpha_album_photo_read on public.album_photos for select to authen
 using (
   exists (
     select 1 from public.photo_albums a
-    where a.id=album_id and a.owner_id=owner_id
+    where a.id=album_photos.album_id and a.owner_id=album_photos.owner_id
   )
 );
 create policy alpha_album_photo_insert on public.album_photos for insert to authenticated
@@ -72,7 +72,7 @@ with check (
   owner_id=(select auth.uid())
   and exists (
     select 1 from public.photo_albums a
-    where a.id=album_id and a.owner_id=owner_id
+    where a.id=album_photos.album_id and a.owner_id=album_photos.owner_id
   )
 );
 create policy alpha_album_photo_update on public.album_photos for update to authenticated
