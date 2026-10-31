@@ -1,3 +1,7 @@
+# Recovery360 | Confirmed-email gate for returned signup sessions (2026-10-30)
+
+Continued from [Recovery359](RECOVERY359.md) on an isolated branch. [Recovery360](RECOVERY360.md) prevents a returned but unconfirmed signup session from persisting Stay Logged In or claiming that private Kinfolk access is ready. Six source-executed synthetic cases are included in offline Android/iOS auth verification. Real isolated Supabase signup/email/RLS, backend-connected packages, signed iPhone builds and physical-device QA remain separate release gates. No live backend, production, Kinfolksworld, paid resources or stores changed.
+
 # Recovery359 | Token-bound signup persistence and cleanup (2026-10-30)
 
 Continued from [Recovery358](RECOVERY358.md) on an isolated branch. [Recovery359](RECOVERY359.md) requires exact signup access-token identity before saving Stay Logged In or performing local cleanup after storage failure, preventing same-account relogin races. Eight source-executed synthetic regressions are wired into offline Android/iOS verification. Real isolated Supabase signup/email/RLS, backend-connected packages, signed iPhone builds and physical devices remain separate release gates. No live backend, production, Kinfolksworld, paid resources or stores changed.
