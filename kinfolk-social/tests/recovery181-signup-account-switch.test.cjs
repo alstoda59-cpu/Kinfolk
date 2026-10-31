@@ -40,6 +40,7 @@ function fixture({activeIds=['signup'],denySecondPreference=false,signOutError=f
     addEventListener:(type,fn)=>{if(type==='submit')submit=fn}
   };
   const sb={auth:{
+    getUser:async()=>({data:{user:{id:'signup',email:'qa@example.test',email_confirmed_at:'2026-10-30T00:00:00Z'}},error:null}),
     signUp:async()=>({data:{user:{id:'signup',email:'qa@example.test',identities:[{provider:'email',user_id:'signup',identity_data:{email:'qa@example.test'}}],email_confirmed_at:'2026-10-30T00:00:00Z'},session:{access_token:'synthetic-signup-token',user:{id:'signup',email:'qa@example.test',email_confirmed_at:'2026-10-30T00:00:00Z'}}},error:null}),
     getSession:async()=>{if(readIndex++===0)return {data:{session:null},error:null};const id=activeIds[Math.min(readIndex-2,activeIds.length-1)];return {data:{session:{access_token:'synthetic-signup-token',user:{id,email:'qa@example.test',email_confirmed_at:'2026-10-30T00:00:00Z'}}},error:null}},
     signOut:async()=>{signouts++;return {error:signOutError?Error('Synthetic signout failure'):null}}
@@ -77,7 +78,7 @@ test('stale signup response cannot overwrite a different account preference',asy
 });
 
 test('account switching during storage cleanup does not sign out new account',async()=>{
-  const f=fixture({activeIds:['signup','other-account'],denySecondPreference:true});
+  const f=fixture({activeIds:['signup','signup','other-account'],denySecondPreference:true});
   assert.match(await f.submit(),/could not save/);
   assert.equal(f.local.get('kinfolk_stay_logged_in_v1'),'1');
   assert.equal(f.local.get('kinfolk_stay_logged_in'),'1');

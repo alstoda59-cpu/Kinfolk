@@ -15,7 +15,7 @@ const snippet=source.slice(start,end);
 const email='test.account@example.invalid';
 const session={access_token:'synthetic-signup-token-a',user:{id:'synthetic-user-a',email}};
 function helper(active,{error=null,available=true}={}){
-  const sb=available?{auth:{getSession:async()=>({data:{session:active},error})}}:undefined;
+  const sb=available?{auth:{getSession:async()=>({data:{session:active},error}),getUser:async()=>({data:{user:{id:session.user.id,email:session.user.email,email_confirmed_at:'2026-10-30T00:00:00Z'}},error:null})}}:undefined;
   return vm.runInNewContext('(()=>{'+snippet+';return signupSessionIsCurrent})()', {sb});
 }
 test('matching signup account ID, email and access token can retain session choice',async()=>{

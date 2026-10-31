@@ -38,6 +38,7 @@ function fixture({sessionCheck='missing'}={}){
     addEventListener:(type,fn)=>{if(type==='submit')submit=fn}
   };
   const auth={
+    getUser:async()=>({data:{user:{id:'signup-user',email:'synthetic@example.invalid',email_confirmed_at:'2026-10-30T00:00:00Z'}},error:null}),
     signUp:async()=>{signups++;return {data:{user:{id:'signup-user',email:'synthetic@example.invalid',identities:[{provider:'email',user_id:'signup-user',identity_data:{email:'synthetic@example.invalid'}}],email_confirmed_at:'2026-10-30T00:00:00Z'},session:{access_token:'synthetic-signup-token',user:{id:'signup-user',email:'synthetic@example.invalid',email_confirmed_at:'2026-10-30T00:00:00Z'}}},error:null}}
   };
   if(sessionCheck!=='missing'){
