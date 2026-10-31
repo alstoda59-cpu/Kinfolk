@@ -79,12 +79,19 @@
   async function signupSessionIsCurrent(session,submittedEmail){
     if(typeof sb==='undefined'||typeof sb?.auth?.getSession!=='function')throw new Error('Kinfolk could not verify the signup session. Sign in again to set Stay Logged In.');
     const expected=session?.user?.id;
+    const expectedToken=session?.access_token;
     const email=String(submittedEmail||'').trim().toLowerCase();
-    if(!expected||!email||typeof session?.user?.email!=='string'||session.user.email.trim().toLowerCase()!==email)return false;
+    // The same account may log in again while getSession is pending. A matching
+    // user ID and email do not prove that the signup's session is still active.
+    // Fail closed for adapters that omit either access token.
+    if(!expected||typeof expectedToken!=='string'||!expectedToken.trim()||!email||
+       typeof session?.user?.email!=='string'||session.user.email.trim().toLowerCase()!==email)return false;
     const {data,error}=await sb.auth.getSession();
     if(error)throw error;
-    const active=data?.session?.user;
-    return active?.id===expected&&typeof active.email==='string'&&active.email.trim().toLowerCase()===email;
+    const activeSession=data?.session;
+    const active=activeSession?.user;
+    return activeSession?.access_token===expectedToken&&active?.id===expected&&
+      typeof active.email==='string'&&active.email.trim().toLowerCase()===email;
   }
 
   function updateSignupPrivacy(form){
