@@ -61,13 +61,16 @@ async function addOne(albumId,file,accountId,form,activation){
   }
 }async function hardCreate(e){
   e?.preventDefault?.();
-  if(busy)return;
+  if(busy&&busy.epoch===kf129Epoch)return;
   const f=document.getElementById('albumForm');
   if(!f)return;
   const accountId=state?.user?.id,activation=kf129Epoch;
   if(!accountId)return tell('Your session is not ready. Please log in again.');
   const btn=f.querySelector('button'),old=btn?.textContent||'Create album';
-  busy=true;
+  // A stale operation from a prior login must not block this activation.
+  // Its finally block must also never unlock a newer operation.
+  const operation={epoch:activation};
+  busy=operation;
   if(btn){btn.disabled=true;btn.textContent='Creating…'}
   try{
     requireAlbumSession(accountId,f,activation);
@@ -109,20 +112,23 @@ async function addOne(albumId,file,accountId,form,activation){
   }catch(err){
     if(state?.user?.id===accountId&&kf129Epoch===activation&&document.getElementById('albumForm')===f)tell(err?.message||'Album could not be created');
   }finally{
-    busy=false;
+    if(busy===operation)busy=false;
     if(btn&&document.contains(btn)&&state?.user?.id===accountId&&kf129Epoch===activation&&document.getElementById('albumForm')===f){
       btn.disabled=false;btn.textContent=old;
     }
   }
 }async function hardAddSubmit(id,e){
   e?.preventDefault?.();
-  if(busy)return;
+  if(busy&&busy.epoch===kf129Epoch)return;
   const f=document.getElementById('albumAddForm');
   if(!f)return;
   const accountId=state?.user?.id,activation=kf129Epoch;
   if(!accountId)return tell('Your session is not ready. Please log in again.');
   const btn=f.querySelector('button'),old=btn?.textContent||'Upload photos';
-  busy=true;
+  // A stale operation from a prior login must not block this activation.
+  // Its finally block must also never unlock a newer operation.
+  const operation={epoch:activation};
+  busy=operation;
   if(btn){btn.disabled=true;btn.textContent='Uploading…'}
   try{
     requireAlbumSession(accountId,f,activation);
@@ -141,7 +147,7 @@ async function addOne(albumId,file,accountId,form,activation){
   }catch(err){
     if(state?.user?.id===accountId&&kf129Epoch===activation&&document.getElementById('albumAddForm')===f)tell(err?.message||'Photos could not be added');
   }finally{
-    busy=false;
+    if(busy===operation)busy=false;
     if(btn&&document.contains(btn)&&state?.user?.id===accountId&&kf129Epoch===activation&&document.getElementById('albumAddForm')===f){
       btn.disabled=false;btn.textContent=old;
     }
