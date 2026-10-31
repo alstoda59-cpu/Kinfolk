@@ -1,3 +1,7 @@
+# Recovery372 | Hard deadline for mobile password-token login (2026-10-31)
+
+Continued from [Recovery371](RECOVERY371.md) on an isolated branch. [Recovery372](RECOVERY372.md) bounds the effective Phase95 password-token fetch **and response-body read** to 15 seconds, even if an abort-ignoring fetch wrapper or body reader resolves late. Ten synthetic regressions are included in the offline Android/iOS auth source gate. Real isolated signup/email confirmation and two-user RLS, backend-connected media/messaging, signed native packages and physical-device QA remain unverified. No shared live backend, production, Kinfolksworld, paid resources or stores changed.
+
 # Recovery371 | Mobile login preflight deadline (2026-10-31)
 
 Continued from [Recovery370](RECOVERY370.md) on an isolated branch. [Recovery371](RECOVERY371.md) bounds the effective Phase95 pre-login Auth session lookup to 15 seconds, rejects malformed/missing session identities, and prevents a late lookup from authorizing an expired login attempt. Nine synthetic source-executed regression tests are included in offline Android/iOS auth verification. Real isolated email confirmation and two-user RLS, backend-connected media/messaging, signed native packages and physical-device QA remain unverified. No shared live backend, production, Kinfolksworld, paid resources or stores changed.
