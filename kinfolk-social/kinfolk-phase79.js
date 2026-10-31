@@ -94,6 +94,17 @@
       typeof active.email==='string'&&active.email.trim().toLowerCase()===email;
   }
 
+  // A session returned by signUp is not proof of email verification. Supabase
+  // may issue a session when confirmation is disabled or an adapter is misconfigured.
+  // Never persist Stay Logged In or advertise private-app access in that case.
+  function signupSessionEmailConfirmed(data){
+    const signupUser=data?.user;
+    const sessionUser=data?.session?.user;
+    return Boolean(data?.session&&
+      typeof signupUser?.email_confirmed_at==='string'&&signupUser.email_confirmed_at.trim()&&
+      typeof sessionUser?.email_confirmed_at==='string'&&sessionUser.email_confirmed_at.trim());
+  }
+
   function updateSignupPrivacy(form){
     const birthday=form.querySelector('#kf79Birthdate');
     const check=form.querySelector('#kf219Private');
@@ -542,8 +553,19 @@
         console.info('Kinfolk signup completed after leaving the signup screen; ignoring stale UI result.');
         return;
       }
-      // An email-confirmation signup has no authenticated session yet.
-      // Do not persist Stay Logged In until signup actually returns a session.
+      // A returned session alone is not proof that email was confirmed.
+      // Keep the verification screen and never persist login preferences for
+      // unconfirmed or malformed signup identities. The global auth activation
+      // guard separately rejects unconfirmed sessions before private UI opens.
+      if(data?.session&&!signupSessionEmailConfirmed(data)){
+        form.__kf221Verification={email,busy:false,retryAt:0};
+        mountVerification(form);
+        show(form,'Email confirmation is still required. Check your inbox, then log in. Kinfolk has not saved a Stay Logged In choice.',true);
+        if(btn){btn.disabled=false;btn.textContent='Create account'}
+        return;
+      }
+      // Email-confirmation signups normally have no session yet.
+      // Only confirmed sessions may persist Stay Logged In.
       if(data?.session){
         const verifiedSignupSession=await signupSessionIsCurrent(data.session,email);
         // Session verification is asynchronous: the form may have changed again.
