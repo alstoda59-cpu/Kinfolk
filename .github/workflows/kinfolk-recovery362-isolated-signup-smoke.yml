@@ -16,8 +16,10 @@ jobs:
     timeout-minutes: 5
     env:
       KINFOLK_ALPHA_REAL_SIGNUP_OPT_IN: "1"
+      KINFOLK_ALPHA_TEST_EMAIL: ${{ secrets.KINFOLK_ALPHA_TEST_EMAIL }}
+      KINFOLK_ALPHA_TEST_INBOX_APPROVED: ${{ vars.KINFOLK_ALPHA_TEST_INBOX_APPROVED }}
       KINFOLK_ALPHA_SUPABASE_URL: "https://viantpfagtbgyyzavmtv.supabase.co"
-      KINFOLK_ALPHA_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_Kb4Mge6cPELN7gbBRkPl0g_RdXqAnuJ"
+      KINFOLK_ALPHA_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.KINFOLK_ALPHA_SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
