@@ -4,7 +4,7 @@ import {ALPHA_REF} from '../scripts/alpha-backend-config.mjs';
 import {verifyIsolatedRealSignup} from '../scripts/verify-real-signup-smoke.mjs';
 
 const config={projectRef:ALPHA_REF,url:'https://'+ALPHA_REF+'.supabase.co',key:'sb_publishable_synthetic_only_test_key',offlineStub:false};
-const email='kinfolkalpha+0123456789abcdef01234567@example.com';
+const email='owner-test+kinfolkalpha@actualmailbox.com';
 const password='wRfXpt7Z0H!2';
 const userId='11111111-1111-4111-8111-111111111111';
 const settings={disable_signup:false,external:{email:true},mailer_autoconfirm:false};
@@ -35,6 +35,8 @@ test('shared live project and non-synthetic emails are refused before network',a
   const m=mockFetch();
   await assert.rejects(verifyIsolatedRealSignup({...config,projectRef:'zojajuzmfjpvubzibzgg'},{fetchImpl:m.fetchImpl,email,password}),/isolated/);
   await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email:'someone@gmail.com',password}),/synthetic/);
+  await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email:'kinfolkalpha@sample.invalid',password}),/approved test inbox/);
+  await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email:'alpha@example.com',password}),/approved test inbox/);
   await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password:'short'}),/password/);
   assert.equal(m.calls.length,0);
 });
