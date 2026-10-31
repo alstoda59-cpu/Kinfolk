@@ -92,20 +92,39 @@
       activeSession?.user?.id===expected&&
       typeof activeSession.user.email==='string'&&
       activeSession.user.email.trim().toLowerCase()===email;
-    const first=await sb.auth.getSession();
-    if(first?.error)throw first.error;
-    if(!matchesActive(first?.data?.session))return false;
-    // Supabase getUser(jwt) validates the supplied access token with Auth.
-    // Never authorize persistence from getSession's locally stored user alone.
-    const verified=await sb.auth.getUser(expectedToken);
-    if(verified?.error)throw verified.error;
-    const user=verified?.data?.user;
-    if(user?.id!==expected||typeof user?.email!=='string'||
-       user.email.trim().toLowerCase()!==email||
-       typeof user?.email_confirmed_at!=='string'||!user.email_confirmed_at.trim())return false;
-    const last=await sb.auth.getSession();
-    if(last?.error)throw last.error;
-    return matchesActive(last?.data?.session);
+    const verify=async()=>{
+      const first=await sb.auth.getSession();
+      if(first?.error)throw first.error;
+      if(!matchesActive(first?.data?.session))return false;
+      // The remote Auth request proves this token, unlike locally cached getSession.
+      const verified=await sb.auth.getUser(expectedToken);
+      if(verified?.error)throw verified.error;
+      const user=verified?.data?.user;
+      if(user?.id!==expected||typeof user?.email!=='string'||
+         user.email.trim().toLowerCase()!==email||
+         typeof user?.email_confirmed_at!=='string'||!user.email_confirmed_at.trim())return false;
+      // A different login/logout may complete while remote Auth is pending.
+      const last=await sb.auth.getSession();
+      if(last?.error)throw last.error;
+      return matchesActive(last?.data?.session);
+    };
+    // Any of the three Auth calls can stall on a mobile connection. Bound the
+    // *whole* verification, not just getUser, and never save Stay Logged In on
+    // timeout. Late Auth responses cannot resume this signup's UI continuation.
+    // The isolated VM source tests do not supply browser timers by default.
+    if(typeof setTimeout!=='function'||typeof clearTimeout!=='function')return verify();
+    const timedOut=Symbol('signup-auth-verification-timeout');
+    let timerId;
+    try{
+      const result=await Promise.race([
+        verify(),
+        new Promise(resolve=>{timerId=setTimeout(()=>resolve(timedOut),20000)})
+      ]);
+      if(result===timedOut)throw new Error('Kinfolk could not verify the signup session in time. Sign in again to set Stay Logged In.');
+      return result;
+    }finally{
+      if(timerId!==undefined)clearTimeout(timerId);
+    }
   }
 
   // A session returned by signUp is not proof of email verification. Supabase
