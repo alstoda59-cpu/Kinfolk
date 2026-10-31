@@ -543,8 +543,9 @@
       if(!data?.user?.id)throw new Error('Kinfolk could not confirm account creation. Please try again.');
       // Supabase can return a user-shaped response without an active session.
       // Never accept an explicitly different email identity as this signup.
-      // Case differences are normal; missing email is tolerated for older auth adapters.
-      const matchesSubmittedEmail=value=>value==null||String(value).trim().toLowerCase()===email.toLowerCase();
+      // An email signup must return its submitted email identity. Missing or
+      // non-string emails cannot prove which account Supabase actually created.
+      const matchesSubmittedEmail=value=>typeof value==='string'&&value.trim().toLowerCase()===email.toLowerCase();
       if(!matchesSubmittedEmail(data.user.email))throw new Error('Signup returned a different email account. Sign in again.');
       if(data.session&&(data.session.user?.id!==data.user.id||!matchesSubmittedEmail(data.session.user?.email)))throw new Error('Signup session did not match the new account. Sign in again.');
       // The user may have navigated to login while signup was in flight.
@@ -621,8 +622,14 @@
       // Never write its error into a different screen or reset that screen's button.
       if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!(isSignupTitle(signupTitle?.textContent)))return;
       const raw=err?.message||String(err),low=raw.toLowerCase();
+      const code=String(err?.code||err?.error_code||'').toLowerCase();
       let message=raw;
-      if(low.includes('birthday is required'))message='Enter your birthday to create a Kinfolk account.';
+      // Real isolated Auth smoke tests returned email_address_invalid. Do not
+      // print a raw provider error or mistake an undeliverable inbox for a
+      // successful signup: give the member a useful correction instead.
+      if(code==='email_address_invalid'||(low.includes('email address')&&low.includes('invalid')))message='Enter a valid email address that can receive a verification link.';
+      else if(code==='over_email_send_rate_limit'||code==='over_request_rate_limit'||Number(err?.status)===429)message='Too many account or email requests. Please wait before trying again.';
+      else if(low.includes('birthday is required'))message='Enter your birthday to create a Kinfolk account.';
       else if(low.includes('requires ages 13 through 99')||low.includes('minimum age is 13'))message='Kinfolk accounts are available for ages 13–99.';
       else if(low.includes('username')&&(low.includes('already taken')||low.includes('duplicate')||low.includes('unique')))message='That username is already taken. Choose a different username.';
       show(form,message);
