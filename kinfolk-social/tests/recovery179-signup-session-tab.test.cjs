@@ -31,10 +31,10 @@ function fixture({ stay = false, session = true, error = null } = {}) {
       if (type === 'submit') { assert.equal(capture, true); submit = fn; }
     },
   };
-  const sb = { auth: { async getSession() { return { data: { session: sessionReads++===0?null:(session ? { user: { id: 'synthetic-user', email:'synthetic@example.test' } } : null) }, error: null }; }, async signUp(args) {
+  const sb = { auth: { async getSession() { return { data: { session: sessionReads++===0?null:(session ? { access_token:'synthetic-signup-token', user: { id: 'synthetic-user', email:'synthetic@example.test' } } : null) }, error: null }; }, async signUp(args) {
     calls.push(args);
     return { data: { user: { id: 'synthetic-user', email:'synthetic@example.test' },
-      session: session ? { user: { id: 'synthetic-user', email:'synthetic@example.test' } } : null }, error };
+      session: session ? { access_token:'synthetic-signup-token', user: { id: 'synthetic-user', email:'synthetic@example.test' } } : null }, error };
   } } };
   const context = {
     window: {}, document, sb, URL, Date,
