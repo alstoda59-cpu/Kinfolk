@@ -33,11 +33,11 @@ function fixture({ids=[null,null,'login','login'],adoptedId='login',setSessionEr
   const sb={auth:{
     async getSession(){
       const id=ids[Math.min(read++,ids.length-1)];
-      return {data:{session:id===null?null:{user:{id,email:'test@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'},access_token:'synthetic'}}},error:null};
+      return {data:{session:id===null?null:{user:{id,email:'test@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'},access_token:'synthetic'}},error:null};
     },
     async setSession(){
       adoptions++;
-      return {data:{session:{user:adoptedId?{id:adoptedId,email:'test@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'}:null},access_token:'synthetic'}},error:setSessionError};
+      return {data:{session:{user:adoptedId?{id:adoptedId,email:'test@example.test',email_confirmed_at:'2026-10-29T12:00:00.000Z'}:null,access_token:'synthetic'}},error:setSessionError};
     }
   }};
   const window={};
