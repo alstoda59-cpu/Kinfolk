@@ -37,7 +37,7 @@ test('photo rows are tied to parent owner and owner-prefixed storage path',()=>{
   assert.match(sql,/foreign key\(album_id,owner_id\)/);
   assert.match(sql,/references public\.photo_albums\(id,owner_id\) on delete cascade/);
   assert.match(sql,/album_photos_owner_path_check/);
-  assert.match(sql,/owner_id::text\|\| '\/albums\/'\|\|album_id::text/);
+  assert.match(sql,/owner_id::text\|\|\s*'\/albums\/'\|\|album_id::text/);
   assert.match(sql,/create policy alpha_album_photo_insert/);
 });
 test('signed album media reads require a linked public album, not a public bucket',()=>{
