@@ -54,7 +54,8 @@ test('hung remote getUser cannot leave the signup button waiting indefinitely',a
   });
   const attempt=h.check(signup,email);
   const failure=assert.rejects(attempt,/could not verify the signup session in time/i);
-  await Promise.resolve();
+  // Drain the VM realm's async continuation before checking the remote call.
+  await new Promise(resolve=>setImmediate(resolve));
   assert.equal(token,signup.access_token);
   h.expire();
   await failure;
@@ -69,7 +70,8 @@ test('hung final session recheck fails closed instead of persisting stale prefer
   });
   const attempt=h.check(signup,email);
   const failure=assert.rejects(attempt,/could not verify the signup session in time/i);
-  for(let i=0;i<5;i++)await Promise.resolve();
+  // A Node event-loop turn flushes promises created in the isolated VM realm.
+  await new Promise(resolve=>setImmediate(resolve));
   assert.equal(reads,2);
   h.expire();
   await failure;
