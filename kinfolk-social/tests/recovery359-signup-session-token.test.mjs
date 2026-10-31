@@ -12,8 +12,8 @@ assert.ok(start>=0&&end>start,'effective signup session verifier exists');
 const production=source.slice(start,end);
 const email='member@example.invalid';
 const signup={access_token:'synthetic-signup-token',user:{id:'synthetic-member',email}};
-function verifier(getSession){
-  const sb={auth:{getSession}};
+function verifier(getSession,getUser=async()=>({data:{user:{...signup.user,email_confirmed_at:'2026-10-30T18:00:00.000Z'}},error:null})){
+  const sb={auth:{getSession,getUser}};
   return vm.runInNewContext('(()=>{'+production+';return signupSessionIsCurrent})()',{sb});
 }
 const current=()=>({data:{session:signup},error:null});
