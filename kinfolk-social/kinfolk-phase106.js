@@ -77,17 +77,24 @@ async function addOne(albumId,file,accountId,form){
     const files=[...(f.querySelector('#albumFiles')?.files||[])];
     if(!title)throw new Error('Give your album a name.');
     validate(files);
-    const q=await sb.from('photo_albums').insert({owner_id:accountId,title,description,visibility},{count:'exact'}).select().single();
+    const uncertain='Album creation could not be confirmed. Refresh your albums before retrying.';
     // A returned album-shaped object is not proof of a committed, owned row.
     // A transport error can also arrive after commit: never encourage a blind
     // retry that may create a second album.
+    let q;
+    try{
+      q=await sb.from('photo_albums').insert({owner_id:accountId,title,description,visibility},{count:'exact'}).select().single();
+    }catch(error){
+      console.warn('Kinfolk album creation response failed',error);
+      throw new Error(uncertain);
+    }
     if(q.error){
       console.warn('Kinfolk album creation outcome could not be confirmed',q.error);
-      throw new Error('Album creation could not be confirmed. Refresh your albums before retrying.');
+      throw new Error(uncertain);
     }
     requireAlbumSession(accountId,f);
     if(q.count!==1||!q.data?.id||q.data.owner_id!==accountId)
-      throw new Error('Album creation could not be confirmed. Refresh your albums before retrying.');
+      throw new Error(uncertain);
     for(let i=0;i<files.length;i++){
       requireAlbumSession(accountId,f);
       const pg=f.querySelector('#albumProgress');
