@@ -550,6 +550,9 @@
     activeSignupTitle=signupTitle;
     if(btn){btn.disabled=true;btn.textContent='Creating account…'}
     let signupTimeoutId=null;
+    // Distinguish preflight failures from a signup already sent to Auth.
+    // A rejected network response may arrive after the member edits the form.
+    let signupRequestSent=false;
     try{
       if(typeof sb==='undefined'||!sb?.auth?.signUp)throw new Error('Kinfolk signup is not ready. Try again in a moment.');
       await requireNoActiveSignupAccount();
@@ -561,6 +564,7 @@
       // A mobile connection can leave signUp unresolved forever. Limit the UI
       // wait without claiming failure: the server may have created the account.
       const timedOut=Symbol('signup-timeout');
+      signupRequestSent=true;
       const result=await Promise.race([
         sb.auth.signUp({
           email,password,
@@ -682,6 +686,15 @@
       // An in-flight signup can fail after the user navigates to login.
       // Never write its error into a different screen or reset that screen's button.
       if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!(isSignupTitle(signupTitle?.textContent)))return;
+      // If the member edited the signup details after Auth was contacted,
+      // an old email/password error must not be attributed to the new form.
+      // The original request may have created an account despite a network error.
+      if(signupRequestSent&&!signupInputsUnchanged(form,signupSnapshot)){
+        signupRetryAt=Date.now()+60000;
+        show(form,'An earlier signup request may have completed for the original email. Check that inbox or log in before retrying in a minute.');
+        if(btn){btn.disabled=false;btn.textContent='Create account'}
+        return;
+      }
       const raw=err?.message||String(err),low=raw.toLowerCase();
       const code=String(err?.code||err?.error_code||'').toLowerCase();
       let message=raw;
