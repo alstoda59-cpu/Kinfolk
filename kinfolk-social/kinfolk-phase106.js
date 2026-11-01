@@ -143,12 +143,17 @@ async function addOne(albumId,file,accountId,form,activation){
   if(!f)return;
   const accountId=state?.user?.id,activation=kf129Epoch;
   if(!accountId)return tell('Your session is not ready. Please log in again.');
+  // The same Add Photos editor must never replay files after a confirmed or
+  // potentially partial upload. Reopen the album to inspect what was saved.
+  if(f.__kf106AddOutcome?.accountId===accountId&&f.__kf106AddOutcome?.albumId===id)
+    return tell('Photos may already have been added. Reopen this album and check its photos before uploading again.');
   const btn=f.querySelector('button'),old=btn?.textContent||'Upload photos';
   // A stale operation from a prior login must not block this activation.
   // Its finally block must also never unlock a newer operation.
   const operation={epoch:activation};
   busy=operation;
   if(btn){btn.disabled=true;btn.textContent='Uploading…'}
+  let uploadAttempted=false;
   try{
     requireAlbumSession(accountId,f,activation);
     const files=[...(f.querySelector('#albumAddFiles')?.files||[])];
@@ -158,17 +163,29 @@ async function addOne(albumId,file,accountId,form,activation){
       requireAlbumSession(accountId,f,activation);
       const pg=f.querySelector('#albumAddProgress');
       if(pg)pg.textContent='Uploading '+(i+1)+' of '+files.length+'…';
+      uploadAttempted=true;
       await addOne(id,files[i],accountId,f,activation);
     }
     requireAlbumSession(accountId,f,activation);
+    f.__kf106AddOutcome={accountId,albumId:id};
     await window.viewAlbum(id);
     if(state?.user?.id===accountId&&kf129Epoch===activation)tell('Photos added','good');
   }catch(err){
-    if(state?.user?.id===accountId&&kf129Epoch===activation&&document.getElementById('albumAddForm')===f)tell(err?.message||'Photos could not be added');
+    if(state?.user?.id===accountId&&kf129Epoch===activation&&document.getElementById('albumAddForm')===f){
+      if(uploadAttempted){
+        // A later file can fail after earlier files were committed, and even
+        // the failing file may have committed before its response was lost.
+        // Never replay the original selection from this mounted editor.
+        f.__kf106AddOutcome={accountId,albumId:id};
+        console.warn('Kinfolk Add Photos may have partially committed',err);
+        tell('Photo upload may have partially completed. Reopen this album and check which photos are present before uploading missing photos. Do not submit this form again.');
+      }else tell(err?.message||'Photos could not be added');
+    }
   }finally{
     if(busy===operation)busy=false;
     if(btn&&document.contains(btn)&&state?.user?.id===accountId&&kf129Epoch===activation&&document.getElementById('albumAddForm')===f){
-      btn.disabled=false;btn.textContent=old;
+      const locked=f.__kf106AddOutcome?.accountId===accountId&&f.__kf106AddOutcome?.albumId===id;
+      btn.disabled=!!locked;btn.textContent=locked?'Reopen album to review photos':old;
     }
   }
 }

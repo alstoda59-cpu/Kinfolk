@@ -87,5 +87,6 @@ test('Add Photos does not open viewer or toast after same-user session reactivat
 test('Add Photos refreshes through the effective guarded viewer on success',async()=>{
   const h=addFormHarness(false);await h.run();
   assert.deepEqual(h.calls,['upload','guarded-view','toast']);
-  assert.equal(h.button.disabled,false);
+  assert.equal(h.button.disabled,true); // A completed Add Photos form must not replay the same file.
+  assert.match(h.button.textContent,/Reopen album/);
 });

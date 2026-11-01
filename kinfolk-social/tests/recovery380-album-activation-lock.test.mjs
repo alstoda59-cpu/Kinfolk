@@ -86,19 +86,13 @@ for(const mode of ['create','add']){
 
     h.resolve(1);
     await fresh;
-    assert.equal(h.button.disabled,false);
+    assert.equal(h.button.disabled,mode==='add',
+      'completed Add Photos editor stays locked; Create Album closes normally');
     const next=h.submit();
-    if(mode==='create'){
-      // The original form still exists in this synthetic fixture. Once the
-      // fresh activation committed its album, reusing that form must not
-      // issue another INSERT even though the async lock has released.
-      assert.equal(h.gates.length,2,'committed album form cannot create a duplicate');
-      assert.equal(h.calls.at(-1),'toast');
-      await next;
-    }else{
-      assert.equal(h.gates.length,3,'Add Photos lock releases when its own operation finishes');
-      h.resolve(2);
-      await next;
-    }
+    // Both forms are deliberately left mounted by this synthetic fixture.
+    // Neither may replay a confirmed album or photo upload after completion.
+    assert.equal(h.gates.length,2,'committed album/photo form cannot repeat writes');
+    assert.equal(h.calls.at(-1),'toast');
+    await next;
   });
 }
