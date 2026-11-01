@@ -11,16 +11,31 @@ export async function verifyIsolatedRealSignup(config,{fetchImpl=globalThis.fetc
   if(!/^[^\s@]{1,64}@[a-z0-9-]+(?:\.[a-z0-9-]+)+$/i.test(email||'')||/@(?:example\.(?:com|org|net)|[^@]+\.(?:invalid|test))$/i.test(email)) throw Error('An explicitly approved test inbox is required; reserved or invalid domains are refused');
   if(typeof password!=='string'||password.length<12||password.length>128)throw Error('Synthetic signup password must meet Kinfolk limits');
   if(typeof fetchImpl!=='function')throw Error('Fetch is required');
+  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>60000)throw Error('Synthetic signup request timeout must be 1 to 60000 ms');
   const base=config.url+'/auth/v1';
   const headers={apikey:config.key,accept:'application/json','content-type':'application/json'};
   async function request(path,method='GET',body){
     const controller=new AbortController();
-    const timeout=setTimeout(()=>controller.abort(),timeoutMs);
-    try{
+    let timer;
+    const timedOut=()=>new Error('Isolated synthetic signup Auth request timed out');
+    // Abort alone cannot bound a fetch wrapper or JSON reader that ignores its signal.
+    // Fail closed across the complete request and body read, including /signup.
+    const deadline=new Promise((_,reject)=>{
+      timer=setTimeout(()=>{
+        reject(timedOut());
+        controller.abort();
+      },timeoutMs);
+    });
+    const read=async()=>{
       const response=await fetchImpl(base+path,{method,headers,redirect:'manual',cache:'no-store',signal:controller.signal,...(body?{body:JSON.stringify(body)}:{})});
+      if(controller.signal.aborted)throw timedOut();
       if(!/\bapplication\/json\b/i.test(response.headers?.get('content-type')||''))throw Error('Auth endpoint response was not JSON');
-      return {status:response.status,data:await response.json()};
-    }finally{clearTimeout(timeout)}
+      const data=await response.json();
+      if(controller.signal.aborted)throw timedOut();
+      return {status:response.status,data};
+    };
+    try{return await Promise.race([read(),deadline])}
+    finally{clearTimeout(timer)}
   }
   const settings=await request('/settings');
   if(settings.status!==200)throw Error('Isolated Auth settings HTTP '+settings.status);
