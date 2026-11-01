@@ -123,7 +123,7 @@ test('reused auth form cannot receive old signup success after login-to-signup r
   assert.equal(f.tab.size,0);
   await f.submit();
   assert.equal(f.signupCalls,1,'an existing signup session must block a second account creation');
-  assert.match(f.message,/already signed in/i);
+  assert.match(f.message,/previous signup may still be processing/i,'a stale successful request must retain duplicate-signup protection');
 });
 
 test('reused auth form cannot receive old signup error after login-to-signup roundtrip',async()=>{
