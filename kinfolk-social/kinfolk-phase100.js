@@ -1,17 +1,19 @@
-(()=>{if(window.__kinfolkPhase100)return;window.__kinfolkPhase100=true;const BUCKET='kinfolk-media',MAX=5*1024*1024,ACCEPT='image/jpeg,image/png,image/webp,image/gif',ALLOWED=new Set(ACCEPT.split(','));const wait=ms=>new Promise(r=>setTimeout(r,ms));const notify=(m,t='danger')=>{try{toast(m,t)}catch{console.warn('Kinfolk',m)}};const cleanName=n=>{const v=String(n||'image').replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'').slice(-70);return v||'image'};const extFor=t=>t==='image/jpeg'?'jpg':t==='image/png'?'png':t==='image/webp'?'webp':t==='image/gif'?'gif':'img';const toBlob=(c,t,q)=>new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(new Error('Could not prepare this image.')),t,q));async function compress(file,label){const url=URL.createObjectURL(file),img=new Image();try{await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(new Error(label+' could not be read. Try another image.'));img.src=url});const ow=img.naturalWidth||img.width,oh=img.naturalHeight||img.height;if(!ow||!oh)throw new Error(label+' could not be read. Try another image.');const type=file.type==='image/jpeg'?'image/jpeg':'image/webp',limits=[2400,2000,1600,1280,1024],qs=[.88,.8,.72,.64,.58];for(let i=0;i<limits.length;i++){const scale=Math.min(1,limits[i]/Math.max(ow,oh)),w=Math.max(1,Math.round(ow*scale)),h=Math.max(1,Math.round(oh*scale)),c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d',{alpha:true});if(!ctx)throw new Error('Image preparation is not available on this device.');ctx.drawImage(img,0,0,w,h);let b;try{b=await toBlob(c,type,qs[i])}catch{b=await toBlob(c,'image/jpeg',qs[i])}if(b.size<=MAX){const base=cleanName(file.name).replace(/\.[^.]+$/,'')||'image',ext=b.type==='image/webp'?'webp':'jpg';return new File([b],base+'.'+ext,{type:b.type,lastModified:Date.now()})}}throw new Error(label+' is still larger than 5 MB after optimization. Choose a smaller image.')}finally{URL.revokeObjectURL(url)}}async function prepare(file,label){if(!file)return null;if(!ALLOWED.has(file.type))throw new Error(label+' must be JPG, PNG, WebP or GIF.');if(file.size<=MAX)return file;if(file.type==='image/gif')throw new Error(label+' GIF must be 5 MB or smaller.');return compress(file,label)}async function removeUploaded(paths){if(!paths.length)return;try{const {error}=await sb.storage.from(BUCKET).remove(paths);if(error)console.warn('Kinfolk could not clean up an uncommitted profile image',error)}catch(error){console.warn('Kinfolk could not clean up an uncommitted profile image',error)}}function sameEditor(accountId,editor){
-  return state?.user?.id===accountId && document.getElementById('profileForm')===editor && editor.isConnected!==false;
+(()=>{if(window.__kinfolkPhase100)return;window.__kinfolkPhase100=true;const BUCKET='kinfolk-media',MAX=5*1024*1024,ACCEPT='image/jpeg,image/png,image/webp,image/gif',ALLOWED=new Set(ACCEPT.split(','));const wait=ms=>new Promise(r=>setTimeout(r,ms));const notify=(m,t='danger')=>{try{toast(m,t)}catch{console.warn('Kinfolk',m)}};const cleanName=n=>{const v=String(n||'image').replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'').slice(-70);return v||'image'};const extFor=t=>t==='image/jpeg'?'jpg':t==='image/png'?'png':t==='image/webp'?'webp':t==='image/gif'?'gif':'img';const toBlob=(c,t,q)=>new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(new Error('Could not prepare this image.')),t,q));async function compress(file,label){const url=URL.createObjectURL(file),img=new Image();try{await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(new Error(label+' could not be read. Try another image.'));img.src=url});const ow=img.naturalWidth||img.width,oh=img.naturalHeight||img.height;if(!ow||!oh)throw new Error(label+' could not be read. Try another image.');const type=file.type==='image/jpeg'?'image/jpeg':'image/webp',limits=[2400,2000,1600,1280,1024],qs=[.88,.8,.72,.64,.58];for(let i=0;i<limits.length;i++){const scale=Math.min(1,limits[i]/Math.max(ow,oh)),w=Math.max(1,Math.round(ow*scale)),h=Math.max(1,Math.round(oh*scale)),c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d',{alpha:true});if(!ctx)throw new Error('Image preparation is not available on this device.');ctx.drawImage(img,0,0,w,h);let b;try{b=await toBlob(c,type,qs[i])}catch{b=await toBlob(c,'image/jpeg',qs[i])}if(b.size<=MAX){const base=cleanName(file.name).replace(/\.[^.]+$/,'')||'image',ext=b.type==='image/webp'?'webp':'jpg';return new File([b],base+'.'+ext,{type:b.type,lastModified:Date.now()})}}throw new Error(label+' is still larger than 5 MB after optimization. Choose a smaller image.')}finally{URL.revokeObjectURL(url)}}async function prepare(file,label){if(!file)return null;if(!ALLOWED.has(file.type))throw new Error(label+' must be JPG, PNG, WebP or GIF.');if(file.size<=MAX)return file;if(file.type==='image/gif')throw new Error(label+' GIF must be 5 MB or smaller.');return compress(file,label)}async function removeUploaded(paths){if(!paths.length)return;try{const {error}=await sb.storage.from(BUCKET).remove(paths);if(error)console.warn('Kinfolk could not clean up an uncommitted profile image',error)}catch(error){console.warn('Kinfolk could not clean up an uncommitted profile image',error)}}function sameEditor(accountId,editor,authEpoch){
+  // A logout/relogin can return to the same user ID while an older upload
+  // is pending. The auth activation epoch, not just the user ID, owns it.
+  return state?.user?.id===accountId && (authEpoch===null || (typeof kf129Epoch==='number' && kf129Epoch===authEpoch)) && document.getElementById('profileForm')===editor && editor.isConnected!==false;
 }
-function requireEditor(accountId,editor){
-  if(!sameEditor(accountId,editor))throw new Error('Account or profile editor changed during save. Reopen Edit Profile and try again.');
+function requireEditor(accountId,editor,authEpoch){
+  if(!sameEditor(accountId,editor,authEpoch))throw new Error('Account or profile editor changed during save. Reopen Edit Profile and try again.');
 }
-async function upload(file,folder,paths,accountId,editor){
-  requireEditor(accountId,editor);
+async function upload(file,folder,paths,accountId,editor,authEpoch){
+  requireEditor(accountId,editor,authEpoch);
   const base=cleanName(file.name).replace(/\.[^.]+$/,'')||'image';
   const path=accountId+'/'+folder+'/'+crypto.randomUUID()+'-'+base+'.'+extFor(file.type);
   const {error}=await sb.storage.from(BUCKET).upload(path,file,{upsert:false,contentType:file.type,cacheControl:'3600'});
   if(error)throw error;
   paths.push(path);
-  requireEditor(accountId,editor);
+  requireEditor(accountId,editor,authEpoch);
   return path;
 }
 // Freeze the editor after capturing its values and files. Otherwise a slow
@@ -42,6 +44,10 @@ function form(){return document.getElementById('profileForm')}function saveButto
   const f=form();
   if(!f||f.dataset.kf100Busy==='1')return;
   const accountId=state?.user?.id;
+  // Capture the activation before any asynchronous work. The main app
+  // increments kf129Epoch on auth transitions, including same-user relogin.
+  const authEpoch=typeof kf129Epoch==='number'?kf129Epoch:null;
+  const stillOwner=()=>state?.user?.id===accountId&&(authEpoch===null||kf129Epoch===authEpoch);
   if(!accountId)return notify('Your session is not ready. Please log in again.');
   if(!claimProfileSave(accountId))return notify('A previous profile save is still finishing. Please wait before saving again.');
   f.dataset.kf100Busy='1';
@@ -54,7 +60,7 @@ function form(){return document.getElementById('profileForm')}function saveButto
   let profileWriteMayHaveCommitted=false;
   let restoreEditorFields=()=>{};
   try{
-    requireEditor(accountId,f);
+    requireEditor(accountId,f,authEpoch);
     patch();
     // Capture all fields and files before the first asynchronous operation.
     // A new account must never supply values to an old account's save.
@@ -67,18 +73,18 @@ function form(){return document.getElementById('profileForm')}function saveButto
     // from appearing to be included while compression or uploads are pending.
     restoreEditorFields=lockEditorFields(f);
     const avatar=await prepare(avatarFile,'Profile photo');
-    requireEditor(accountId,f);
+    requireEditor(accountId,f,authEpoch);
     const wallpaper=await prepare(wallpaperFile,'Wallpaper');
-    requireEditor(accountId,f);
-    if(avatar)po.avatar_url=await upload(avatar,'avatars',uploaded,accountId,f);
-    if(wallpaper)po.wallpaper_url=await upload(wallpaper,'wallpapers',uploaded,accountId,f);
-    requireEditor(accountId,f);
+    requireEditor(accountId,f,authEpoch);
+    if(avatar)po.avatar_url=await upload(avatar,'avatars',uploaded,accountId,f,authEpoch);
+    if(wallpaper)po.wallpaper_url=await upload(wallpaper,'wallpapers',uploaded,accountId,f,authEpoch);
+    requireEditor(accountId,f,authEpoch);
     const x=await sb.from('kinfolk_profile_extras').upsert(ex,{onConflict:'user_id',count:'exact'});
     if(x.error)throw x.error;
     // RLS can silently filter an upsert without raising an API error.
     // Treat a missing count as unverified rather than reporting a partial save.
     if(x.count!==1)throw new Error('Profile preferences could not be saved. Please sign in again and retry.');
-    requireEditor(accountId,f);
+    requireEditor(accountId,f,authEpoch);
     profileWriteMayHaveCommitted=true;
     const p=await sb.from('profiles').update(po,{count:'exact'}).eq('id',accountId);
     if(!p.error&&p.count===0)profileWriteMayHaveCommitted=false;
@@ -89,27 +95,27 @@ function form(){return document.getElementById('profileForm')}function saveButto
     // The database update may finish after logout or account switching.
     // Never hydrate, render or show success for a different account.
     profileSaved=true;
-    requireEditor(accountId,f);
+    requireEditor(accountId,f,authEpoch);
     try{
       closeModal();
-      if(state?.user?.id===accountId){
+      if(stillOwner()){
         await hydrateUser();
-        if(state?.user?.id===accountId){
+        if(stillOwner()){
           state.profiles.set(accountId,state.profile);
           await loadCore();
-          if(state?.user?.id===accountId)await renderApp();
+          if(stillOwner())await renderApp();
         }
       }
     }catch(renderErr){console.warn('Kinfolk profile refresh',renderErr)}
-    if(state?.user?.id===accountId)notify('Profile updated','good');
+    if(stillOwner())notify('Profile updated','good');
   }catch(err){
     if(!profileSaved&&!profileWriteMayHaveCommitted)await removeUploaded(uploaded);
-    if(state?.user?.id===accountId && form()===f)notify(err?.message||'Profile update failed');
+    if(stillOwner() && form()===f)notify(err?.message||'Profile update failed');
   }finally{
     restoreEditorFields();
     f.dataset.kf100Busy='0';
     releaseProfileSave(accountId);
-    if(btn&&document.contains(btn)&&form()===f&&state?.user?.id===accountId){
+    if(btn&&document.contains(btn)&&form()===f&&stillOwner()){
       btn.disabled=false;btn.textContent=old;
     }
   }
