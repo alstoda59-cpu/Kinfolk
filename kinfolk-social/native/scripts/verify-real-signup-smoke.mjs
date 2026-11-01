@@ -6,10 +6,14 @@ import {ALPHA_REF, alphaBackendConfig} from './alpha-backend-config.mjs';
 import {assertEmailSignupReady} from './verify-isolated-auth.mjs';
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-export async function verifyIsolatedRealSignup(config,{fetchImpl=globalThis.fetch,email,password,timeoutMs=10000}={}){
+export async function verifyIsolatedRealSignup(config,{fetchImpl=globalThis.fetch,email,password,timeoutMs=10000,syntheticAccountOnly=false,approvedInbox=false}={}){
   if(config?.projectRef!==ALPHA_REF||config?.offlineStub||config?.url!=='https://'+ALPHA_REF+'.supabase.co'||!/^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(config.key||'')) throw Error('Only the isolated alpha publishable client may create a test signup');
   if(!/^[^\s@]{1,64}@[a-z0-9-]+(?:\.[a-z0-9-]+)+$/i.test(email||'')||/@(?:example\.(?:com|org|net)|[^@]+\.(?:invalid|test))$/i.test(email)) throw Error('An explicitly approved test inbox is required; reserved or invalid domains are refused');
   if(typeof password!=='string'||password.length<12||password.length>128)throw Error('Synthetic signup password must meet Kinfolk limits');
+  // Enforce the authorization boundary in the exported function, not only in
+  // its CLI wrapper. Imported callers must explicitly opt in before any
+  // request can create a persistent test account.
+  if(syntheticAccountOnly!==true||approvedInbox!==true)throw Error('Explicit synthetic-account and approved-inbox opt-in required before signup');
   if(typeof fetchImpl!=='function')throw Error('Fetch is required');
   if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>60000)throw Error('Synthetic signup request timeout must be 1 to 60000 ms');
   const base=config.url+'/auth/v1';
@@ -79,6 +83,6 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
   if(process.env.KINFOLK_ALPHA_TEST_INBOX_APPROVED!=='1')throw Error('Owner must explicitly approve the deliverable test inbox before Auth signup');
   const email=String(process.env.KINFOLK_ALPHA_TEST_EMAIL||'').trim().toLowerCase();
   const password=randomBytes(9).toString('base64url');
-  const result=await verifyIsolatedRealSignup(alphaBackendConfig(process.env),{email,password});
+  const result=await verifyIsolatedRealSignup(alphaBackendConfig(process.env),{email,password,syntheticAccountOnly:true,approvedInbox:true});
   console.log('PASS isolated synthetic signup and unconfirmed-login block; email delivery/callback NOT verified; nonproduction test user retained ('+result.projectRef+')');
 }
