@@ -18,9 +18,21 @@ async function blockPeer(peer,originForm){
     const {error,count}=await sb.from('blocks').insert(
       {blocker_id:accountId,blocked_id:peer},{count:'exact'}
     );
-    const alreadyBlocked=!!error&&/duplicate|unique/i.test(error.message||'');
+    const alreadyBlocked=!!error&&(error.code==='23505'||/duplicate|unique/i.test(error.message||''));
     if(error&&!alreadyBlocked)throw error;
-    if(!alreadyBlocked&&count!==1)
+    if(alreadyBlocked){
+      // A duplicate constraint error alone does not prove this peer is blocked.
+      // Confirm the exact owner/peer pair under the active user's SELECT RLS.
+      if(!stillCurrent())return;
+      const {data:existing,error:readError}=await sb.from('blocks')
+        .select('blocker_id,blocked_id')
+        .eq('blocker_id',accountId)
+        .eq('blocked_id',peer)
+        .limit(1);
+      if(readError||!Array.isArray(existing)||
+         !existing.some(row=>row?.blocker_id===accountId&&row?.blocked_id===peer))
+        throw new Error('Existing block could not be verified. Check Blocked Accounts before trying again.');
+    }else if(count!==1)
       throw new Error('Block could not be confirmed. Check Blocked Accounts before trying again.');
     if(!stillCurrent())return;
     try{closeModal()}catch{}

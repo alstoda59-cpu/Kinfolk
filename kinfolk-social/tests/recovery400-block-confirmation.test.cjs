@@ -4,14 +4,15 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 
-const source=fs.readFileSync('kinfolk-social/kinfolk-phase107.js','utf8');
+const path=require('node:path');
+const source=fs.readFileSync(path.resolve(__dirname,'../kinfolk-phase107.js'),'utf8');
 const start=source.indexOf('const pendingBlocks=');
 const end=source.indexOf('window.blockKinfolk=blockPeer;',start);
 assert.ok(start>=0&&end>start,'effective DM block handler is present');
 const blockCode=source.slice(start,end);
 
-function harness(){
-  const events=[],writes=[];
+function harness(lookup={data:[{blocker_id:'synthetic-adult-A',blocked_id:'synthetic-peer-B'}],error:null}){
+  const events=[],writes=[],reads=[];
   const ctx={
     window:{state:{user:{id:'synthetic-adult-A'}}},
     kf129Epoch:1,
@@ -26,11 +27,16 @@ function harness(){
         const promise=new Promise(r=>{resolve=r});
         writes.push({row,options,resolve});
         return promise;
+      },select(columns){
+        assert.equal(columns,'blocker_id,blocked_id');
+        const filters=[];
+        return {eq(key,value){filters.push([key,value]);return this},
+          limit(n){assert.equal(n,1);reads.push(filters);return Promise.resolve(lookup)}};
       }};
     }}
   };
   const blockPeer=vm.runInNewContext(blockCode+'\nblockPeer',ctx,{timeout:1000});
-  return {ctx,events,writes,blockPeer,resolve(result){writes.at(-1).resolve(result)}};
+  return {ctx,events,writes,reads,blockPeer,resolve(result){writes.at(-1).resolve(result)}};
 }
 function successes(h){return h.events.filter(e=>e[0]==='close'||(e[0]==='toast'&&e[2]==='good'))}
 
@@ -62,7 +68,36 @@ test('unique duplicate response retains existing-block behavior without a second
   h.resolve({error:{message:'duplicate key value violates unique constraint',code:'23505'},count:null});
   await p;
   assert.equal(h.writes.length,1);
+  assert.equal(h.reads.length,1);
+  assert.deepEqual(Array.from(h.reads[0],pair=>Array.from(pair)),[
+    ['blocker_id','synthetic-adult-A'],['blocked_id','synthetic-peer-B']
+  ]);
   assert.equal(successes(h).length,2);
+});
+test('duplicate error without a visible exact owner-peer row never claims privacy success',async()=>{
+  const lookups=[
+    {data:[],error:null},
+    {data:null,error:null},
+    {data:[{blocker_id:'synthetic-adult-A',blocked_id:'other-peer'}],error:null},
+    {data:[{blocker_id:'other-account',blocked_id:'synthetic-peer-B'}],error:null},
+    {data:null,error:{message:'RLS denied'}}
+  ];
+  for(const lookup of lookups){
+    const h=harness(lookup),p=h.blockPeer('synthetic-peer-B');
+    h.resolve({error:{code:'23505',message:'duplicate key'},count:null});
+    await p;
+    assert.equal(h.reads.length,1);
+    assert.equal(successes(h).length,0);
+    assert.match(h.events.at(-1)[1],/could not be verified/);
+  }
+});
+test('duplicate insert from an old activation never reads or toasts in the new session',async()=>{
+  const h=harness(),p=h.blockPeer('synthetic-peer-B');
+  h.ctx.kf129Epoch=2;
+  h.resolve({error:{code:'23505',message:'duplicate key'},count:null});
+  await p;
+  assert.equal(h.reads.length,0);
+  assert.equal(h.events.length,0);
 });
 test('same-account reauthentication suppresses stale block success UI',async()=>{
   const h=harness(),p=h.blockPeer('synthetic-peer-B');

@@ -23,6 +23,16 @@ function blockHarness(){
       assert.equal(options.count,'exact','block privacy writes require a confirmed affected-row count');
       events.push(['insert',row.blocker_id,row.blocked_id]);
       return new Promise(resolve=>{settle=resolve});
+    },select:columns=>{
+      assert.equal(columns,'blocker_id,blocked_id');
+      const filters=[];
+      return {eq(key,value){filters.push([key,value]);return this},
+        limit(n){
+          assert.equal(n,1);
+          assert.deepEqual(filters,[['blocker_id','account-A'],['blocked_id','peer-B']]);
+          events.push(['verify-existing-block']);
+          return Promise.resolve({data:[{blocker_id:'account-A',blocked_id:'peer-B'}],error:null});
+        }};
     }};
   }};
   const blockPeer=vm.runInNewContext(blockCode+'\nblockPeer',{
@@ -73,6 +83,7 @@ test('existing duplicate block is treated as blocked, without a second insert',a
   h.finish(new Error('duplicate key value violates unique constraint'));
   await pending;
   assert.equal(h.events.filter(e=>e[0]==='insert').length,1);
+  assert.equal(h.events.filter(e=>e[0]==='verify-existing-block').length,1);
   assert.ok(h.events.some(e=>e[0]==='toast'&&e[2]==='good'));
 });
 
