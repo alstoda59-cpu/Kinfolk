@@ -49,6 +49,18 @@ test('unconfirmed signup may not return a session or confirmed identity',async()
   await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password}),/confirmed user or session/);
   assert.equal(m.calls.length,2);
 });
+test('signup smoke rejects general confirmed_at even without email_confirmed_at',async()=>{
+  const m=mockFetch({signupData:{user:{
+    id:userId,email,email_confirmed_at:null,confirmed_at:'2026-10-31T00:00:00Z',
+    identities:[{provider:'email',user_id:userId,identity_data:{email}}]
+  },session:null}});
+  await assert.rejects(
+    verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password}),
+    /confirmed user or session/
+  );
+  assert.deepEqual(m.calls.map(c=>c.method),['GET','POST']);
+});
+
 test('unconfirmed user receiving password session is a hard failure',async()=>{
   const m=mockFetch({loginStatus:200,loginData:{access_token:'should-not-exist'}});
   await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password}),/allowed to sign in/);
