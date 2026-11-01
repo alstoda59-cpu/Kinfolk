@@ -33,8 +33,10 @@ export async function verifyIsolatedAuthReachability(config, { fetchImpl=globalT
   // deadline so functional native verification always fails closed.
   const deadline=new Promise((_,reject)=>{
     timeout=setTimeout(()=>{
-      controller.abort();
+      // Settle the hard deadline first; abort listeners may synchronously
+      // reject their own fetch promise with a different, less useful error.
       reject(timedOut());
+      controller.abort();
     },timeoutMs);
   });
   const readSettings=async()=>{
