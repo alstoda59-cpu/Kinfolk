@@ -35,11 +35,11 @@ function exercise({connected=true,replacedTitle=false,loginTitle=false,unchanged
   return {result:outcome.result,retryAt:outcome.retryAt,messages,btn};
 }
 
-test('late successful signup after navigation or unmount cannot reach result handling',()=>{
+test('late successful signup after navigation or unmount keeps cooldown and cannot reach result handling',()=>{
   for(const options of [{connected:false},{replacedTitle:true},{loginTitle:true}]){
     const r=exercise(options);
     assert.equal(r.result,undefined);
-    assert.equal(r.retryAt,0);
+    assert.equal(r.retryAt,61000);
     assert.deepEqual(r.messages,[]);
     assert.equal(r.btn.disabled,true);
     assert.equal(r.btn.textContent,'Creating account…');

@@ -585,7 +585,13 @@
       // A completed Auth request belongs to the exact signup screen that sent
       // it. Navigation, unmount, or a reused form must never adopt its returned
       // session, show its success, or persist Stay Logged In for another screen.
-      if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!isSignupTitle(signupTitle?.textContent))return;
+      // Recovery392: the Auth request may have created an account even if the
+      // member navigated away. Preserve the retry cooldown across Login ->
+      // Signup navigation so the stale result cannot prompt a duplicate signup.
+      if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!isSignupTitle(signupTitle?.textContent)){
+        signupRetryAt=Date.now()+60000;
+        return;
+      }
       if(!signupInputsUnchanged(form,signupSnapshot)){
         signupRetryAt=Date.now()+60000;
         show(form,'Signup details changed while account creation was processing. The earlier request may have succeeded. Check the original email inbox or log in before retrying in a minute.');
@@ -688,7 +694,12 @@
     }catch(err){
       // An in-flight signup can fail after the user navigates to login.
       // Never write its error into a different screen or reset that screen's button.
-      if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!(isSignupTitle(signupTitle?.textContent)))return;
+      // A dispatched signup may still have succeeded, even when the old screen
+      // is gone. Keep the retry guard without touching the replacement form.
+      if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!(isSignupTitle(signupTitle?.textContent))){
+        if(signupRequestSent)signupRetryAt=Date.now()+60000;
+        return;
+      }
       // If the member edited the signup details after Auth was contacted,
       // an old email/password error must not be attributed to the new form.
       // The original request may have created an account despite a network error.
