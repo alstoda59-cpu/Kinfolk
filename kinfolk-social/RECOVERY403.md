@@ -18,6 +18,10 @@ Date: 2026-11-01 (America/Los_Angeles). Scope: FULL MAIN Kinfolk Social under `k
 - All 16 public tables have RLS enabled; all 16 report zero rows. Security advisor returned no findings.
 - These checks do not prove the RLS policies enforce access between authenticated synthetic accounts. No database, Auth, storage, policy or security settings were changed.
 
+## CI runner compatibility fix
+- Recovery403 [run 41362104257](https://github.com/alstoda59-cpu/Kinfolk/actions/runs/41362104257) passed **1,031/1,031 Node tests**, including all five new source-executed regressions, but the workflow failed before browser tests because `ubuntu-latest` resolved to Ubuntu 26.04 and Playwright 1.58.0 rejected the unsupported image during `python -m playwright install --with-deps chromium webkit`. This is a runner/browser compatibility failure, not a Node application regression.
+- Commit `828cc5713a50c2e8864d18e0c49fda9d1651b721` pins the existing Kinfolk Social-only workflow to `ubuntu-24.04` to restore a supported Playwright browser-test image. This modifies only `.github/workflows/kinfolk-social-ci.yml`, not Kinfolksworld or production settings. Verify the replacement run before claiming full CI success.
+
 ## CI, preview and native limits
 - Recovery403 final-head CI and exact-head Vercel READY must be checked independently after commits; no result is presumed from Recovery402.
 - No real synthetic-account signup, confirmation email delivery, login/logout/session restoration, two-user RLS, backend-connected media or messaging was performed.
