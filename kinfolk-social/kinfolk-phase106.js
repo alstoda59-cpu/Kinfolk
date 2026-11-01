@@ -203,7 +203,7 @@ async function guardedViewAlbum(id){
     const filename=storagePath.slice(storagePrefix.length);
     // Uploads create one flat filename. Reject foreign, nested, or traversal
     // paths even if a compromised/malformed row has matching owner columns.
-    if(!filename||filename==='.'||filename==='..'||/[\\/]/.test(filename))continue;
+    if(!/^[A-Za-z0-9._-]+$/.test(filename)||filename==='.'||filename==='..')continue;
     let url;
     try{url=await signed('kinfolk-media',photo.storage_path)}
     catch(error){if(!active())return;continue}
