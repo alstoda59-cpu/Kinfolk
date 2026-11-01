@@ -142,3 +142,109 @@ test('new same-account activation can block while old request is still pending',
   h.writes[1].resolve({error:null,count:1});await fresh;
   assert.equal(successes(h).length,2,'only fresh session may acknowledge success');
 });
+
+
+// Recovery403 DM privacy control: exercise the actual helper from Phase107.
+// This button is a sibling of the form, so replacing that sibling must not
+// permanently hide the safety action while the form itself stays mounted.
+const privacyStart=source.indexOf('function addDmBlock(form){');
+const privacyEnd=source.indexOf('function enforce(){',privacyStart);
+assert.ok(privacyStart>=0&&privacyEnd>privacyStart,'effective DM privacy helper is present');
+const privacyCode=source.slice(privacyStart,privacyEnd);
+function privacyHarness(){
+  const notes=[],calls=[];
+  const form={
+    dataset:{peer:'synthetic-peer-B'},
+    previousElementSibling:null,
+    insertAdjacentElement(position,note){
+      assert.equal(position,'beforebegin');
+      this.previousElementSibling=note;
+      note.isConnected=true;
+      notes.push(note);
+    }
+  };
+  const document={createElement(tag){
+    assert.equal(tag,'div');
+    const button={onclick:null};
+    const note={
+      isConnected:false,
+      button,
+      querySelector(selector){return selector==='button'?this.button:null},
+      remove(){
+        this.isConnected=false;
+        if(form.previousElementSibling===this)form.previousElementSibling=null;
+      }
+    };
+    return note;
+  }};
+  const addDmBlock=vm.runInNewContext(privacyCode+'\naddDmBlock',{
+    document,blockPeer:(peer,origin)=>{calls.push({peer,origin});return Promise.resolve()}
+  },{timeout:1000});
+  return {form,notes,calls,addDmBlock};
+}
+function clickPrivacy(note){
+  let prevented=false,stopped=false;
+  note.button.onclick({
+    preventDefault(){prevented=true},
+    stopImmediatePropagation(){stopped=true}
+  });
+  assert.ok(prevented&&stopped,'native click must be handled once');
+}
+
+test('Recovery403 DM privacy control stays single across repeated mobile enforcement',()=>{
+  const h=privacyHarness();
+  h.addDmBlock(h.form);
+  h.addDmBlock(h.form);
+  h.addDmBlock(h.form);
+  assert.equal(h.notes.length,1);
+  assert.equal(h.form.dataset.kf107Privacy,'1');
+  clickPrivacy(h.notes[0]);
+  assert.equal(h.calls.length,1);
+  assert.equal(h.calls[0].peer,'synthetic-peer-B');
+  assert.equal(h.calls[0].origin,h.form);
+});
+
+test('Recovery403 recreates Block Account after modal removes only its sibling',()=>{
+  const h=privacyHarness();
+  h.addDmBlock(h.form);
+  const first=h.notes[0];
+  first.remove();
+  assert.equal(h.form.dataset.kf107Privacy,'1','legacy flag remains set');
+  h.addDmBlock(h.form);
+  assert.equal(h.notes.length,2);
+  assert.equal(h.form.previousElementSibling,h.notes[1]);
+  clickPrivacy(h.notes[1]);
+  assert.equal(h.calls.length,1);
+});
+
+test('Recovery403 reparented DM form removes orphan privacy control and uses current peer',()=>{
+  const h=privacyHarness();
+  h.addDmBlock(h.form);
+  const first=h.notes[0];
+  h.form.previousElementSibling={otherModalElement:true};
+  h.form.dataset.peer='synthetic-peer-C';
+  h.addDmBlock(h.form);
+  assert.equal(first.isConnected,false,'old button must not remain in previous modal');
+  assert.equal(h.notes.length,2);
+  clickPrivacy(h.notes[1]);
+  assert.equal(h.calls[0].peer,'synthetic-peer-C');
+  assert.equal(h.calls[0].origin,h.form);
+});
+
+test('Recovery403 missing privacy button is recreated without duplicate visible controls',()=>{
+  const h=privacyHarness();
+  h.addDmBlock(h.form);
+  const first=h.notes[0];
+  first.button=null;
+  h.addDmBlock(h.form);
+  assert.equal(first.isConnected,false);
+  assert.equal(h.notes.length,2);
+  assert.ok(h.notes[1].button.onclick);
+});
+
+test('Recovery403 never offers Block Account without a selected DM peer',()=>{
+  const h=privacyHarness();
+  delete h.form.dataset.peer;
+  h.addDmBlock(h.form);
+  assert.equal(h.notes.length,0);
+});
