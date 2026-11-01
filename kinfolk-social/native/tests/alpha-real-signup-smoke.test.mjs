@@ -86,3 +86,55 @@ test('matching email identities tolerate harmless case and whitespace',async()=>
   assert.equal(result.signupAccepted,true);
   assert.equal(m.calls.length,3);
 });
+
+
+test('real synthetic signup fails closed if the signup fetch ignores abort',async()=>{
+  const urls=[];
+  let signupSignal;
+  const fetchImpl=async(url,opts)=>{
+    urls.push(url);
+    if(url.endsWith('/settings'))return response(200,settings);
+    if(url.endsWith('/signup')){
+      signupSignal=opts.signal;
+      return new Promise(()=>{});
+    }
+    throw Error('Password login must not run after signup timeout');
+  };
+  await assert.rejects(
+    verifyIsolatedRealSignup(config,{fetchImpl,email,password,timeoutMs:15}),
+    /synthetic signup Auth request timed out/
+  );
+  assert.equal(signupSignal.aborted,true);
+  assert.deepEqual(urls.map(url=>url.split('/').at(-1)),['settings','signup']);
+});
+
+test('real synthetic signup fails closed if signup JSON reading ignores abort',async()=>{
+  const urls=[];
+  let signupSignal;
+  const fetchImpl=async(url,opts)=>{
+    urls.push(url);
+    if(url.endsWith('/settings'))return response(200,settings);
+    if(url.endsWith('/signup')){
+      signupSignal=opts.signal;
+      return {...response(200,{}),json:()=>new Promise(()=>{})};
+    }
+    throw Error('Password login must not run after signup body timeout');
+  };
+  await assert.rejects(
+    verifyIsolatedRealSignup(config,{fetchImpl,email,password,timeoutMs:15}),
+    /synthetic signup Auth request timed out/
+  );
+  assert.equal(signupSignal.aborted,true);
+  assert.equal(urls.length,2);
+});
+
+test('real synthetic signup refuses invalid timeouts before network or account creation',async()=>{
+  let calls=0;
+  for(const timeoutMs of [0,-1,1.5,NaN,Infinity,60001]){
+    await assert.rejects(
+      verifyIsolatedRealSignup(config,{email,password,timeoutMs,fetchImpl:async()=>{calls++;return response(200,settings)}}),
+      /timeout must be 1 to 60000 ms/
+    );
+  }
+  assert.equal(calls,0);
+});
