@@ -2,10 +2,11 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
+const path=require('node:path');
 const vm=require('node:vm');
 
-const source=fs.readFileSync('kinfolk-social/kinfolk-phase100.js','utf8');
-assert.match(source,/function requireEditor\(accountId,editor\)/);
+const source=fs.readFileSync(path.resolve(__dirname,'../kinfolk-phase100.js'),'utf8');
+assert.match(source,/function requireEditor\(accountId,editor,authEpoch\)/);
 assert.match(source,/eq\('id',accountId\)/);
 assert.doesNotMatch(source,/eq\('id',state\.user\.id\)/);
 
@@ -19,7 +20,7 @@ async function until(predicate){
   assert.ok(predicate(),'expected async checkpoint to be reached');
 }
 function harness(hooks={}){
-  const calls={uploads:[],removed:[],extras:[],extrasOptions:[],profiles:[],notices:[],closed:0,rendered:0};
+  const calls={uploads:[],removed:[],extras:[],extrasOptions:[],profiles:[],notices:[],closed:0,hydrated:0,loaded:0,rendered:0};
   const button={textContent:'Save profile',disabled:false};
   const values={
     editDisplay:'Original Name',editUsername:'original_user',editBio:'A bio',
@@ -45,17 +46,17 @@ function harness(hooks={}){
     })},
     from:table=>{
       if(table==='kinfolk_profile_extras')return {upsert:async (row,options)=>{calls.extras.push({...row});calls.extrasOptions.push(options);if(hooks.extras)await hooks.extras();return {error:null,count:Object.hasOwn(hooks,'extrasCount')?hooks.extrasCount:1}}};
-      if(table==='profiles')return {update:row=>({eq:async(key,id)=>{calls.profiles.push({key,id,row:{...row}});return {error:null,count:Object.hasOwn(hooks,'profileCount')?hooks.profileCount:1}}})};
+      if(table==='profiles')return {update:row=>({eq:async(key,id)=>{calls.profiles.push({key,id,row:{...row}});if(hooks.profile)await hooks.profile();return {error:null,count:Object.hasOwn(hooks,'profileCount')?hooks.profileCount:1}}})};
       throw new Error('Unexpected table '+table);
     }
   };
   const window={};
   const context={
-    window,document,state,sb,
+    window,document,state,sb,kf129Epoch:7,
     toast:(message,type)=>calls.notices.push({message,type}),
     crypto:{randomUUID:()=> 'synthetic-uuid'},
     closeModal:()=>{calls.closed++},
-    hydrateUser:async()=>{},loadCore:async()=>{},
+    hydrateUser:async()=>{calls.hydrated++;if(hooks.hydrate)await hooks.hydrate()},loadCore:async()=>{calls.loaded++},
     renderApp:async()=>{calls.rendered++},
     MutationObserver:class{observe(){}},
     setTimeout:()=>0,setInterval:()=>0,
@@ -66,7 +67,8 @@ function harness(hooks={}){
   vm.runInNewContext(instrumented,context,{timeout:2000});
   return {calls,state,fields,editor,button,
     save:()=>window.__kf230Save(),
-    switchAccount:id=>{state.user={id}},
+    switchAccount:id=>{context.kf129Epoch++;state.user={id}},
+    reactivateSameAccount:()=>{context.kf129Epoch++},
     replaceEditor:()=>{currentEditor={...editor,dataset:{}}}
   };
 }
@@ -193,4 +195,57 @@ test('unexpected multi-row profile count cannot delete possibly linked media',as
   assert.equal(h.calls.rendered,0);
   assert.deepEqual(h.calls.removed,[]);
   assert.match(h.calls.notices.at(-1).message,/Profile could not be verified as updated/);
+});
+
+
+test('same-account relogin during avatar upload cancels stale profile writes',async()=>{
+  const gate=deferred(),h=harness({upload:()=>gate.promise});
+  const pending=h.save();
+  await until(()=>h.calls.uploads.length===1);
+  h.reactivateSameAccount();
+  gate.resolve();
+  await pending;
+  assert.equal(h.calls.extras.length,0);
+  assert.equal(h.calls.profiles.length,0);
+  assert.deepEqual(h.calls.removed,h.calls.uploads);
+  assert.equal(h.calls.notices.length,0);
+  assert.equal(h.button.disabled,false,'same-account editor must not remain stuck after cancellation');
+  assert.equal(h.button.textContent,'Save profile');
+});
+
+test('same-account relogin during extras save cannot dispatch profile update',async()=>{
+  const gate=deferred(),h=harness({extras:()=>gate.promise});
+  const pending=h.save();
+  await until(()=>h.calls.extras.length===1);
+  h.reactivateSameAccount();
+  gate.resolve();
+  await pending;
+  assert.equal(h.calls.profiles.length,0);
+  assert.equal(h.calls.rendered,0);
+  assert.equal(h.calls.notices.length,0);
+});
+
+test('same-account relogin during profile update suppresses stale success and retains uncertain media',async()=>{
+  const gate=deferred(),h=harness({profile:()=>gate.promise});
+  const pending=h.save();
+  await until(()=>h.calls.profiles.length===1);
+  h.reactivateSameAccount();
+  gate.resolve();
+  await pending;
+  assert.equal(h.calls.rendered,0);
+  assert.equal(h.calls.closed,0);
+  assert.deepEqual(h.calls.removed,[]);
+  assert.equal(h.calls.notices.length,0);
+});
+
+test('same-account relogin during profile refresh cannot render or notify from old activation',async()=>{
+  const gate=deferred(),h=harness({hydrate:()=>gate.promise});
+  const pending=h.save();
+  await until(()=>h.calls.hydrated===1);
+  h.reactivateSameAccount();
+  gate.resolve();
+  await pending;
+  assert.equal(h.calls.loaded,0);
+  assert.equal(h.calls.rendered,0);
+  assert.equal(h.calls.notices.length,0);
 });
