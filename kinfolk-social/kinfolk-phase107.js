@@ -48,7 +48,7 @@ async function blockPeer(peer,originForm){
   // can remove or relocate that sibling while retaining the same form node.
   // A dataset-only one-time flag would then hide Block Account indefinitely.
   const previous=form.__kf107PrivacyNote;
-  if(previous&&form.previousElementSibling===previous&&previous.querySelector('button'))return;
+  if(previous&&form.previousElementSibling===previous&&previous.querySelector('button')?.onclick)return;
   if(previous&&previous.isConnected)previous.remove();
   const note=document.createElement('div');
   note.className='kf107DmPrivacy';
