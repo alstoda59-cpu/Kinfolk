@@ -22,9 +22,22 @@ export async function verifyIsolatedAuthReachability(config, { fetchImpl=globalT
     throw new Error('Auth reachability check requires the designated isolated alpha backend.');
   }
   if (typeof fetchImpl!=='function') throw new Error('Fetch is unavailable for isolated Auth reachability check.');
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs<1 || timeoutMs>60000) {
+    throw new Error('Isolated Auth reachability timeout must be 1 to 60000 ms.');
+  }
   const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),timeoutMs);
-  try {
+  const timedOut=()=>new Error('Isolated Auth settings request timed out.');
+  let timeout;
+  // Abort alone is not a deadline: a fetch wrapper or response.json() may
+  // ignore the signal. Race the entire read and validation against a hard
+  // deadline so functional native verification always fails closed.
+  const deadline=new Promise((_,reject)=>{
+    timeout=setTimeout(()=>{
+      controller.abort();
+      reject(timedOut());
+    },timeoutMs);
+  });
+  const readSettings=async()=>{
     const response=await fetchImpl(config.url+'/auth/v1/settings', {
       method:'GET',
       headers:{ apikey:config.key, accept:'application/json' },
@@ -42,8 +55,13 @@ export async function verifyIsolatedAuthReachability(config, { fetchImpl=globalT
           typeof data.disable_signup==='boolean' || typeof data.mailer_autoconfirm==='boolean')) {
       throw new Error('Isolated Auth settings response was not recognized.');
     }
+    if (controller.signal.aborted) throw timedOut();
     if (requireEmailSignupReady) assertEmailSignupReady(data);
+    if (controller.signal.aborted) throw timedOut();
     return { projectRef:ALPHA_REF, reachable:true };
+  };
+  try {
+    return await Promise.race([readSettings(),deadline]);
   } finally {
     clearTimeout(timeout);
   }
