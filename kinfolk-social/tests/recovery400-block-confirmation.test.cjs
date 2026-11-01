@@ -4,7 +4,8 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 
-const source=fs.readFileSync('kinfolk-social/kinfolk-phase107.js','utf8');
+const path=require('node:path');
+const source=fs.readFileSync(path.resolve(__dirname,'../kinfolk-phase107.js'),'utf8');
 const start=source.indexOf('const pendingBlocks=');
 const end=source.indexOf('window.blockKinfolk=blockPeer;',start);
 assert.ok(start>=0&&end>start,'effective DM block handler is present');
