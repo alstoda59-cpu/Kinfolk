@@ -62,7 +62,10 @@ export async function verifyIsolatedRealSignup(config,{fetchImpl=globalThis.fetc
     normalizeEmail(identity.identity_data?.email)===requestedEmail)){
     throw Error('Signup did not prove a new email identity');
   }
-  if(user?.email_confirmed_at||signup.data?.session||signup.data?.access_token)throw Error('Unconfirmed signup unexpectedly returned a confirmed user or session');
+  // Supabase may expose the general confirmed_at timestamp even when the
+  // email-specific field is absent. Neither form of confirmation is valid
+  // evidence for an email-confirmation-required signup smoke test.
+  if(user?.email_confirmed_at||user?.confirmed_at||signup.data?.session||signup.data?.access_token)throw Error('Unconfirmed signup unexpectedly returned a confirmed user or session');
   // Verify the new account cannot log in with its password before email confirmation.
   const login=await request('/token?grant_type=password','POST',{email,password});
   if(login.status===200||login.data?.access_token)throw Error('Unconfirmed synthetic signup was allowed to sign in');
