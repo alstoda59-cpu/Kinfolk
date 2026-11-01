@@ -136,12 +136,15 @@ test('mismatched photo rows never request signed URLs',async()=>{
   assert.equal(h.root.textContent,'No photos yet.');
 });
 // A matching row owner is insufficient to sign a private storage object:
- // the key must be a flat object inside that exact album's owner namespace.
+// the key must be a flat object inside that exact album's owner namespace.
 for(const [name,path] of [
   ['another owner','synthetic-B/albums/synthetic-album/photo.png'],
   ['another album','synthetic-A/albums/other-album/photo.png'],
   ['nested folder','synthetic-A/albums/synthetic-album/subfolder/photo.png'],
   ['backslash segment','synthetic-A/albums/synthetic-album/subfolder\\\\photo.png'],
+  ['encoded slash','synthetic-A/albums/synthetic-album/%2Fprivate.png'],
+  ['query delimiter','synthetic-A/albums/synthetic-album/photo.png?token=other'],
+  ['unsanitized Unicode','synthetic-A/albums/synthetic-album/é.png'],
   ['empty basename','synthetic-A/albums/synthetic-album/'],
   ['dot basename','synthetic-A/albums/synthetic-album/.'],
   ['parent basename','synthetic-A/albums/synthetic-album/..']
