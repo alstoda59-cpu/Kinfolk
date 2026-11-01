@@ -6,11 +6,22 @@ async function blockPeer(peer,originForm){
   const requestKey=accountId+':'+peer;
   if(pendingBlocks.has(requestKey))return;
   pendingBlocks.add(requestKey);
+  // A same-account login creates a new activation. Its DM must not receive
+  // success or failure UI from a block request started in the old session.
+  const activation=typeof kf129Epoch==='number'?kf129Epoch:null;
   const stillCurrent=()=>window.state?.user?.id===accountId&&
+    (activation===null||(typeof kf129Epoch==='number'&&kf129Epoch===activation))&&
     (!originForm||(originForm.isConnected&&originForm.dataset.peer===peer));
   try{
-    const {error}=await sb.from('blocks').insert({blocker_id:accountId,blocked_id:peer});
-    if(error&&!/duplicate|unique/i.test(error.message||''))throw error;
+    // A successful PostgREST request may affect zero rows under RLS.
+    // Never tell someone a privacy block succeeded without one confirmed row.
+    const {error,count}=await sb.from('blocks').insert(
+      {blocker_id:accountId,blocked_id:peer},{count:'exact'}
+    );
+    const alreadyBlocked=!!error&&/duplicate|unique/i.test(error.message||'');
+    if(error&&!alreadyBlocked)throw error;
+    if(!alreadyBlocked&&count!==1)
+      throw new Error('Block could not be confirmed. Check Blocked Accounts before trying again.');
     if(!stillCurrent())return;
     try{closeModal()}catch{}
     try{toast('Account blocked. They can no longer message you.','good')}catch{}
