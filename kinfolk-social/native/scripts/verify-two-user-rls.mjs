@@ -35,7 +35,10 @@ export async function verifyTwoUserRls(config,{tokenA,tokenB,idA,idB,fetchImpl=g
     const read=async()=>{
       const response=await fetchImpl(url,{method:'GET',headers:{apikey:config.key,...(jwt?{Authorization:'Bearer '+jwt}:{}),Accept:'application/json'},redirect:'manual',cache:'no-store',signal:controller.signal});
       if(controller.signal.aborted)throw timedOut();
-      if([401,403].includes(response.status)&&expected===0)return 0;
+      // A denied cross-account request may mean its JWT expired or became
+      // invalid, not that RLS hid the row. Only an anonymous denial is
+      // sufficient; authenticated cross-account checks must return HTTP 200 [].
+      if([401,403].includes(response.status)&&expected===0&&!jwt)return 0;
       if(response.status!==200)throw Error('RLS probe HTTP '+response.status+' for '+table);
       if(!/\bapplication\/json\b/i.test(response.headers?.get('content-type')||''))throw Error('RLS probe expected JSON for '+table);
       const rows=await response.json();
