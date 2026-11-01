@@ -31,7 +31,10 @@ function harness(hooks={}){
   for(const [id,value] of Object.entries(values))fields['#'+id]={value};
   fields['#editAvatar']={files:[{name:'avatar.png',type:'image/png',size:120}]};
   fields['#editWallpaper']={files:[]};
-  const editor={dataset:{},isConnected:true,querySelector:sel=>fields[sel]||null,querySelectorAll:()=>[button]};
+  // Model real form controls separately from action buttons. Disabled input
+  // states are security-sensitive when auth changes during a pending save.
+  for(const field of Object.values(fields))field.disabled=false;
+  const editor={dataset:{},isConnected:true,querySelector:sel=>fields[sel]||null,querySelectorAll:sel=>sel==='input,textarea,select'?Object.values(fields):[button]};
   let currentEditor=editor;
   const state={user:{id:'account-A'},profile:{id:'account-A'},profiles:new Map()};
   const document={
@@ -248,4 +251,36 @@ test('same-account relogin during profile refresh cannot render or notify from o
   assert.equal(h.calls.loaded,0);
   assert.equal(h.calls.rendered,0);
   assert.equal(h.calls.notices.length,0);
+});
+
+
+test('switching accounts during upload cannot re-enable replacement account privacy-disabled fields',async()=>{
+  const gate=deferred(),h=harness({upload:()=>gate.promise});
+  const pending=h.save();
+  await until(()=>h.calls.uploads.length===1);
+  assert.equal(h.fields['#editDisplay'].disabled,true,'old save locks the original form');
+  h.switchAccount('account-B');
+  // A replacement account's privacy gate deliberately keeps this input disabled.
+  h.fields['#editDisplay'].disabled=true;
+  gate.resolve();
+  await pending;
+  assert.equal(h.fields['#editDisplay'].disabled,true,'stale save must not unlock another account');
+  assert.equal(h.calls.extras.length,0);
+  assert.equal(h.calls.profiles.length,0);
+  assert.equal(h.calls.notices.length,0);
+});
+
+test('same-account reactivation restores original field lock state after stale save cancellation',async()=>{
+  const gate=deferred(),h=harness({upload:()=>gate.promise});
+  h.fields['#editLocation'].disabled=true;
+  const pending=h.save();
+  await until(()=>h.calls.uploads.length===1);
+  assert.equal(h.fields['#editDisplay'].disabled,true);
+  h.reactivateSameAccount();
+  gate.resolve();
+  await pending;
+  assert.equal(h.fields['#editDisplay'].disabled,false,'editable field should be usable again');
+  assert.equal(h.fields['#editLocation'].disabled,true,'originally disabled field stays disabled');
+  assert.equal(h.button.disabled,false,'Save Profile must not remain stuck');
+  assert.equal(h.calls.profiles.length,0);
 });
