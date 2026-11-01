@@ -8,6 +8,7 @@ const email='synthetic@kinfolk-alpha-fixture.dev';
 const password='synthetic-only-password-for-offline-test';
 const userId='11111111-1111-4111-8111-111111111111';
 const settings={disable_signup:false,external:{email:true},mailer_autoconfirm:false};
+const OPT_IN=Object.freeze({syntheticAccountOnly:true,approvedInbox:true});
 const response=(status,data)=>({status,headers:{get:()=> 'application/json'},json:async()=>data});
 function mockFetch({settingsData=settings,signupData={user:{id:userId,email,email_confirmed_at:null,identities:[{provider:'email',user_id:userId,identity_data:{email}}]},session:null},loginStatus=400,loginData={error_code:'email_not_confirmed'}}={}){
   const calls=[];
@@ -22,7 +23,7 @@ function mockFetch({settingsData=settings,signupData={user:{id:userId,email,emai
 }
 test('synthetic isolated signup verifies confirmation gate without leaking credentials',async()=>{
   const m=mockFetch();
-  const result=await verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password});
+  const result=await verifyIsolatedRealSignup(config,{...OPT_IN,fetchImpl:m.fetchImpl,email,password});
   assert.deepEqual([result.signupAccepted,result.confirmationRequired,result.unconfirmedLoginBlocked,result.emailDelivered],[true,true,true,false]);
   assert.deepEqual(m.calls.map(x=>x.method),['GET','POST','POST']);
   assert.ok(m.calls.every(x=>x.url.startsWith(config.url+'/auth/v1/')));
@@ -31,22 +32,32 @@ test('synthetic isolated signup verifies confirmation gate without leaking crede
   assert.match(m.calls[1].body.data.username,/^[a-zA-Z0-9_]{3,24}$/);
   assert.equal(m.calls[1].body.data.profile_private,'true');
 });
+test('imported real signup verifier refuses missing or partial opt-in before any network access',async()=>{
+  const m=mockFetch();
+  for(const flags of [{},{syntheticAccountOnly:true},{approvedInbox:true},{syntheticAccountOnly:1,approvedInbox:true}]){
+    await assert.rejects(
+      verifyIsolatedRealSignup(config,{...flags,fetchImpl:m.fetchImpl,email,password}),
+      /synthetic-account and approved-inbox opt-in required/
+    );
+  }
+  assert.equal(m.calls.length,0);
+});
 test('shared live project and reserved email domains are refused before network',async()=>{
   const m=mockFetch();
-  await assert.rejects(verifyIsolatedRealSignup({...config,projectRef:'zojajuzmfjpvubzibzgg'},{fetchImpl:m.fetchImpl,email,password}),/isolated/);
-  await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email:'kinfolkalpha@sample.invalid',password}),/approved test inbox/);
-  await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email:'alpha@example.com',password}),/approved test inbox/);
-  await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password:'short'}),/password/);
+  await assert.rejects(verifyIsolatedRealSignup({...config,projectRef:'zojajuzmfjpvubzibzgg'},{...OPT_IN,fetchImpl:m.fetchImpl,email,password}),/isolated/);
+  await assert.rejects(verifyIsolatedRealSignup(config,{...OPT_IN,fetchImpl:m.fetchImpl,email:'kinfolkalpha@sample.invalid',password}),/approved test inbox/);
+  await assert.rejects(verifyIsolatedRealSignup(config,{...OPT_IN,fetchImpl:m.fetchImpl,email:'alpha@example.com',password}),/approved test inbox/);
+  await assert.rejects(verifyIsolatedRealSignup(config,{...OPT_IN,fetchImpl:m.fetchImpl,email,password:'short'}),/password/);
   assert.equal(m.calls.length,0);
 });
 test('missing email confirmation settings prevent account creation',async()=>{
   const m=mockFetch({settingsData:{...settings,mailer_autoconfirm:true}});
-  await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password}),/email confirmation/);
+  await assert.rejects(verifyIsolatedRealSignup(config,{...OPT_IN,fetchImpl:m.fetchImpl,email,password}),/email confirmation/);
   assert.deepEqual(m.calls.map(c=>c.method),['GET']);
 });
 test('unconfirmed signup may not return a session or confirmed identity',async()=>{
   const m=mockFetch({signupData:{user:{id:userId,email,email_confirmed_at:'2026-10-31T00:00:00Z',identities:[{provider:'email',user_id:userId,identity_data:{email}}]},session:{access_token:'no'}}});
-  await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password}),/confirmed user or session/);
+  await assert.rejects(verifyIsolatedRealSignup(config,{...OPT_IN,fetchImpl:m.fetchImpl,email,password}),/confirmed user or session/);
   assert.equal(m.calls.length,2);
 });
 test('signup smoke rejects general confirmed_at even without email_confirmed_at',async()=>{
@@ -55,7 +66,7 @@ test('signup smoke rejects general confirmed_at even without email_confirmed_at'
     identities:[{provider:'email',user_id:userId,identity_data:{email}}]
   },session:null}});
   await assert.rejects(
-    verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password}),
+    verifyIsolatedRealSignup(config,{...OPT_IN,fetchImpl:m.fetchImpl,email,password}),
     /confirmed user or session/
   );
   assert.deepEqual(m.calls.map(c=>c.method),['GET','POST']);
@@ -63,17 +74,17 @@ test('signup smoke rejects general confirmed_at even without email_confirmed_at'
 
 test('unconfirmed user receiving password session is a hard failure',async()=>{
   const m=mockFetch({loginStatus:200,loginData:{access_token:'should-not-exist'}});
-  await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password}),/allowed to sign in/);
+  await assert.rejects(verifyIsolatedRealSignup(config,{...OPT_IN,fetchImpl:m.fetchImpl,email,password}),/allowed to sign in/);
 });
 test('other denied login errors cannot be misreported as email confirmation',async()=>{
   const m=mockFetch({loginStatus:429,loginData:{error_code:'over_email_send_rate_limit'}});
-  await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password}),/did not prove/);
+  await assert.rejects(verifyIsolatedRealSignup(config,{...OPT_IN,fetchImpl:m.fetchImpl,email,password}),/did not prove/);
 });
 
 test('signup proof refuses missing or mismatched returned email before password login',async()=>{
   for(const returnedEmail of [undefined,null,'','other@kinfolk-alpha-fixture.dev',42]){
     const m=mockFetch({signupData:{user:{id:userId,email:returnedEmail,identities:[{provider:'email',user_id:userId,identity_data:{email}}]},session:null}});
-    await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password}),/requested email identity/);
+    await assert.rejects(verifyIsolatedRealSignup(config,{...OPT_IN,fetchImpl:m.fetchImpl,email,password}),/requested email identity/);
     assert.deepEqual(m.calls.map(c=>c.method),['GET','POST']);
   }
 });
@@ -87,14 +98,14 @@ test('obfuscated existing-user and malformed email identities never prove fresh 
     [{...valid,identity_data:null}]
   ]){
     const m=mockFetch({signupData:{user:{id:userId,email,identities},session:null}});
-    await assert.rejects(verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password}),/new email identity/);
+    await assert.rejects(verifyIsolatedRealSignup(config,{...OPT_IN,fetchImpl:m.fetchImpl,email,password}),/new email identity/);
     assert.deepEqual(m.calls.map(c=>c.method),['GET','POST']);
   }
 });
 test('matching email identities tolerate harmless case and whitespace',async()=>{
   const upper=email.toUpperCase();
   const m=mockFetch({signupData:{user:{id:userId,email:' '+upper+' ',identities:[{provider:'email',user_id:userId,identity_data:{email:upper}}]},session:null}});
-  const result=await verifyIsolatedRealSignup(config,{fetchImpl:m.fetchImpl,email,password});
+  const result=await verifyIsolatedRealSignup(config,{...OPT_IN,fetchImpl:m.fetchImpl,email,password});
   assert.equal(result.signupAccepted,true);
   assert.equal(m.calls.length,3);
 });
@@ -113,7 +124,7 @@ test('real synthetic signup fails closed if the signup fetch ignores abort',asyn
     throw Error('Password login must not run after signup timeout');
   };
   await assert.rejects(
-    verifyIsolatedRealSignup(config,{fetchImpl,email,password,timeoutMs:15}),
+    verifyIsolatedRealSignup(config,{...OPT_IN,fetchImpl,email,password,timeoutMs:15}),
     /synthetic signup Auth request timed out/
   );
   assert.equal(signupSignal.aborted,true);
@@ -133,7 +144,7 @@ test('real synthetic signup fails closed if signup JSON reading ignores abort',a
     throw Error('Password login must not run after signup body timeout');
   };
   await assert.rejects(
-    verifyIsolatedRealSignup(config,{fetchImpl,email,password,timeoutMs:15}),
+    verifyIsolatedRealSignup(config,{...OPT_IN,fetchImpl,email,password,timeoutMs:15}),
     /synthetic signup Auth request timed out/
   );
   assert.equal(signupSignal.aborted,true);
@@ -144,7 +155,7 @@ test('real synthetic signup refuses invalid timeouts before network or account c
   let calls=0;
   for(const timeoutMs of [0,-1,1.5,NaN,Infinity,60001]){
     await assert.rejects(
-      verifyIsolatedRealSignup(config,{email,password,timeoutMs,fetchImpl:async()=>{calls++;return response(200,settings)}}),
+      verifyIsolatedRealSignup(config,{...OPT_IN,email,password,timeoutMs,fetchImpl:async()=>{calls++;return response(200,settings)}}),
       /timeout must be 1 to 60000 ms/
     );
   }
