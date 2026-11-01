@@ -248,3 +248,15 @@ test('Recovery403 never offers Block Account without a selected DM peer',()=>{
   h.addDmBlock(h.form);
   assert.equal(h.notes.length,0);
 });
+
+test('Recovery403 rerendered privacy button with stripped handler becomes functional again',()=>{
+  const h=privacyHarness();
+  h.addDmBlock(h.form);
+  const first=h.notes[0];
+  first.button.onclick=null;
+  h.addDmBlock(h.form);
+  assert.equal(first.isConnected,false);
+  assert.equal(h.notes.length,2);
+  clickPrivacy(h.notes[1]);
+  assert.equal(h.calls.length,1);
+});
