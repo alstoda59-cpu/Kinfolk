@@ -36,10 +36,13 @@ test('rejects HTML and malformed Auth settings responses',async()=>{
     await assert.rejects(verifyIsolatedAuthReachability(config,{fetchImpl:async()=>json(200,payload)}),/not recognized/);
   }
 });
-test('propagates aborted network failures without logging credentials',async()=>{
+test('timed-out network failures return a deterministic safe error and abort fetch',async()=>{
+  let signal;
   await assert.rejects(verifyIsolatedAuthReachability(config,{fetchImpl:async(_url,opts)=>{
+    signal=opts.signal;
     return new Promise((_resolve,reject)=>opts.signal.addEventListener('abort',()=>reject(new Error('aborted'))));
-  },timeoutMs:10}),/aborted/);
+  },timeoutMs:10}),/Isolated Auth settings request timed out/);
+  assert.equal(signal.aborted,true);
 });
 test('functional package verifier requires reachability after static checks',async()=>{
   const script=await readFile(new URL('../scripts/verify-functional-alpha.mjs',import.meta.url),'utf8');
