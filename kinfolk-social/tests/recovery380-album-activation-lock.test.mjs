@@ -67,7 +67,23 @@ function harness(mode){
   };
 }
 
-for(const mode of ['create','add']){
+test('Create Album stays one-shot across reactivation while INSERT response is pending',async()=>{
+  const h=harness('create');
+  const old=h.submit();
+  assert.equal(h.gates.length,1);
+  await h.submit(); // same activation cannot send another INSERT
+  h.ctx.kf129Epoch++;
+  await h.submit(); // a fresh activation still cannot replay an uncertain INSERT
+  assert.equal(h.gates.length,1);
+  h.resolve(0);
+  await old; // stale response cannot hydrate the new activation
+  assert.equal(h.button.disabled,true);
+  await h.submit();
+  assert.equal(h.gates.length,1,'original editor must never duplicate an uncertain album');
+  assert.equal(h.calls.at(-1),'toast');
+});
+
+for(const mode of ['add']){
   test(mode+' permits a fresh auth activation while the old album request is pending',async()=>{
     const h=harness(mode);
     const old=h.submit();
