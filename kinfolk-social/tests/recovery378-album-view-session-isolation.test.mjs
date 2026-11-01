@@ -135,6 +135,41 @@ test('mismatched photo rows never request signed URLs',async()=>{
   assert.equal(h.root.children.length,0);
   assert.equal(h.root.textContent,'No photos yet.');
 });
+// A matching row owner is insufficient to sign a private storage object:
+// the key must be a flat object inside that exact album's owner namespace.
+for(const [name,path] of [
+  ['another owner','synthetic-B/albums/synthetic-album/photo.png'],
+  ['another album','synthetic-A/albums/other-album/photo.png'],
+  ['nested folder','synthetic-A/albums/synthetic-album/subfolder/photo.png'],
+  ['backslash segment','synthetic-A/albums/synthetic-album/subfolder\\\\photo.png'],
+  ['encoded slash','synthetic-A/albums/synthetic-album/%2Fprivate.png'],
+  ['query delimiter','synthetic-A/albums/synthetic-album/photo.png?token=other'],
+  ['unsanitized Unicode','synthetic-A/albums/synthetic-album/é.png'],
+  ['empty basename','synthetic-A/albums/synthetic-album/'],
+  ['dot basename','synthetic-A/albums/synthetic-album/.'],
+  ['parent basename','synthetic-A/albums/synthetic-album/..']
+]){
+  test('viewer refuses to sign '+name+' storage path despite matching row owner',async()=>{
+    const h=harness({photos:[{
+      id:'synthetic-photo',album_id:'synthetic-album',owner_id:'synthetic-A',storage_path:path
+    }]});
+    await h.run();
+    assert.equal(count(h,'signed'),0);
+    assert.equal(h.root.children.length,0);
+    assert.equal(h.root.textContent,'No photos yet.');
+  });
+}
+test('viewer signs a flat object under the exact owner and album prefix',async()=>{
+  const path='synthetic-A/albums/synthetic-album/uuid-photo.webp';
+  const h=harness({photos:[{
+    id:'synthetic-photo',album_id:'synthetic-album',owner_id:'synthetic-A',storage_path:path
+  }]});
+  await h.run();
+  assert.equal(count(h,'signed'),1);
+  assert.equal(h.calls.find(c=>c.type==='signed').path,path);
+  assert.equal(h.root.children.length,1);
+});
+
 test('unsafe signed URL schemes are never rendered or opened',async()=>{
   const h=harness({url:'javascript:alert(1)'});
   await h.run();

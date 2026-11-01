@@ -190,11 +190,20 @@ async function guardedViewAlbum(id){
     const add=document.getElementById('albumAddPhotosAction');
     if(add)add.onclick=()=>{if(active())window.addPhotosToAlbum(id)};
   }
+  // Match the exact owner/album storage namespace before requesting a signed
+  // private-media URL. Row IDs alone must not authorize arbitrary object keys.
+  const storagePrefix=String(album.owner_id)+'/albums/'+String(id)+'/';
   let rendered=0;
   for(const photo of photos){
     if(!active())return;
     // A mismatched result must never cause a signed URL request.
-    if(!photo||photo.album_id!==id||photo.owner_id!==album.owner_id||!photo.id||!photo.storage_path)continue;
+    if(!photo||photo.album_id!==id||photo.owner_id!==album.owner_id||!photo.id||typeof photo.storage_path!=='string')continue;
+    const storagePath=photo.storage_path;
+    if(!storagePath.startsWith(storagePrefix))continue;
+    const filename=storagePath.slice(storagePrefix.length);
+    // Uploads create one flat filename. Reject foreign, nested, or traversal
+    // paths even if a compromised/malformed row has matching owner columns.
+    if(!/^[A-Za-z0-9._-]+$/.test(filename)||filename==='.'||filename==='..')continue;
     let url;
     try{url=await signed('kinfolk-media',photo.storage_path)}
     catch(error){if(!active())return;continue}
