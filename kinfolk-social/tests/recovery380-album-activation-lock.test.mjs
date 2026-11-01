@@ -88,8 +88,17 @@ for(const mode of ['create','add']){
     await fresh;
     assert.equal(h.button.disabled,false);
     const next=h.submit();
-    assert.equal(h.gates.length,3,'lock releases when its own operation finishes');
-    h.resolve(2);
-    await next;
+    if(mode==='create'){
+      // The original form still exists in this synthetic fixture. Once the
+      // fresh activation committed its album, reusing that form must not
+      // issue another INSERT even though the async lock has released.
+      assert.equal(h.gates.length,2,'committed album form cannot create a duplicate');
+      assert.equal(h.calls.at(-1),'toast');
+      await next;
+    }else{
+      assert.equal(h.gates.length,3,'Add Photos lock releases when its own operation finishes');
+      h.resolve(2);
+      await next;
+    }
   });
 }

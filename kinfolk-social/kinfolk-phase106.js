@@ -66,6 +66,10 @@ async function addOne(albumId,file,accountId,form,activation){
   if(!f)return;
   const accountId=state?.user?.id,activation=kf129Epoch;
   if(!accountId)return tell('Your session is not ready. Please log in again.');
+  // A confirmed album must not be inserted twice from the same mounted form,
+  // even if its photo upload or the final Photos render failed.
+  if(f.__kf106Created?.accountId===accountId)
+    return tell('This album was already created. Open Photos to add any missing photos instead of creating it again.');
   const btn=f.querySelector('button'),old=btn?.textContent||'Create album';
   // A stale operation from a prior login must not block this activation.
   // Its finally block must also never unlock a newer operation.
@@ -74,7 +78,7 @@ async function addOne(albumId,file,accountId,form,activation){
   if(btn){btn.disabled=true;btn.textContent='Creating…'}
   // A verified album row survives even if a later photo upload fails.
   // Keep that distinction so the member does not create duplicate albums.
-  let confirmedAlbumId=null;
+  let confirmedAlbumId=null,partialFailure=false;
   try{
     requireAlbumSession(accountId,f,activation);
     const title=f.querySelector('#albumTitle')?.value.trim()||'';
@@ -102,6 +106,7 @@ async function addOne(albumId,file,accountId,form,activation){
     if(q.count!==1||!q.data?.id||q.data.owner_id!==accountId)
       throw new Error(uncertain);
     confirmedAlbumId=q.data.id;
+    f.__kf106Created={accountId,id:confirmedAlbumId};
     for(let i=0;i<files.length;i++){
       requireAlbumSession(accountId,f,activation);
       const pg=f.querySelector('#albumProgress');
@@ -116,6 +121,7 @@ async function addOne(albumId,file,accountId,form,activation){
   }catch(err){
     if(state?.user?.id===accountId&&kf129Epoch===activation&&document.getElementById('albumForm')===f){
       if(confirmedAlbumId){
+        partialFailure=true;
         console.warn('Kinfolk album was created but subsequent work failed',err);
         tell('Album created, but finishing it was interrupted. Open Photos and check this album before adding missing photos. Do not create it again.');
       }else tell(err?.message||'Album could not be created');
@@ -123,7 +129,11 @@ async function addOne(albumId,file,accountId,form,activation){
   }finally{
     if(busy===operation)busy=false;
     if(btn&&document.contains(btn)&&state?.user?.id===accountId&&kf129Epoch===activation&&document.getElementById('albumForm')===f){
-      btn.disabled=false;btn.textContent=old;
+      // A partial failure is not a failed album creation. Keep this exact
+      // editor from submitting a second INSERT; members can add photos
+      // through the existing album in Photos.
+      btn.disabled=partialFailure;
+      btn.textContent=partialFailure?'Album created · Open Photos':old;
     }
   }
 }async function hardAddSubmit(id,e){
