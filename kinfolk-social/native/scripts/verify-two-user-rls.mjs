@@ -15,21 +15,36 @@ export function jwtSubject(token){
 export async function verifyTwoUserRls(config,{tokenA,tokenB,idA,idB,fetchImpl=globalThis.fetch,tables=PRIVATE_TABLES,timeoutMs=8000}={}){
   if(!config||config.projectRef!==ALPHA_REF||config.offlineStub||config.url!=='https://'+ALPHA_REF+'.supabase.co'||!config.key)throw Error('RLS probe requires designated isolated alpha backend');
   if(typeof fetchImpl!=='function')throw Error('RLS probe requires fetch');
+  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>60000)throw Error('RLS probe timeout must be 1 to 60000 ms');
   const a=jwtSubject(tokenA),b=jwtSubject(tokenB);
   if(!UUID.test(idA||'')||!UUID.test(idB||'')||a!==idA.toLowerCase()||b!==idB.toLowerCase()||a===b)throw Error('Two distinct synthetic JWT subjects must match designated IDs');
   if(!Array.isArray(tables)||!tables.length||tables.some(t=>!PRIVATE_TABLES.includes(t))||new Set(tables).size!==tables.length)throw Error('Only known owner-private tables may be tested');
   async function count(table,owner,jwt,expected){
     const url=config.url+'/rest/v1/'+table+'?select=user_id&user_id=eq.'+owner+'&limit=2';
-    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
-    try{
+    const controller=new AbortController();
+    const timedOut=()=>new Error('RLS probe timed out for '+table);
+    let timer;
+    // AbortController alone is not a deadline: a fetch or JSON reader can
+    // ignore the signal. Bound the complete read for each RLS check.
+    const deadline=new Promise((_,reject)=>{
+      timer=setTimeout(()=>{
+        reject(timedOut());
+        controller.abort();
+      },timeoutMs);
+    });
+    const read=async()=>{
       const response=await fetchImpl(url,{method:'GET',headers:{apikey:config.key,...(jwt?{Authorization:'Bearer '+jwt}:{}),Accept:'application/json'},redirect:'manual',cache:'no-store',signal:controller.signal});
+      if(controller.signal.aborted)throw timedOut();
       if([401,403].includes(response.status)&&expected===0)return 0;
       if(response.status!==200)throw Error('RLS probe HTTP '+response.status+' for '+table);
       if(!/\bapplication\/json\b/i.test(response.headers?.get('content-type')||''))throw Error('RLS probe expected JSON for '+table);
       const rows=await response.json();
+      if(controller.signal.aborted)throw timedOut();
       if(!Array.isArray(rows)||rows.some(row=>!row||Object.keys(row).some(k=>k!=='user_id')||row.user_id!==owner))throw Error('Unexpected RLS response for '+table);
       return rows.length;
-    }finally{clearTimeout(timer)}
+    };
+    try{return await Promise.race([read(),deadline])}
+    finally{clearTimeout(timer)}
   }
   for(const table of tables){
     if(await count(table,a,tokenA,1)!==1||await count(table,b,tokenB,1)!==1)throw Error('RLS owner fixture missing in '+table);
