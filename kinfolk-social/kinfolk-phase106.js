@@ -72,6 +72,9 @@ async function addOne(albumId,file,accountId,form,activation){
   const operation={epoch:activation};
   busy=operation;
   if(btn){btn.disabled=true;btn.textContent='Creating…'}
+  // A verified album row survives even if a later photo upload fails.
+  // Keep that distinction so the member does not create duplicate albums.
+  let confirmedAlbumId=null;
   try{
     requireAlbumSession(accountId,f,activation);
     const title=f.querySelector('#albumTitle')?.value.trim()||'';
@@ -98,6 +101,7 @@ async function addOne(albumId,file,accountId,form,activation){
     requireAlbumSession(accountId,f,activation);
     if(q.count!==1||!q.data?.id||q.data.owner_id!==accountId)
       throw new Error(uncertain);
+    confirmedAlbumId=q.data.id;
     for(let i=0;i<files.length;i++){
       requireAlbumSession(accountId,f,activation);
       const pg=f.querySelector('#albumProgress');
@@ -110,7 +114,12 @@ async function addOne(albumId,file,accountId,form,activation){
     await renderApp();
     if(state?.user?.id===accountId&&kf129Epoch===activation)tell('Album created','good');
   }catch(err){
-    if(state?.user?.id===accountId&&kf129Epoch===activation&&document.getElementById('albumForm')===f)tell(err?.message||'Album could not be created');
+    if(state?.user?.id===accountId&&kf129Epoch===activation&&document.getElementById('albumForm')===f){
+      if(confirmedAlbumId){
+        console.warn('Kinfolk album was created but subsequent work failed',err);
+        tell('Album created, but finishing it was interrupted. Open Photos and check this album before adding missing photos. Do not create it again.');
+      }else tell(err?.message||'Album could not be created');
+    }
   }finally{
     if(busy===operation)busy=false;
     if(btn&&document.contains(btn)&&state?.user?.id===accountId&&kf129Epoch===activation&&document.getElementById('albumForm')===f){
