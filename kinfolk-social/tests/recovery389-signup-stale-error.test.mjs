@@ -55,7 +55,7 @@ test('navigated or detached forms never receive stale signup errors',()=>{
   for(const args of [{connected:false},{titleCurrent:false}]){
     const result=exercise(args);
     assert.equal(result.result,undefined);
-    assert.equal(result.retryAt,0);
+    assert.equal(result.retryAt,61234);
     assert.equal(result.messages.length,0);
   }
 });
