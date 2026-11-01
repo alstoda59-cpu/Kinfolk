@@ -3,12 +3,13 @@ async function blockPeer(peer,originForm){
   const accountId=window.state?.user?.id;
   if(!peer||!accountId)return;
   if(peer===accountId){try{toast('You cannot block your own account.','danger')}catch{}return}
-  const requestKey=accountId+':'+peer;
+  // Lock duplicate taps within one auth activation, not across a new login.
+  // A stalled request from a previous activation must not block a fresh
+  // session from protecting itself, even when the account ID is unchanged.
+  const activation=typeof kf129Epoch==='number'?kf129Epoch:null;
+  const requestKey=JSON.stringify([accountId,activation,peer]);
   if(pendingBlocks.has(requestKey))return;
   pendingBlocks.add(requestKey);
-  // A same-account login creates a new activation. Its DM must not receive
-  // success or failure UI from a block request started in the old session.
-  const activation=typeof kf129Epoch==='number'?kf129Epoch:null;
   const stillCurrent=()=>window.state?.user?.id===accountId&&
     (activation===null||(typeof kf129Epoch==='number'&&kf129Epoch===activation))&&
     (!originForm||(originForm.isConnected&&originForm.dataset.peer===peer));
