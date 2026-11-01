@@ -26,8 +26,11 @@ test('functional gate fails closed when any required setting is missing or malfo
     await assert.rejects(verifyIsolatedAuthReachability(config,{fetchImpl:fetchFor(data),requireEmailSignupReady:true}));
   }
 });
-test('nonfunctional reachability probe remains backward compatible',async()=>{
-  assert.deepEqual(await verifyIsolatedAuthReachability(config,{fetchImpl:fetchFor({external:{email:true}})}),{projectRef:ALPHA_REF,reachable:true});
+test('nonfunctional reachability rejects partial settings instead of reporting success',async()=>{
+  for(const data of [{external:{email:true}},{disable_signup:false},{mailer_autoconfirm:false}]){
+    await assert.rejects(verifyIsolatedAuthReachability(config,{fetchImpl:fetchFor(data)}),/not recognized/);
+  }
+  assert.deepEqual(await verifyIsolatedAuthReachability(config,{fetchImpl:fetchFor(settings)}),{projectRef:ALPHA_REF,reachable:true});
 });
 test('functional native entrypoint explicitly opts into strict signup readiness',async()=>{
   const source=await readFile(new URL('../scripts/verify-functional-alpha.mjs',import.meta.url),'utf8');
