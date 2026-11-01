@@ -19,7 +19,8 @@ function blockHarness(){
   let settle;
   const sb={from:table=>{
     assert.equal(table,'blocks');
-    return {insert:row=>{
+    return {insert:(row,options)=>{
+      assert.equal(options.count,'exact','block privacy writes require a confirmed affected-row count');
       events.push(['insert',row.blocker_id,row.blocked_id]);
       return new Promise(resolve=>{settle=resolve});
     }};
@@ -30,7 +31,7 @@ function blockHarness(){
     closeModal:()=>events.push(['close']),
     console:{warn:(...args)=>events.push(['warn',...args])}
   });
-  return {state,events,blockPeer,finish:error=>{assert.equal(typeof settle,'function');settle({error:error||null})}};
+  return {state,events,blockPeer,finish:error=>{assert.equal(typeof settle,'function');settle({error:error||null,count:error?null:1})}};
 }
 
 test('block request preserves originating account and confirms success',async()=>{
