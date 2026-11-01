@@ -175,12 +175,22 @@ test('multiple extras rows never count as a verified single-account save',async(
   assert.notEqual(h.calls.notices.at(-1).type,'good');
 });
 
-test('missing profile update count cannot produce a false save confirmation',async()=>{
+test('missing profile update count cannot produce a false save confirmation or delete possibly linked media',async()=>{
   const h=harness({profileCount:null});
   await h.save();
   assert.equal(h.calls.profiles.length,1);
   assert.equal(h.calls.rendered,0);
   assert.equal(h.calls.closed,0);
-  assert.deepEqual(h.calls.removed,h.calls.uploads);
+  // An absent PostgREST count does not prove the UPDATE failed to commit.
+  assert.deepEqual(h.calls.removed,[]);
+  assert.match(h.calls.notices.at(-1).message,/Profile could not be verified as updated/);
+});
+
+test('unexpected multi-row profile count cannot delete possibly linked media',async()=>{
+  const h=harness({profileCount:2});
+  await h.save();
+  assert.equal(h.calls.profiles.length,1);
+  assert.equal(h.calls.rendered,0);
+  assert.deepEqual(h.calls.removed,[]);
   assert.match(h.calls.notices.at(-1).message,/Profile could not be verified as updated/);
 });
