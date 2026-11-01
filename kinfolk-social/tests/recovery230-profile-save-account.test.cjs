@@ -209,6 +209,8 @@ test('same-account relogin during avatar upload cancels stale profile writes',as
   assert.equal(h.calls.profiles.length,0);
   assert.deepEqual(h.calls.removed,h.calls.uploads);
   assert.equal(h.calls.notices.length,0);
+  assert.equal(h.button.disabled,false,'same-account editor must not remain stuck after cancellation');
+  assert.equal(h.button.textContent,'Save profile');
 });
 
 test('same-account relogin during extras save cannot dispatch profile update',async()=>{
