@@ -6,13 +6,14 @@ const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222
 const jwt=id=>'h.'+Buffer.from(JSON.stringify({sub:id,role:'authenticated'})).toString('base64url')+'.s';
 const tokenA=jwt(A),tokenB=jwt(B),config={projectRef:ALPHA_REF,url:'https://'+ALPHA_REF+'.supabase.co',key:'sb_publishable_synthetic_test',offlineStub:false};
 const opts={tokenA,tokenB,idA:A,idB:B};
-function mock({cross=false,anon=false,missing=false,deny=false}={}){
+function mock({cross=false,anon=false,missing=false,denyCrossStatus=0,denyAnonymous=false}={}){
   return async(url,init)=>{
     assert.equal(init.method,'GET');assert.equal(init.body,undefined);
     assert.equal(init.redirect,'manual');assert.ok(url.startsWith(config.url+'/rest/v1/'));
     const owner=new URL(url).searchParams.get('user_id').slice(3);
     const own=init.headers.Authorization==='Bearer '+jwt(owner);
-    if(deny&&!own)return {status:403,headers:{get:()=>''},json:async()=>[]};
+    if(denyCrossStatus&&init.headers.Authorization&&!own)return {status:denyCrossStatus,headers:{get:()=>''},json:async()=>[]};
+    if(denyAnonymous&&!init.headers.Authorization)return {status:403,headers:{get:()=>''},json:async()=>[]};
     const rows=own&&!missing||!own&&((init.headers.Authorization&&cross)||(!init.headers.Authorization&&anon))?[{user_id:owner}]:[];
     return {status:200,headers:{get:()=> 'application/json'},json:async()=>rows};
   };
@@ -31,8 +32,17 @@ test('cross-account exposure fails',async()=>{
 test('anonymous exposure fails',async()=>{
   await assert.rejects(verifyTwoUserRls(config,{...opts,tables:['user_settings'],fetchImpl:mock({anon:true})}),/Anonymous/);
 });
-test('explicit HTTP denial is accepted only for non-owner requests',async()=>{
-  assert.equal((await verifyTwoUserRls(config,{...opts,tables:['user_settings'],fetchImpl:mock({deny:true})})).checkedTables,1);
+test('authenticated cross-account HTTP 401 or 403 cannot count as RLS isolation',async()=>{
+  for(const denyCrossStatus of [401,403]){
+    await assert.rejects(
+      verifyTwoUserRls(config,{...opts,tables:['user_settings'],fetchImpl:mock({denyCrossStatus})}),
+      new RegExp('RLS probe HTTP '+denyCrossStatus+' for user_settings')
+    );
+  }
+});
+test('anonymous HTTP 403 denial is valid only after authenticated cross-account reads succeed',async()=>{
+  const result=await verifyTwoUserRls(config,{...opts,tables:['user_settings'],fetchImpl:mock({denyAnonymous:true})});
+  assert.equal(result.checkedTables,1);
 });
 test('foreign or offline backends rejected before network',async()=>{
   let calls=0;const fetchImpl=async()=>{calls++;throw Error('unexpected')};
