@@ -53,8 +53,8 @@ export async function verifyIsolatedAuthReachability(config, { fetchImpl=globalT
     }
     const data=await response.json();
     if (!data || typeof data!=='object' || Array.isArray(data) ||
-        !(data.external && typeof data.external==='object' && !Array.isArray(data.external) ||
-          typeof data.disable_signup==='boolean' || typeof data.mailer_autoconfirm==='boolean')) {
+        !(data.external && typeof data.external==='object' && !Array.isArray(data.external) &&
+          typeof data.disable_signup==='boolean' && typeof data.mailer_autoconfirm==='boolean')) {
       throw new Error('Isolated Auth settings response was not recognized.');
     }
     if (controller.signal.aborted) throw timedOut();

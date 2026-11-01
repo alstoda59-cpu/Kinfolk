@@ -5,7 +5,7 @@ import { verifyIsolatedAuthReachability } from '../scripts/verify-isolated-auth.
 import { ALPHA_REF } from '../scripts/alpha-backend-config.mjs';
 
 const config={projectRef:ALPHA_REF,url:'https://'+ALPHA_REF+'.supabase.co',key:'sb_publishable_synthetic_alpha_test',offlineStub:false};
-const json=(status=200,data={external:{email:true}},type='application/json')=>({status,headers:{get:()=>type},json:async()=>data});
+const json=(status=200,data={disable_signup:false,external:{email:true},mailer_autoconfirm:false},type='application/json')=>({status,headers:{get:()=>type},json:async()=>data});
 
 test('read-only GET uses pinned isolated Auth settings endpoint',async()=>{
   let seen;
@@ -32,7 +32,7 @@ test('rejects unauthorized, missing, and redirected settings responses',async()=
 });
 test('rejects HTML and malformed Auth settings responses',async()=>{
   await assert.rejects(verifyIsolatedAuthReachability(config,{fetchImpl:async()=>json(200,{},'text/html')}),/return JSON/);
-  for(const payload of [{},[],null,{external:[]},'ok']){
+  for(const payload of [{},[],null,{external:[]},'ok',{external:{email:true}},{disable_signup:false},{mailer_autoconfirm:false},{disable_signup:false,external:{email:true}},{disable_signup:false,mailer_autoconfirm:false},{external:{email:true},mailer_autoconfirm:false}]){
     await assert.rejects(verifyIsolatedAuthReachability(config,{fetchImpl:async()=>json(200,payload)}),/not recognized/);
   }
 });
@@ -76,7 +76,7 @@ test('hard deadline also bounds an Auth response body reader that ignores abort'
     /settings request timed out/
   );
   assert.equal(signal.aborted,true);
-  release({external:{email:true}});
+  release({disable_signup:false,external:{email:true},mailer_autoconfirm:false});
 });
 test('Auth reachability refuses invalid deadline values before any network access',async()=>{
   let calls=0;
