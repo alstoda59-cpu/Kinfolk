@@ -14,7 +14,7 @@ const handler=source.slice(start,end);
 function harness(options={}){
   const {owner='synthetic-A',id='synthetic-album',
     error=null,throwAfterCommit=false,switchAfterCommit=false,reactivateAfterCommit=false,
-    photoFailure=false,renderFailure=false}=options;
+    photoFailure=false,renderFailure=false,validationFailure=false}=options;
   const count=Object.hasOwn(options,'count')?options.count:1;
   const button={disabled:false,textContent:'Create album'};
   const inputs={
@@ -48,7 +48,7 @@ function harness(options={}){
     state,document,sb,kf129Epoch:1,requireAlbumSession:(account,editor,activation)=>{
       requireAlbumSession(account,editor);
       if(ctx.kf129Epoch!==activation)throw new Error('Account or album editor changed during upload.');
-    },validate:()=>{},
+    },validate:()=>{if(validationFailure)throw Error('Synthetic validation failed')},
     addOne:async()=>{calls.push({type:'photo-upload'});if(photoFailure)throw new Error('synthetic photo upload failed')},
     closeModal:()=>calls.push({type:'close'}),
     renderApp:async()=>{calls.push({type:'render'});if(renderFailure)throw new Error('synthetic render failed')},
@@ -56,10 +56,10 @@ function harness(options={}){
     console:{warn:()=>{}}
   };
   const create=vm.runInNewContext('let busy=false;'+handler+';hardCreate',ctx,{timeout:2000});
-  return {run:()=>create({preventDefault(){}}),calls,notices,state,button};
+  return {run:()=>create({preventDefault(){}}),calls,notices,state,button,form};
 }
 const byType=(h,type)=>h.calls.filter(x=>x.type===type);
-const failed=h=>{assert.equal(byType(h,'photo-upload').length,0);assert.equal(byType(h,'close').length,0);assert.equal(byType(h,'render').length,0);assert.equal(h.button.disabled,false)};
+const failed=(h,locked=true)=>{assert.equal(byType(h,'photo-upload').length,0);assert.equal(byType(h,'close').length,0);assert.equal(byType(h,'render').length,0);assert.equal(h.button.disabled,locked)};
 
 test('confirmed one-row owned album proceeds to photo upload and success',async()=>{
   const h=harness();
@@ -70,10 +70,10 @@ test('confirmed one-row owned album proceeds to photo upload and success',async(
   assert.equal(byType(h,'render').length,1);
   assert.equal(h.notices.at(-1).message,'Album created');
   assert.equal(h.state.profileTab,'photos');
-  assert.equal(h.button.disabled,false);
+  assert.equal(h.button.disabled,true);
 });
 test('zero affected rows never starts photo upload',async()=>{
-  const h=harness({count:0});await h.run();failed(h);
+  const h=harness({count:0});await h.run();failed(h,false);
   assert.match(h.notices[0].message,/Refresh your albums before retrying/);
 });
 test('missing count is not mistaken for a saved album',async()=>{
@@ -175,4 +175,43 @@ test('confirmed successful album cannot be reinserted by a stale mounted form',a
   assert.equal(byType(h,'insert').length,1);
   assert.equal(byType(h,'photo-upload').length,1);
   assert.match(h.notices.at(-1).message,/already created/);
+});
+
+// Recovery399: a dropped or ambiguous Create Album response can follow a
+// committed INSERT. Reusing the same mounted form must not duplicate it.
+test('lost Create Album response locks the exact form against duplicate INSERT',async()=>{
+  const h=harness({throwAfterCommit:true});
+  await h.run();await h.run();
+  assert.equal(byType(h,'insert').length,1);
+  assert.equal(h.button.disabled,true);
+  assert.match(h.button.textContent,/Check Photos/);
+  assert.match(h.notices.at(-1).message,/may already have completed/);
+  assert.equal(h.form.__kf106CreateUncertain.accountId,'synthetic-A');
+});
+test('PostgREST error after potential commit also blocks repeat Create Album',async()=>{
+  const h=harness({error:new Error('synthetic response lost')});
+  await h.run();await h.run();
+  assert.equal(byType(h,'insert').length,1);
+  assert.equal(h.button.disabled,true);
+});
+test('missing affected-row count cannot replay uncertain album creation',async()=>{
+  const h=harness({count:undefined});
+  await h.run();await h.run();
+  assert.equal(byType(h,'insert').length,1);
+  assert.equal(h.button.disabled,true);
+});
+test('authoritative zero-row acknowledgement clears uncertainty and allows retry',async()=>{
+  const h=harness({count:0});
+  await h.run();await h.run();
+  assert.equal(byType(h,'insert').length,2);
+  assert.equal(h.button.disabled,false);
+  assert.equal(h.form.__kf106CreateUncertain,undefined);
+});
+test('preflight validation errors do not lock Create Album or dispatch INSERT',async()=>{
+  const h=harness({validationFailure:true});
+  await h.run();await h.run();
+  assert.equal(byType(h,'insert').length,0);
+  assert.equal(h.button.disabled,false);
+  assert.equal(h.form.__kf106CreateUncertain,undefined);
+  assert.match(h.notices.at(-1).message,/Synthetic validation failed/);
 });

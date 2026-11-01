@@ -70,6 +70,10 @@ async function addOne(albumId,file,accountId,form,activation){
   // even if its photo upload or the final Photos render failed.
   if(f.__kf106Created?.accountId===accountId)
     return tell('This album was already created. Open Photos to add any missing photos instead of creating it again.');
+  // A lost INSERT response can follow a committed album. Keep the original
+  // editor one-shot until the member has checked the actual album list.
+  if(f.__kf106CreateUncertain?.accountId===accountId)
+    return tell('Album creation may already have completed. Open Photos and check for the album before creating another one.');
   const btn=f.querySelector('button'),old=btn?.textContent||'Create album';
   // A stale operation from a prior login must not block this activation.
   // Its finally block must also never unlock a newer operation.
@@ -93,6 +97,9 @@ async function addOne(albumId,file,accountId,form,activation){
     // retry that may create a second album.
     let q;
     try{
+      // Mark BEFORE dispatch: even a thrown transport response can follow a
+      // committed INSERT. Preflight failures do not set this marker.
+      f.__kf106CreateUncertain={accountId};
       q=await sb.from('photo_albums').insert({owner_id:accountId,title,description,visibility},{count:'exact'}).select().single();
     }catch(error){
       console.warn('Kinfolk album creation response failed',error);
@@ -103,6 +110,9 @@ async function addOne(albumId,file,accountId,form,activation){
       throw new Error(uncertain);
     }
     requireAlbumSession(accountId,f,activation);
+    // A successful authoritative zero-row acknowledgment means no album was
+    // inserted; unlike an unknown result, this exact editor may retry.
+    if(q.count===0)delete f.__kf106CreateUncertain;
     if(q.count!==1||!q.data?.id||q.data.owner_id!==accountId)
       throw new Error(uncertain);
     confirmedAlbumId=q.data.id;
@@ -132,8 +142,10 @@ async function addOne(albumId,file,accountId,form,activation){
       // A partial failure is not a failed album creation. Keep this exact
       // editor from submitting a second INSERT; members can add photos
       // through the existing album in Photos.
-      btn.disabled=partialFailure;
-      btn.textContent=partialFailure?'Album created · Open Photos':old;
+      const created=f.__kf106Created?.accountId===accountId;
+      const uncertainCreate=f.__kf106CreateUncertain?.accountId===accountId;
+      btn.disabled=!!(partialFailure||created||uncertainCreate);
+      btn.textContent=created?'Album created · Open Photos':uncertainCreate?'Check Photos before retrying':old;
     }
   }
 }async function hardAddSubmit(id,e){
