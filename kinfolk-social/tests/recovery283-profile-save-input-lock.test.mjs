@@ -44,7 +44,7 @@ test('save captures profile values and files before locking and awaiting media w
   const firstAwait=source.indexOf("const avatar=await prepare(avatarFile,'Profile photo')");
   assert.ok(capture>0&&snapshot>capture&&freeze>snapshot&&firstAwait>freeze);
 });
-test('profile save always restores controls in finally',()=>{
+test('profile save restores controls only for the original account and active editor',()=>{
   assert.match(source,/let restoreEditorFields=\(\)=>\{\};/);
-  assert.match(source,/\}finally\{\s*restoreEditorFields\(\);\s*f\.dataset\.kf100Busy='0';/);
+  assert.match(source,/\}finally\{[\s\S]*?if\(state\?\.user\?\.id===accountId&&form\(\)===f\)restoreEditorFields\(\);\s*f\.dataset\.kf100Busy='0';/);
 });
