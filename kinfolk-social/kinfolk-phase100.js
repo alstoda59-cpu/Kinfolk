@@ -115,7 +115,7 @@ function form(){return document.getElementById('profileForm')}function saveButto
     restoreEditorFields();
     f.dataset.kf100Busy='0';
     releaseProfileSave(accountId);
-    if(btn&&document.contains(btn)&&form()===f&&stillOwner()){
+    if(btn&&document.contains(btn)&&form()===f&&state?.user?.id===accountId){
       btn.disabled=false;btn.textContent=old;
     }
   }
