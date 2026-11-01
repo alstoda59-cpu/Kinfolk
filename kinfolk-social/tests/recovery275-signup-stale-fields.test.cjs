@@ -18,8 +18,8 @@ test('unchanged signup identity is accepted',()=>assert.equal(unchanged(form(bas
 for(const [field,changed] of Object.entries({email:'other@example.test',password:'changed_password_123',birthdate:'2000-01-01',stay:false,privateProfile:false,username:'different_teen',display_name:'Different Member',preferredLanguage:'fr',interests:['music'],confirmPassword:'different_password_123',bio:'changed bio',gender:'Female'})){
   test('signup identity rejects changed '+field,()=>assert.equal(unchanged(form({...baseline,[field]:changed}),baseline),false));
 }
-test('guard is checked after signup response and after asynchronous session verification',()=>{
-  assert.equal(source.split('!signupInputsUnchanged(form,signupSnapshot)').length-1,3);
+test('guard is checked before signup and after response, session verification and stale error',()=>{
+  assert.equal(source.split('!signupInputsUnchanged(form,signupSnapshot)').length-1,4);
   const preflight=source.indexOf('!signupInputsUnchanged(form,signupSnapshot)');
   const request=source.indexOf('const result=await Promise.race(',source.indexOf('async function handleSignup'));
   const afterRequest=source.indexOf('!signupInputsUnchanged(form,signupSnapshot)',request);
