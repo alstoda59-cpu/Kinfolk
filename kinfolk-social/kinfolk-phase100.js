@@ -112,7 +112,10 @@ function form(){return document.getElementById('profileForm')}function saveButto
     if(!profileSaved&&!profileWriteMayHaveCommitted)await removeUploaded(uploaded);
     if(stillOwner() && form()===f)notify(err?.message||'Profile update failed');
   }finally{
-    restoreEditorFields();
+    // The old async save must not unlock fields that a different account's
+    // editor or privacy guard has since disabled on a reused DOM node.
+    // A same-account reactivation may safely restore the original editor.
+    if(state?.user?.id===accountId&&form()===f)restoreEditorFields();
     f.dataset.kf100Busy='0';
     releaseProfileSave(accountId);
     if(btn&&document.contains(btn)&&form()===f&&state?.user?.id===accountId){
