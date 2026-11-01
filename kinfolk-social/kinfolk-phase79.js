@@ -582,8 +582,11 @@
       }
       // Do not bind a completed request to changed signup details, especially
       // birthday/teen privacy, email, password or Stay Logged In preference.
-      if(form.isConnected&&form.querySelector('.kf73Title')===signupTitle&&isSignupTitle(signupTitle?.textContent)&&
-         !signupInputsUnchanged(form,signupSnapshot)){
+      // A completed Auth request belongs to the exact signup screen that sent
+      // it. Navigation, unmount, or a reused form must never adopt its returned
+      // session, show its success, or persist Stay Logged In for another screen.
+      if(!form.isConnected||form.querySelector('.kf73Title')!==signupTitle||!isSignupTitle(signupTitle?.textContent))return;
+      if(!signupInputsUnchanged(form,signupSnapshot)){
         signupRetryAt=Date.now()+60000;
         show(form,'Signup details changed while account creation was processing. The earlier request may have succeeded. Check the original email inbox or log in before retrying in a minute.');
         if(btn){btn.disabled=false;btn.textContent='Create account'}
