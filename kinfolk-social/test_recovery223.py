@@ -62,6 +62,14 @@ with sync_playwright() as p:
             assert 'old@example.test' not in page.locator('#authForm').inner_text()
             assert 'Synthetic signup rejected' not in page.locator('#authForm').inner_text()
             assert page.evaluate('window.__signup223Calls')==1
+            # Recovery392 deliberately retains a one-minute cooldown when the
+            # old Auth request resolves after Login -> Signup navigation.
+            # Verify it blocks a duplicate request, then advance the synthetic
+            # page clock rather than waiting a real minute in browser CI.
+            page.locator('.kf73Primary').click()
+            assert page.evaluate('window.__signup223Calls')==1
+            assert 'previous signup may still be processing' in page.locator('.kf73Msg').inner_text().lower()
+            page.evaluate('() => { const now=Date.now(); Date.now=()=>now+61000; }')
             page.locator('.kf73Primary').click()
             page.wait_for_function('window.__signup223Calls===2')
             page.evaluate("""(wrongIdentity) => window.__resolvers223[1]({

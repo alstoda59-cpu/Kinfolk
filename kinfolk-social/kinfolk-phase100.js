@@ -48,6 +48,10 @@ function form(){return document.getElementById('profileForm')}function saveButto
   const btn=saveButton(f),old=btn?.textContent||'Save profile',uploaded=[];
   if(btn){btn.disabled=true;btn.textContent='Saving…'}
   let profileSaved=false;
+  // A PostgREST update may commit even when its response is lost. Once the
+  // profile write is dispatched, never delete uploaded files unless the server
+  // explicitly confirms that zero profile rows were changed.
+  let profileWriteMayHaveCommitted=false;
   let restoreEditorFields=()=>{};
   try{
     requireEditor(accountId,f);
@@ -75,7 +79,9 @@ function form(){return document.getElementById('profileForm')}function saveButto
     // Treat a missing count as unverified rather than reporting a partial save.
     if(x.count!==1)throw new Error('Profile preferences could not be saved. Please sign in again and retry.');
     requireEditor(accountId,f);
+    profileWriteMayHaveCommitted=true;
     const p=await sb.from('profiles').update(po,{count:'exact'}).eq('id',accountId);
+    if(!p.error&&p.count===0)profileWriteMayHaveCommitted=false;
     if(p.error)throw p.error;
     // Supabase may report no error when RLS filters out every matching row.
     // Never announce a successful save unless the original profile was updated.
@@ -97,7 +103,7 @@ function form(){return document.getElementById('profileForm')}function saveButto
     }catch(renderErr){console.warn('Kinfolk profile refresh',renderErr)}
     if(state?.user?.id===accountId)notify('Profile updated','good');
   }catch(err){
-    if(!profileSaved)await removeUploaded(uploaded);
+    if(!profileSaved&&!profileWriteMayHaveCommitted)await removeUploaded(uploaded);
     if(state?.user?.id===accountId && form()===f)notify(err?.message||'Profile update failed');
   }finally{
     restoreEditorFields();
