@@ -17,7 +17,9 @@ on:
       - '.github/workflows/kinfolk-social-ci.yml'
 jobs:
   syntax-and-package:
-    runs-on: ubuntu-latest
+    # Playwright 1.58.0 does not support the Ubuntu 26.04 image currently
+    # selected by ubuntu-latest; pin the supported browser-test image.
+    runs-on: ubuntu-24.04
     # Packaging-only placeholder. Never connects to the live Supabase project.
     env:
       KINFOLK_ALPHA_SUPABASE_URL: https://aaaaaaaaaaaaaaaaaaaa.supabase.co
