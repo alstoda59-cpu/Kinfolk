@@ -14,6 +14,7 @@ The initiating `kf129Epoch` is now captured before asynchronous work and checked
 - Source commit `f156cc362c483f4daea6746a6aa1ec0648b4c4a1`: profile-save auth epoch isolation.
 - Regression commit `18e4642db7fd978862648045aa4cf8aae8c6436f`: four synthetic, source-executed same-user relogin cases in the existing Recovery230 harness: during upload, during extras write, during profile UPDATE, and during UI hydration. The harness uses a file-relative source path so it can also run from the native package directory.
 - Native gate commit `00e4add6a205703cfd19b7e7510bcc95ecd3cca3`: requires the same source-executed Recovery230 regression as part of `alpha:profile:source:test` and `alpha:verify` for offline Android/iOS packaging.
+- Follow-up source commit `1898bed1e8353db4d19d58ca027c5f0bbe1fe1cb` and regression commit `ee58681bfdafda0342f2766a8d2a52f1ee4c15e5`: a cancelled save from a same-account relogin restores the original editor button when it is still the active form, without showing a stale success/error or changing another account's form. The synthetic harness checks the button is not left disabled.
 - GitHub Actions and Vercel results must be checked against the final head separately. A READY preview is not an authenticated test; a packaging-only CI build uses an unreachable placeholder Supabase URL and cannot prove functional login or native device readiness.
 
 ## Safety and next steps
