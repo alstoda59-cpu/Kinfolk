@@ -13,7 +13,8 @@ const handler=source.slice(start,end);
 
 function harness(options={}){
   const {owner='synthetic-A',id='synthetic-album',
-    error=null,throwAfterCommit=false,switchAfterCommit=false,reactivateAfterCommit=false}=options;
+    error=null,throwAfterCommit=false,switchAfterCommit=false,reactivateAfterCommit=false,
+    photoFailure=false,renderFailure=false}=options;
   const count=Object.hasOwn(options,'count')?options.count:1;
   const button={disabled:false,textContent:'Create album'};
   const inputs={
@@ -48,9 +49,9 @@ function harness(options={}){
       requireAlbumSession(account,editor);
       if(ctx.kf129Epoch!==activation)throw new Error('Account or album editor changed during upload.');
     },validate:()=>{},
-    addOne:async()=>{calls.push({type:'photo-upload'})},
+    addOne:async()=>{calls.push({type:'photo-upload'});if(photoFailure)throw new Error('synthetic photo upload failed')},
     closeModal:()=>calls.push({type:'close'}),
-    renderApp:async()=>calls.push({type:'render'}),
+    renderApp:async()=>{calls.push({type:'render'});if(renderFailure)throw new Error('synthetic render failed')},
     tell:(message,kind)=>notices.push({message,kind}),
     console:{warn:()=>{}}
   };
@@ -111,4 +112,33 @@ test('same-user session reactivation after album insert prevents stale upload or
   assert.equal(h.button.disabled,true); // The old session's editor must not be unlocked.
   assert.equal(byType(h,'insert').length,1);
   assert.equal(h.notices.length,0);
+});
+
+test('verified album remains created when its first photo upload fails; warn against duplicate creation',async()=>{
+  const h=harness({photoFailure:true});
+  await h.run();
+  assert.equal(byType(h,'insert').length,1);
+  assert.equal(byType(h,'photo-upload').length,1);
+  assert.equal(byType(h,'close').length,0);
+  assert.equal(byType(h,'render').length,0);
+  assert.equal(h.button.disabled,false);
+  assert.equal(h.notices.length,1);
+  assert.match(h.notices[0].message,/Album created/);
+  assert.match(h.notices[0].message,/check this album/);
+  assert.match(h.notices[0].message,/Do not create it again/);
+  assert.doesNotMatch(h.notices[0].message,/synthetic photo upload failed/);
+});
+
+test('confirmed album is not mislabeled a failed creation when opening Photos fails',async()=>{
+  const h=harness({renderFailure:true});
+  await h.run();
+  assert.equal(byType(h,'insert').length,1);
+  assert.equal(byType(h,'photo-upload').length,1);
+  assert.equal(byType(h,'close').length,1);
+  assert.equal(byType(h,'render').length,1);
+  // This synthetic closeModal only records a call; it leaves the form mounted.
+  // The handler must still describe the confirmed album rather than a failed creation.
+  assert.equal(h.notices.length,1);
+  assert.match(h.notices[0].message,/Album created/);
+  assert.match(h.notices[0].message,/Do not create it again/);
 });
