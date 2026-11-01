@@ -119,3 +119,26 @@ test('pending block cannot close a DM reused for a different peer',async()=>{
   h.resolve({error:null,count:1});await p;
   assert.equal(h.events.length,0);
 });
+
+test('repeated block taps within one auth activation share a single insert',async()=>{
+  const h=harness();
+  const first=h.blockPeer('synthetic-peer-B');
+  await h.blockPeer('synthetic-peer-B');
+  assert.equal(h.writes.length,1);
+  h.writes[0].resolve({error:null,count:1});await first;
+  assert.equal(successes(h).length,2);
+});
+test('new same-account activation can block while old request is still pending',async()=>{
+  const h=harness();
+  const old=h.blockPeer('synthetic-peer-B');
+  assert.equal(h.writes.length,1);
+  h.ctx.kf129Epoch=2;
+  const fresh=h.blockPeer('synthetic-peer-B');
+  assert.equal(h.writes.length,2,'fresh session must not inherit old request lock');
+  h.writes[0].resolve({error:null,count:1});await old;
+  assert.equal(h.events.length,0,'old session cannot acknowledge privacy action');
+  await h.blockPeer('synthetic-peer-B');
+  assert.equal(h.writes.length,2,'old cleanup must not unlock pending fresh request');
+  h.writes[1].resolve({error:null,count:1});await fresh;
+  assert.equal(successes(h).length,2,'only fresh session may acknowledge success');
+});
