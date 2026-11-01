@@ -56,3 +56,41 @@ test('anonymous access to second owner fails independently',async()=>{
   };
   await assert.rejects(verifyTwoUserRls(config,{...opts,tables:['user_settings'],fetchImpl}),/Anonymous RLS exposure/);
 });
+
+test('RLS hard deadline rejects an abort-ignoring fetch instead of hanging',async()=>{
+  let signal,release;
+  const pending=new Promise(resolve=>{release=resolve});
+  await assert.rejects(
+    verifyTwoUserRls(config,{...opts,tables:['user_settings'],timeoutMs:15,
+      fetchImpl:async(_url,init)=>{signal=init.signal;return pending}}),
+    /RLS probe timed out for user_settings/
+  );
+  assert.equal(signal.aborted,true);
+  release({status:200,headers:{get:()=> 'application/json'},json:async()=>[{user_id:A}]});
+});
+
+test('RLS hard deadline covers a stalled JSON reader as well as fetch',async()=>{
+  let signal,release;
+  const pendingBody=new Promise(resolve=>{release=resolve});
+  await assert.rejects(
+    verifyTwoUserRls(config,{...opts,tables:['user_settings'],timeoutMs:15,
+      fetchImpl:async(_url,init)=>{signal=init.signal;return {
+        status:200,headers:{get:()=> 'application/json'},json:()=>pendingBody
+      }}}),
+    /RLS probe timed out for user_settings/
+  );
+  assert.equal(signal.aborted,true);
+  release([{user_id:A}]);
+});
+
+test('invalid RLS timeouts fail before any backend request',async()=>{
+  let calls=0;
+  for(const timeoutMs of [0,-1,1.5,Infinity,NaN,60001]){
+    await assert.rejects(
+      verifyTwoUserRls(config,{...opts,tables:['user_settings'],timeoutMs,
+        fetchImpl:async()=>{calls++;return mock()()}}),
+      /RLS probe timeout must be/
+    );
+  }
+  assert.equal(calls,0);
+});
