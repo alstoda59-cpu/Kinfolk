@@ -136,5 +136,9 @@ test('confirmed album is not mislabeled a failed creation when opening Photos fa
   assert.equal(byType(h,'photo-upload').length,1);
   assert.equal(byType(h,'close').length,1);
   assert.equal(byType(h,'render').length,1);
-  assert.equal(h.notices.length,0,'closed editor must not toast over another screen');
+  // This synthetic closeModal only records a call; it leaves the form mounted.
+  // The handler must still describe the confirmed album rather than a failed creation.
+  assert.equal(h.notices.length,1);
+  assert.match(h.notices[0].message,/Album created/);
+  assert.match(h.notices[0].message,/Do not create it again/);
 });
