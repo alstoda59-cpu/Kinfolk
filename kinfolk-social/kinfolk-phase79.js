@@ -700,6 +700,24 @@
       }
       const raw=err?.message||String(err),low=raw.toLowerCase();
       const code=String(err?.code||err?.error_code||'').toLowerCase();
+      // Recovery391: a transport timeout or server error after signUp was
+      // dispatched does not prove the account was rejected. Avoid sending a
+      // duplicate signup while the first request may have created the user.
+      // Explicit validation (4xx) and rate-limit (429) errors retain their
+      // existing actionable messages instead of being called uncertain.
+      const status=Number(err?.status);
+      const ambiguousStatus=!Number.isFinite(status)||status===0||status===408||status>=500;
+      const uncertainSignupResponse=signupRequestSent&&ambiguousStatus&&(
+        status===408||status>=500||
+        ['fetch_error','network_error','request_timeout'].includes(code)||
+        /failed to fetch|fetch failed|network request failed|networkerror|load failed|timed out|timeout|connection (?:reset|closed|lost)/i.test(low)
+      );
+      if(uncertainSignupResponse){
+        signupRetryAt=Date.now()+60000;
+        show(form,'Kinfolk could not confirm whether the account was created. Check the original email inbox or try logging in before retrying in a minute.');
+        if(btn){btn.disabled=false;btn.textContent='Create account'}
+        return;
+      }
       let message=raw;
       // Real isolated Auth smoke tests returned email_address_invalid. Do not
       // print a raw provider error or mistake an undeliverable inbox for a

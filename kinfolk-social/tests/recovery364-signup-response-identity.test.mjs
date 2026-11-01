@@ -23,7 +23,9 @@ function errorMessage(err){
   let message;
   const show=(form,text)=>{message=text};
   const form={};
-  vm.runInNewContext('(()=>{'+errorSource+'})()',{err,show,form}, {timeout:1000});
+  // This fixture tests deterministic provider errors before a signup dispatch;
+  // the effective catch now distinguishes ambiguous post-dispatch failures.
+  vm.runInNewContext('(()=>{'+errorSource+'})()',{err,show,form,signupRequestSent:false}, {timeout:1000});
   return message;
 }
 
