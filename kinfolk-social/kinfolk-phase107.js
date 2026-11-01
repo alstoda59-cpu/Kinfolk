@@ -43,13 +43,19 @@ async function blockPeer(peer,originForm){
     try{toast(e?.message||'Could not block this account.','danger')}catch{console.warn(e)}
   }finally{pendingBlocks.delete(requestKey)}
 }window.blockKinfolk=blockPeer;function addDmBlock(form){
-  if(!form||form.dataset.kf107Privacy==='1')return;
-  if(!form.dataset.peer)return;
-  form.dataset.kf107Privacy='1';
+  if(!form||!form.dataset.peer)return;
+  // The privacy control lives *outside* the DM form. Mobile modal rerenders
+  // can remove or relocate that sibling while retaining the same form node.
+  // A dataset-only one-time flag would then hide Block Account indefinitely.
+  const previous=form.__kf107PrivacyNote;
+  if(previous&&form.previousElementSibling===previous&&previous.querySelector('button'))return;
+  if(previous&&previous.isConnected)previous.remove();
   const note=document.createElement('div');
   note.className='kf107DmPrivacy';
   note.innerHTML='<span>Privacy</span><button type="button" class="btn" id="kf107BlockBtn">Block account</button>';
   form.insertAdjacentElement('beforebegin',note);
+  form.__kf107PrivacyNote=note;
+  form.dataset.kf107Privacy='1';
   const b=note.querySelector('button');
   // A native click fires once for touch, pointer and keyboard activation.
   // Do not bind pointerup + touchend separately: mobile taps can fire both.
