@@ -121,7 +121,8 @@ test('verified album remains created when its first photo upload fails; warn aga
   assert.equal(byType(h,'photo-upload').length,1);
   assert.equal(byType(h,'close').length,0);
   assert.equal(byType(h,'render').length,0);
-  assert.equal(h.button.disabled,false);
+  assert.equal(h.button.disabled,true);
+  assert.match(h.button.textContent,/Album created/);
   assert.equal(h.notices.length,1);
   assert.match(h.notices[0].message,/Album created/);
   assert.match(h.notices[0].message,/check this album/);
@@ -141,4 +142,37 @@ test('confirmed album is not mislabeled a failed creation when opening Photos fa
   assert.equal(h.notices.length,1);
   assert.match(h.notices[0].message,/Album created/);
   assert.match(h.notices[0].message,/Do not create it again/);
+});
+
+
+test('partial photo failure cannot insert the same album twice from the mounted form',async()=>{
+  const h=harness({photoFailure:true});
+  await h.run();
+  await h.run(); // Synthetic second submit, even if another event invokes the handler.
+  assert.equal(byType(h,'insert').length,1);
+  assert.equal(byType(h,'photo-upload').length,1);
+  assert.equal(h.button.disabled,true);
+  assert.equal(h.notices.length,2);
+  assert.match(h.notices[1].message,/already created/);
+  assert.match(h.notices[1].message,/Open Photos/);
+});
+
+test('failed Photos render after committed album cannot trigger a duplicate insert',async()=>{
+  const h=harness({renderFailure:true});
+  await h.run();
+  await h.run();
+  assert.equal(byType(h,'insert').length,1);
+  assert.equal(byType(h,'render').length,1);
+  assert.equal(h.button.disabled,true);
+  assert.match(h.notices.at(-1).message,/already created/);
+});
+
+test('confirmed successful album cannot be reinserted by a stale mounted form',async()=>{
+  // closeModal in this synthetic fixture leaves the original form mounted.
+  const h=harness();
+  await h.run();
+  await h.run();
+  assert.equal(byType(h,'insert').length,1);
+  assert.equal(byType(h,'photo-upload').length,1);
+  assert.match(h.notices.at(-1).message,/already created/);
 });
