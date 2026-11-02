@@ -20,7 +20,7 @@ function harness(options={}){
  const sb={
   from(table){
    if(table==='messages'){
-    const query={select(){return query},or(){return query},order(){return query},limit(){calls.queries++;return options.query?options.query(calls.queries):Promise.resolve({data:[],error:null})},insert(row){calls.inserts.push(row);return Promise.resolve({error:null})}};
+    const query={select(){return query},or(){return query},order(){return query},limit(){calls.queries++;return options.query?options.query(calls.queries):Promise.resolve({data:[],error:null})},insert(row,opts){assert.equal(opts?.count,'exact');calls.inserts.push(row);return Promise.resolve({error:null,count:1})}};
     return query;
    }
    if(table==='kinfolk_user_preferences'){

@@ -1031,17 +1031,35 @@ dmForm.onsubmit=async e=>{
  const button=form.querySelector('button[type="submit"],button.btn.primary');
  form.dataset.kfSending='1';
  if(button)button.disabled=true;
+ // A lost response can hide a committed DM. Require an exact one-row
+ // acknowledgment, just as Group Chats does, before refreshing the thread.
+ let confirmedNoWrite=false,confirmedSent=false;
  try{
-   const {error}=await sb.from('messages').insert({sender_id:viewerId,receiver_id:peer,body,disappear_after_read:disappearing});
+   const {error,count}=await sb.from('messages').insert(
+     {sender_id:viewerId,receiver_id:peer,body,disappear_after_read:disappearing},
+     {count:'exact'});
    if(!active()||form!==document.getElementById('dmForm'))return;
-   if(error){toast(error.message,'danger');return}
+   if(!error&&count===0){
+     confirmedNoWrite=true;
+     toast('Message was not saved. Please try again.','danger');
+     return;
+   }
+   if(error||count!==1){
+     toast('Message could not be confirmed. Reopen the conversation and check before retrying.','danger');
+     return;
+   }
+   confirmedSent=true;
    await window.openDm(peer);
  }catch(error){
-   if(active()&&form===document.getElementById('dmForm'))toast(error?.message||'Message could not be sent.','danger');
+   if(active()&&form===document.getElementById('dmForm'))
+     toast(confirmedSent?'Message saved, but the conversation could not refresh. Reopen it.':
+       'Message could not be confirmed. Reopen the conversation and check before retrying.','danger');
  }finally{
-   // A failed refresh must not leave the same form permanently locked.
-   // Never unlock a different account's or replacement conversation's form.
-   if(kf129Epoch===authEpoch&&state.user?.id===viewerId&&form===document.getElementById('dmForm')&&kf300MessageRequest===ownedModalEpoch){
+   // Only an explicit zero-row response proves a retry is safe. An uncertain
+   // INSERT must not be repeated from this form, even after a network error.
+   if(confirmedNoWrite&&kf129Epoch===authEpoch&&state.user?.id===viewerId&&
+      form===document.getElementById('dmForm')&&form.dataset.peer===peer&&
+      kf300MessageRequest===ownedModalEpoch){
      delete form.dataset.kfSending;
      if(button)button.disabled=false;
    }
