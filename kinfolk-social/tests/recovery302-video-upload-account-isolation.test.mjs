@@ -47,7 +47,7 @@ function harness({channel=null,failLoad=false,file={name:'demo.mp4',type:'video/
     remove:paths=>{removals.push([...paths]);return Promise.resolve({error:null})}
    }}},
    from:table=>{assert.equal(table,'kinfolk_videos');return {
-    insert:payload=>{const d=deferred();inserts.push({...d,payload});return d.promise}
+    insert:(payload,opts)=>{const d=deferred();inserts.push({...d,payload,opts});return {select:columns=>{assert.equal(columns,'id,creator_id,storage_path');return {single:()=>d.promise}}}}
    }}
   }
  };
@@ -72,9 +72,10 @@ test('successful upload uses captured owner ID and owned storage path',async()=>
   storage_path:'A/videos/uuid-demo.mp4',source_mime:'video/mp4',source_size:123,
   channel_id:'chan-A',visibility:'public',processing_status:'ready',transcode_status:'not_required'
  });
- h.inserts[0].resolve({error:null});await pending;
+ h.inserts[0].resolve({error:null,count:1,data:{id:'video-row-1',creator_id:'A',storage_path:h.uploads[0].path}});await pending;
  assert.equal(h.closed,1);assert.equal(h.loaded,1);assert.equal(h.rendered,1);
  assert.equal(h.toasts.length,1);assert.equal(h.button.disabled,false);
+ assert.equal(h.inserts[0].opts.count,'exact');
 });
 test('account switch during storage upload never creates a cross-account video row',async()=>{
  const h=harness(),pending=h.submit();
@@ -96,7 +97,7 @@ test('double submit cannot start duplicate storage writes',async()=>{
  const h=harness(),first=h.submit(),second=h.submit();
  assert.equal(h.uploads.length,1);await second;
  h.uploads[0].resolve({error:null});await waitForInsert(h);
- h.inserts[0].resolve({error:null});await first;
+ h.inserts[0].resolve({error:null,count:1,data:{id:'video-row-1',creator_id:'A',storage_path:h.uploads[0].path}});await first;
  assert.equal(h.inserts.length,1);
 });
 test('cannot upload to another account channel',async()=>{
@@ -104,19 +105,21 @@ test('cannot upload to another account channel',async()=>{
  assert.equal(h.uploads.length,0);assert.equal(h.inserts.length,0);
  assert.match(h.toasts[0][0],/channel you own/);
 });
-test('database insertion failure cleans up uploaded object while session remains current',async()=>{
+test('database insertion error preserves potentially referenced video and locks the form',async()=>{
  const h=harness(),pending=h.submit();
  h.uploads[0].resolve({error:null});await waitForInsert(h);
- h.inserts[0].resolve({error:new Error('write rejected')});await pending;
- assert.deepEqual(h.removals,[['A/videos/uuid-demo.mp4']]);
- assert.equal(h.toasts[0][0],'write rejected');
- assert.equal(h.closed,0);assert.equal(h.button.disabled,false);
+ h.inserts[0].resolve({error:new Error('write rejected'),count:0});await pending;
+ assert.deepEqual(h.removals,[]);
+ assert.match(h.toasts[0][0],/could not be confirmed/);
+ assert.equal(h.closed,0);assert.equal(h.button.disabled,true);
+ assert.equal(h.form.dataset.kfAlphaSending,'1');
+ await h.submit();assert.equal(h.uploads.length,1);
 });
 test('account switch during database insert does not render or clean up with another account',async()=>{
  const h=harness(),pending=h.submit();
  h.uploads[0].resolve({error:null});await waitForInsert(h);
  assert.equal(h.inserts[0].payload.creator_id,'A');
- h.switchAccount('B');h.inserts[0].resolve({error:null});await pending;
+ h.switchAccount('B');h.inserts[0].resolve({error:null,count:1,data:{id:'video-row-1',creator_id:'A',storage_path:h.uploads[0].path}});await pending;
  assert.equal(h.closed,0);assert.equal(h.loaded,0);assert.equal(h.toasts.length,0);
  assert.equal(h.removals.length,0);
 });
@@ -130,7 +133,7 @@ test('storage failure never creates a video row',async()=>{
 test('successful video insert is never rolled back by a later feed refresh failure',async()=>{
  const h=harness({failLoad:true}),pending=h.submit();
  h.uploads[0].resolve({error:null});await waitForInsert(h);
- h.inserts[0].resolve({error:null});await pending;
+ h.inserts[0].resolve({error:null,count:1,data:{id:'video-row-1',creator_id:'A',storage_path:h.uploads[0].path}});await pending;
  assert.equal(h.closed,1);
  assert.equal(h.loaded,1);
  assert.deepEqual(h.removals,[],'saved video media must not be deleted');
@@ -170,11 +173,58 @@ test('Recovery344 permits a valid WebM at the exact 50 MiB boundary',async()=>{
  h.uploads[0].resolve({error:null});await waitForInsert(h);
  assert.equal(h.inserts[0].payload.source_size,file.size);
  assert.equal(h.inserts[0].payload.source_mime,'video/webm');
- h.inserts[0].resolve({error:null});await pending;
+ h.inserts[0].resolve({error:null,count:1,data:{id:'video-row-1',creator_id:'A',storage_path:h.uploads[0].path}});await pending;
  assert.equal(h.closed,1);assert.equal(h.button.disabled,false);
 });
 test('Recovery344 upload modal advertises only supported alpha video formats and size',()=>{
  assert.match(html,/accept="video\/mp4,video\/webm" required/);
  assert.match(html,/MP4 or WebM, up to 50 MiB on the alpha test backend/);
  assert.doesNotMatch(html,/accept="video\/mp4,video\/webm,video\/quicktime"/);
+});
+
+test('Recovery413: missing, zero or duplicate affected-row counts never prove video save',async()=>{
+ for(const count of [undefined,null,0,2]){
+  const h=harness(),pending=h.submit();
+  h.uploads[0].resolve({error:null});await waitForInsert(h);
+  h.inserts[0].resolve({error:null,count,data:{id:'row',creator_id:'A',storage_path:h.uploads[0].path}});
+  await pending;
+  assert.equal(h.closed,0);assert.equal(h.loaded,0);
+  assert.equal(h.button.disabled,true);
+  assert.deepEqual(h.removals,[]);
+  assert.match(h.toasts[0][0],/Check Videos before retrying/);
+ }
+});
+test('Recovery413: wrong owner, path or missing row identity cannot confirm upload',async()=>{
+ for(const row of [
+  {id:'row',creator_id:'B',storage_path:'A/videos/uuid-demo.mp4'},
+  {id:'row',creator_id:'A',storage_path:'B/videos/foreign.mp4'},
+  {id:'',creator_id:'A',storage_path:'A/videos/uuid-demo.mp4'},
+  null
+ ]){
+  const h=harness(),pending=h.submit();
+  h.uploads[0].resolve({error:null});await waitForInsert(h);
+  h.inserts[0].resolve({error:null,count:1,data:row});await pending;
+  assert.equal(h.closed,0);assert.equal(h.button.disabled,true);
+  assert.deepEqual(h.removals,[]);
+ }
+});
+test('Recovery413: rejected metadata promise preserves media and blocks duplicate submission',async()=>{
+ const h=harness(),pending=h.submit();
+ h.uploads[0].resolve({error:null});await waitForInsert(h);
+ // The deferred fixture only resolves; a malformed result exercises the same
+ // fail-closed path as an unavailable acknowledgment.
+ h.inserts[0].resolve(undefined);await pending;
+ assert.equal(h.button.disabled,true);
+ assert.deepEqual(h.removals,[]);
+ await h.submit();
+ assert.equal(h.uploads.length,1);assert.equal(h.inserts.length,1);
+});
+test('Recovery413: a confirmed write followed by a feed failure retains saved media',async()=>{
+ const h=harness({failLoad:true}),pending=h.submit();
+ h.uploads[0].resolve({error:null});await waitForInsert(h);
+ h.inserts[0].resolve({error:null,count:1,data:{id:'row',creator_id:'A',storage_path:h.uploads[0].path}});
+ await pending;
+ assert.equal(h.closed,1);assert.equal(h.button.disabled,false);
+ assert.deepEqual(h.removals,[]);
+ assert.match(h.toasts[0][0],/Video saved, but the feed could not refresh/);
 });
