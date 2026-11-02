@@ -20,16 +20,16 @@ function harness(options={}){
   const writes=[],opened=[],messages=[];
   const state={
     user:{id:'owner'},
-    friendRequests:[{sender_id:'owner',receiver_id:'friend',status:'accepted'}],
+    friendRequests:options.friendRequests||[{sender_id:'owner',receiver_id:'friend',status:'accepted'}],
     profiles:new Map([['friend',{display_name:'Friend'}]])
   };
-  let form=null,modalCount=0;
+  let form=null,modalCount=0,modalMarkup='';
   const ctx={
     state,kf129Epoch:3,kf300MessageRequest:8,
     esc:s=>String(s),
     toast:(message,kind)=>messages.push({message,kind}),
     loadProfiles:options.loadProfiles|| (async()=>{}),
-    modal:()=>{modalCount++;ctx.kf300MessageRequest++;
+    modal:(_title,html)=>{modalMarkup=html;modalCount++;ctx.kf300MessageRequest++;
       form={isConnected:true,dataset:{},title:'Friends',members:['friend'],
         button:{disabled:false},
         querySelector(sel){
@@ -64,7 +64,7 @@ function harness(options={}){
   };
   const openGroupCreate=vm.runInNewContext(code+'\nopenGroupCreate',ctx,{timeout:1000});
   const submit=()=>form.onsubmit({preventDefault(){}});
-  return {ctx,state,writes,opened,messages,openGroupCreate,submit,get form(){return form},get modalCount(){return modalCount}};
+  return {ctx,state,writes,opened,messages,openGroupCreate,submit,get form(){return form},get modalCount(){return modalCount},get modalMarkup(){return modalMarkup}};
 }
 
 test('Recovery405 account change during friend lookup cannot open stale group modal',async()=>{
@@ -162,4 +162,55 @@ test('Recovery405 modal replacement invalidates old Create Group form',async()=>
   h.ctx.kf300MessageRequest++;
   await h.submit();
   assert.equal(h.writes.length,0);
+});
+
+test('Recovery409 only accepted friend requests involving the active member appear in group invitations',async()=>{
+  const loaded=[];
+  const h=harness({
+    friendRequests:[
+      {sender_id:'stranger-a',receiver_id:'stranger-b',status:'accepted'},
+      {sender_id:'owner',receiver_id:'friend',status:'accepted'},
+      {sender_id:'friend',receiver_id:'owner',status:'accepted'},
+      {sender_id:'owner',receiver_id:'pending',status:'pending'},
+      {sender_id:'owner',receiver_id:'owner',status:'accepted'},
+      {sender_id:'owner',receiver_id:null,status:'accepted'},
+      null
+    ],
+    loadProfiles:async ids=>loaded.push(...ids)
+  });
+  await h.openGroupCreate();
+  assert.deepEqual(loaded,['friend']);
+  assert.match(h.modalMarkup,/value="friend"/);
+  assert.doesNotMatch(h.modalMarkup,/value="stranger-a"|value="stranger-b"|value="pending"|value="owner"/);
+  assert.equal((h.modalMarkup.match(/name="member"/g)||[]).length,1);
+  await h.submit();
+  assert.equal(h.writes.length,2);
+  assert.equal(h.writes[1].payload.length,1);
+  assert.equal(h.writes[1].payload[0].user_id,'friend');
+});
+
+test('Recovery409 incoming accepted friendships remain eligible for group invitation',async()=>{
+  const loaded=[];
+  const h=harness({
+    friendRequests:[{sender_id:'friend',receiver_id:'owner',status:'accepted'}],
+    loadProfiles:async ids=>loaded.push(...ids)
+  });
+  await h.openGroupCreate();
+  assert.deepEqual(loaded,['friend']);
+  await h.submit();
+  assert.equal(h.writes[1].payload[0].user_id,'friend');
+});
+
+test('Recovery409 unrelated cached friendships cannot be invited through a forged checkbox',async()=>{
+  const h=harness({friendRequests:[
+    {sender_id:'stranger-a',receiver_id:'stranger-b',status:'accepted'},
+    {sender_id:'owner',receiver_id:'friend',status:'pending'}
+  ]});
+  await h.openGroupCreate();
+  assert.doesNotMatch(h.modalMarkup,/name="member"/);
+  h.form.members=['stranger-a','stranger-b','friend'];
+  await h.submit();
+  assert.equal(h.writes.length,1,'only the owner group INSERT is allowed');
+  assert.equal(h.writes[0].table,'group_conversations');
+  assert.deepEqual(h.opened,['group-1']);
 });

@@ -865,7 +865,12 @@ async function openGroups(){
 async function openGroupCreate(){
  const creatorId=state.user?.id,authEpoch=kf129Epoch;
  if(!creatorId)return;
- const friendIds=[...new Set(state.friendRequests.filter(r=>r.status==='accepted').map(r=>r.sender_id===creatorId?r.receiver_id:r.sender_id))];
+ // Only accepted relationships involving this account may populate the picker.
+ // A stale or overbroad friendRequests cache must not expose unrelated members.
+ const friendIds=[...new Set((state.friendRequests||[])
+   .filter(r=>r?.status==='accepted'&&(r.sender_id===creatorId||r.receiver_id===creatorId))
+   .map(r=>r.sender_id===creatorId?r.receiver_id:r.sender_id)
+   .filter(id=>typeof id==='string'&&id.length>0&&id!==creatorId))];
  await loadProfiles(friendIds);
  // Do not open another member's Create Group modal after an account switch.
  if(state.user?.id!==creatorId||kf129Epoch!==authEpoch)return;
