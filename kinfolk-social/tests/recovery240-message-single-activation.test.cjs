@@ -44,7 +44,7 @@ test('form without a send control remains eligible for binding when button appea
 });
 test('all three message forms use the shared single-activation binding',()=>{
  assert.match(source,/const FORMS=\['dmForm','groupMsgForm','groupCreateForm'\]/);
- assert.match(source,/btn\.onclick=run/);
+ assert.match(source,/btn\.onclick=form\.__kf107Run/);
  assert.doesNotMatch(source,/btn\.onpointerup=run/);
  assert.doesNotMatch(source,/btn\.ontouchend=run/);
 });
