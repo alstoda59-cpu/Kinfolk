@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-const source = fs.readFileSync('kinfolk-social/kinfolk-phase76.js', 'utf8');
+const source = fs.readFileSync(require('node:path').join(__dirname, '..', 'kinfolk-phase76.js'), 'utf8');
 const start = source.indexOf("let cache='',wallpaperRequest=0,wallpaperVisibleAccountId=");
 const end = source.indexOf('new MutationObserver(', start);
 assert.ok(start >= 0 && end > start, 'Recovery229 wallpaper lifecycle must be present');
