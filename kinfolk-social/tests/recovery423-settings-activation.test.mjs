@@ -13,8 +13,8 @@ const A='11111111-1111-4111-8111-111111111111';
 const B='22222222-2222-4222-8222-222222222222';
 
 function harness(){
-  const writes=[],toasts=[],themes=[];
-  let closes=0,renders=0;
+  const writes=[],toasts=[],themes=[],timers=[];
+  let closes=0,renders=0,wallpaperRefreshes=0;
   const state={user:{id:A},profile:null,profiles:new Map()};
   const el={isConnected:true};
   const controls=new Map();
@@ -25,13 +25,13 @@ function harness(){
   $('#kfsAccentText').value='#e85a9b';
   const ctx={
     state,el,settingsAccountId:A,settingsEpoch:9,kf129Epoch:9,isTeen:false,$,
-    t:$('#kfsAccentText'),refreshWallpaper:()=>{},
+    t:$('#kfsAccentText'),refreshWallpaper:()=>{wallpaperRefreshes++},
     settingsCurrent:()=>state.user?.id===A&&ctx.kf129Epoch===9,
     toast:(message,kind)=>toasts.push({message,kind}),
     theme:color=>themes.push(color),
     closeKinfolkSettings:()=>{closes++},
     renderApp:async()=>{renders++},
-    setTimeout:()=>{},
+    setTimeout:callback=>{timers.push(callback)},
     sb:{from:table=>({
       update:payload=>({eq:(_field,_id)=>({select:()=>({single:()=>write(table,payload)})})}),
       upsert:(payload,_options)=>write(table,payload)
@@ -47,8 +47,8 @@ function harness(){
   const complete=(overrides={})=>{for(const [i,write] of writes.entries())write.resolve(Object.prototype.hasOwnProperty.call(overrides,i)?overrides[i]:{
     data:{id:A,accent_color:'#e85a9b'},error:null,count:1
   })};
-  return {ctx,state,el,writes,toasts,themes,$,submit,complete,
-    get closes(){return closes},get renders(){return renders}};
+  return {ctx,state,el,writes,toasts,themes,timers,$,submit,complete,
+    get closes(){return closes},get renders(){return renders},get wallpaperRefreshes(){return wallpaperRefreshes}};
 }
 const event=()=>({preventDefault(){}});
 test('same-account reactivation before Settings submit cannot write stale preferences',async()=>{
@@ -194,7 +194,30 @@ test('late refresh rejection from an old activation cannot notify a different se
   assert.equal(h.toasts.length,0);
 });
 test('post-render Settings success checks the original activation again',()=>{
-  const body=source.slice(start,end);
+  const body=handler;
   assert.match(body,/try\{await renderApp\(\)\}catch\(_error\)/);
-  assert.match(body,/if\(!settingsCurrent\(\)\)return;setTimeout\(refreshWallpaper,80\);toast\('Profile and settings saved','good'\)/);
+  assert.match(body,/if\(!settingsCurrent\(\)\)return;setTimeout\(\(\)=>\{if\(settingsCurrent\(\)\)refreshWallpaper\(\)\},80\);toast\('Profile and settings saved','good'\)/);
+});
+
+test('deferred wallpaper refresh runs only for the initiating Settings activation',async()=>{
+  const h=harness(),pending=h.submit(event());
+  h.complete();await pending;
+  assert.equal(h.timers.length,1,'wallpaper refresh scheduled after confirmed Settings save');
+  h.timers[0]();
+  assert.equal(h.wallpaperRefreshes,1);
+});
+test('deferred Settings wallpaper refresh cannot run after same-account relogin',async()=>{
+  const h=harness(),pending=h.submit(event());
+  h.complete();await pending;
+  assert.equal(h.timers.length,1);
+  h.ctx.kf129Epoch++;
+  h.timers[0]();
+  assert.equal(h.wallpaperRefreshes,0,'old activation cannot refresh current account wallpaper');
+});
+test('deferred Settings wallpaper refresh cannot run after switching accounts',async()=>{
+  const h=harness(),pending=h.submit(event());
+  h.complete();await pending;
+  h.state.user={id:B};
+  h.timers[0]();
+  assert.equal(h.wallpaperRefreshes,0);
 });

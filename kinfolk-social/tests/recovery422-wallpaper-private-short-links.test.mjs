@@ -116,8 +116,9 @@ test('external HTTPS and legacy signed URLs remain usable; executable schemes ar
 });
 
 test('both effective profile wallpaper renderers resolve private refs before display',()=>{
-  assert.match(source,/const url=await window\.resolveKinfolkWallpaper\(reference,accountId\)/);
-  assert.match(source,/if\(request!==wallpaperRequest\|\|state\?\.user\?\.id!==accountId\)return;const route=/);
+  assert.match(source,/url=await window\.resolveKinfolkWallpaper\(reference,accountId\)/);
+  assert.match(source,/if\(!wallpaperCurrent\(\)\)return;const route=/);
+  assert.match(source,/activationEpoch=typeof kf129Epoch==='number'\?kf129Epoch:null/);
   assert.match(source,/wallpaper=await window\.resolveKinfolkWallpaper\(safe\.animated_wallpaper_url\|\|'',uid\)/);
   assert.match(source,/if\(window\.state\?\.user\?\.id!==uid\|\|root\.isConnected===false\)return/);
   assert.doesNotMatch(source,/createSignedUrl\(path,31536000\)/);
