@@ -15,7 +15,7 @@ function deferred(){
   const promise=new Promise((yes,no)=>{resolve=yes;reject=no});
   return {promise,resolve,reject};
 }
-function harness({uploadWait,signWait,saveWait}={}){
+function harness({uploadWait,signWait,saveWait,saveResult}={}){
   const calls={upload:[],sign:[],save:[],toast:[],session:0};
   const state={user:{id:'11111111-1111-4111-8111-111111111111'}};
   let token='token-A';
@@ -47,7 +47,7 @@ function harness({uploadWait,signWait,saveWait}={}){
       assert.equal(table,'kinfolk_safety_settings');
       return {upsert:async(row,opts)=>{
         calls.save.push({row,opts});
-        return saveWait?await saveWait.promise:{error:null};
+        return saveWait?await saveWait.promise:(saveResult||{error:null,count:1});
       }};
     }
   };
@@ -162,4 +162,58 @@ test('disconnected composer fails closed after Auth preflight',async()=>{
   await h.upload(h.input);
   assert.equal(h.calls.upload.length,0);
   assert.equal(h.calls.save.length,0);
+});
+
+test('wallpaper settings upsert requires an exact one-row acknowledgment',async()=>{
+  const h=harness();
+  await h.upload(h.input);
+  assert.equal(h.calls.save.length,1);
+  assert.equal(h.calls.save[0].opts.count,'exact');
+  assert.equal(h.calls.save[0].opts.onConflict,'user_id');
+  assert.equal(h.window.__kf421WallpaperUncertain,null);
+});
+
+for(const [label,result] of [
+  ['missing count',{error:null}],
+  ['zero rows',{error:null,count:0}],
+  ['multiple rows',{error:null,count:2}],
+  ['backend error',{error:{message:'network response lost'},count:1}]
+]){
+  test('unconfirmed wallpaper write locks retry after '+label,async()=>{
+    const h=harness({saveResult:result});
+    await h.upload(h.input);
+    assert.equal(h.calls.upload.length,1);
+    assert.equal(h.calls.save.length,1);
+    assert.equal(h.urlBox.value,'');
+    assert.equal(h.motion.checked,false);
+    assert.equal(h.window.__kf421WallpaperUncertain?.accountId,h.state.user.id);
+    assert.match(h.calls.toast.at(-1)[0],/Reload Settings/);
+    await h.upload(h.input);
+    assert.equal(h.calls.upload.length,1,'No duplicate media upload after ambiguous write');
+    assert.equal(h.calls.save.length,1,'No duplicate database upsert after ambiguous write');
+  });
+}
+
+test('rejected wallpaper acknowledgment preserves retry lock and uploaded media',async()=>{
+  const wait=deferred(),h=harness({saveWait:wait});
+  const first=h.upload(h.input);
+  await tick();
+  assert.equal(h.calls.upload.length,1);
+  assert.equal(h.calls.save.length,1);
+  wait.reject(new Error('connection reset after possible commit'));
+  await first;
+  assert.equal(h.window.__kf421WallpaperUncertain?.accountId,h.state.user.id);
+  await h.upload(h.input);
+  assert.equal(h.calls.upload.length,1);
+  assert.equal(h.urlBox.value,'');
+});
+
+test('confirmed wallpaper write releases retry lock for later deliberate uploads',async()=>{
+  const h=harness();
+  await h.upload(h.input);
+  assert.equal(h.window.__kf421WallpaperUncertain,null);
+  await h.upload(h.input);
+  assert.equal(h.calls.upload.length,2);
+  assert.equal(h.calls.save.length,2);
+  assert.equal(h.calls.toast.at(-1)[0],'Wallpaper uploaded');
 });
