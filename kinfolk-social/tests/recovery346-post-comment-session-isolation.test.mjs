@@ -6,7 +6,7 @@ import vm from 'node:vm';
 // Recovery346 exercises the effective inline override, not the obsolete earlier addComment.
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const start=html.indexOf('// Recovery346: comment and reply UI belongs');
-const end=html.indexOf('  let mediaReplyParent=null;',start);
+const end=html.indexOf('  // Recovery418: keep media comment loads',start);
 assert.ok(start>=0&&end>start,'effective Recovery346 comment handler exists');
 const source=html.slice(start,end);
 const A='account-a',B='account-b',P='post-one';
