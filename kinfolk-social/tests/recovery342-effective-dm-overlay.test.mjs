@@ -15,9 +15,9 @@ const A='11111111-1111-4111-8111-111111111111';
 const B='22222222-2222-4222-8222-222222222222';
 const C='33333333-3333-4333-8333-333333333333';
 function deferred(){
- let resolve;
- const promise=new Promise(r=>{resolve=r});
- return {promise,resolve};
+ let resolve,reject;
+ const promise=new Promise((r,j)=>{resolve=r;reject=j});
+ return {promise,resolve,reject};
 }
 function harness(){
  const requests=[],writes=[],toasts=[],readMarks=[];
@@ -45,7 +45,7 @@ function harness(){
        if(table==='messages')return {
          select(){return this},or(){return this},order(){return this},
          limit(){const d=deferred();requests.push(d);return d.promise},
-         insert(payload){const d=deferred();writes.push({...d,payload});return d.promise}
+         insert(payload,opts){const d=deferred();writes.push({...d,payload,opts});return d.promise}
        };
        if(table==='kinfolk_user_preferences')return {
          select(){return this},eq(){return this},
@@ -126,11 +126,14 @@ test('two taps while DM send is pending create exactly one write',async()=>{
  assert.equal(h.writes[0].payload.sender_id,A);
  assert.equal(h.writes[0].payload.receiver_id,B);
  assert.equal(h.writes[0].payload.disappear_after_read,true);
- h.writes.shift().resolve({error:{message:'synthetic storage failure'}});
+ assert.equal(h.writes[0].opts.count,'exact');
+ h.writes.shift().resolve({error:{message:'synthetic storage failure'},count:null});
  await Promise.all([first,second]);
- assert.equal(form.button.disabled,false);
- assert.equal(form.dataset.kfSending,undefined);
- assert.equal(h.toasts.length,1);
+ assert.equal(form.button.disabled,true);
+ assert.equal(form.dataset.kfSending,'1');
+ assert.match(h.toasts[0][0],/could not be confirmed/);
+ await form.onsubmit(e);
+ assert.equal(h.writes.length,0,'uncertain send cannot be retried from same form');
 });
 
 test('old DM send cannot refresh or show a result after same-user relogin',async()=>{
@@ -140,7 +143,7 @@ test('old DM send cannot refresh or show a result after same-user relogin',async
  const sent=form.onsubmit({preventDefault(){},currentTarget:form});
  assert.equal(h.writes.length,1);
  h.switchSameAccount();
- h.writes.shift().resolve({error:null});
+ h.writes.shift().resolve({error:null,count:1});
  await sent;
  assert.equal(h.requests.length,0);
  assert.equal(h.toasts.length,0);
@@ -151,11 +154,83 @@ test('successful DM send refreshes only the current conversation',async()=>{
  h.requests.shift().resolve({data:[],error:null});await pending;
  const form=h.ctx.currentForm;
  const sent=form.onsubmit({preventDefault(){},currentTarget:form});
- h.writes.shift().resolve({error:null});
+ h.writes.shift().resolve({error:null,count:1});
  for(let i=0;i<8&&h.requests.length===0;i++)await Promise.resolve();
  assert.equal(h.requests.length,1);
  h.requests.shift().resolve({data:[{sender_id:A,receiver_id:B,body:'hello'}],error:null});
  await sent;
  assert.match(h.root.innerHTML,/hello/);
  assert.equal(h.toasts.length,0);
+});
+
+
+test('Recovery410 explicit zero-row DM acknowledgment permits retry',async()=>{
+ const h=harness(),opening=h.openDm(B);
+ h.requests.shift().resolve({data:[],error:null});await opening;
+ const form=h.ctx.currentForm,event={preventDefault(){},currentTarget:form};
+ const first=form.onsubmit(event);
+ assert.equal(h.writes.length,1);
+ h.writes.shift().resolve({error:null,count:0});
+ await first;
+ assert.equal(form.dataset.kfSending,undefined);
+ assert.equal(form.button.disabled,false);
+ assert.match(h.toasts[0][0],/not saved/);
+ const retry=form.onsubmit(event);
+ assert.equal(h.writes.length,1);
+ h.writes.shift().resolve({error:{message:'lost acknowledgment'},count:null});
+ await retry;
+ assert.equal(form.dataset.kfSending,'1');
+ assert.equal(form.button.disabled,true);
+});
+
+test('Recovery410 missing DM affected-row count cannot claim send success',async()=>{
+ const h=harness(),opening=h.openDm(B);
+ h.requests.shift().resolve({data:[],error:null});await opening;
+ const form=h.ctx.currentForm,send=form.onsubmit({preventDefault(){},currentTarget:form});
+ h.writes.shift().resolve({error:null,count:null});
+ await send;
+ assert.equal(h.requests.length,0);
+ assert.equal(form.dataset.kfSending,'1');
+ assert.equal(form.button.disabled,true);
+ assert.match(h.toasts[0][0],/could not be confirmed/);
+});
+
+test('Recovery410 multiple-row DM acknowledgment cannot claim send success',async()=>{
+ const h=harness(),opening=h.openDm(B);
+ h.requests.shift().resolve({data:[],error:null});await opening;
+ const form=h.ctx.currentForm,send=form.onsubmit({preventDefault(){},currentTarget:form});
+ h.writes.shift().resolve({error:null,count:2});
+ await send;
+ assert.equal(h.requests.length,0);
+ assert.equal(form.dataset.kfSending,'1');
+ assert.match(h.toasts[0][0],/check before retrying/);
+});
+
+test('Recovery410 rejected DM network request cannot submit a duplicate',async()=>{
+ const h=harness(),opening=h.openDm(B);
+ h.requests.shift().resolve({data:[],error:null});await opening;
+ const form=h.ctx.currentForm,event={preventDefault(){},currentTarget:form};
+ const send=form.onsubmit(event);
+ h.writes.shift().reject(new Error('connection reset'));
+ await send;
+ assert.equal(form.dataset.kfSending,'1');
+ assert.equal(form.button.disabled,true);
+ await form.onsubmit(event);
+ assert.equal(h.writes.length,0);
+ assert.match(h.toasts[0][0],/could not be confirmed/);
+});
+
+test('Recovery410 confirmed DM remains locked until a fresh conversation replaces the form',async()=>{
+ const h=harness(),opening=h.openDm(B);
+ h.requests.shift().resolve({data:[],error:null});await opening;
+ const oldForm=h.ctx.currentForm,send=oldForm.onsubmit({preventDefault(){},currentTarget:oldForm});
+ h.writes.shift().resolve({error:null,count:1});
+ for(let i=0;i<10&&h.requests.length===0;i++)await Promise.resolve();
+ assert.equal(oldForm.dataset.kfSending,'1');
+ assert.equal(oldForm.button.disabled,true);
+ h.requests.shift().resolve({data:[{sender_id:A,receiver_id:B,body:'hello'}],error:null});
+ await send;
+ assert.match(h.root.innerHTML,/hello/);
+ assert.equal(oldForm.dataset.kfSending,'1');
+ assert.equal(h.ctx.currentForm.dataset.kfSending,undefined);
 });
