@@ -842,9 +842,52 @@ async function createAlbum(e){e.preventDefault();try{const title=$('#albumTitle'
 async function viewAlbum(id){const [{data:album,error:e1},{data:photos,error:e2}]=await Promise.all([sb.from('photo_albums').select('*').eq('id',id).single(),sb.from('album_photos').select('*').eq('album_id',id).order('created_at',{ascending:true})]);if(e1||e2)return toast((e1||e2).message,'danger');modal(album.title,`<div class="muted" style="margin-bottom:10px">${esc(album.description||'')} · ${esc(album.visibility)}</div><div class="photoGrid" id="albumPhotoGrid"></div>${album.owner_id===state.user.id?`<div class="divider"></div><button class="btn primary full" onclick="addPhotosToAlbum('${id}')">＋ Add photos</button>`:''}`);const root=$('#albumPhotoGrid');let h='';for(const ph of photos||[]){const u=await signed('kinfolk-media',ph.storage_path);if(u)h+=`<button class="photoTile" onclick="window.open('${esc(u)}','_blank')"><img src="${esc(u)}" loading="lazy"></button>`}root.innerHTML=h||'<div class="empty">No photos yet.</div>'}
 function addPhotosToAlbum(id){modal('Add photos',`<form id="albumAddForm"><input class="field" id="albumAddFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple required><div id="albumAddProgress" class="muted" style="margin:8px 0"></div><button class="btn primary full">Upload photos</button></form>`);$('#albumAddForm').onsubmit=async e=>{e.preventDefault();try{const files=[...$('#albumAddFiles').files];for(let i=0;i<files.length;i++){const f=files[i];$('#albumAddProgress').textContent=`Uploading ${i+1} of ${files.length}…`;const path=`${state.user.id}/albums/${id}/${crypto.randomUUID()}-${safeName(f.name)}`;const up=await sb.storage.from('kinfolk-media').upload(path,f);if(up.error)throw up.error;const ins=await sb.from('album_photos').insert({album_id:id,owner_id:state.user.id,storage_path:path,caption:''});if(ins.error)throw ins.error}await viewAlbum(id);toast('Photos added','good')}catch(err){toast(err.message,'danger')}}}
 async function showChannelPlaylists(cid){document.querySelectorAll('.profileTabs button').forEach(b=>b.classList.remove('active'));$('#channelPlaylistsTab')?.classList.add('active');const pane=$('#channelPane'),c=state.channels.find(x=>x.id===cid);if(!pane||!c)return;pane.className='card';const {data,error}=await sb.from('kinfolk_playlists').select('*').eq('channel_id',cid).order('created_at',{ascending:false});if(error){pane.innerHTML=`<div class="empty">${esc(error.message)}</div>`;return}pane.innerHTML=`<div class="cardpad"><div class="row"><div class="sectionTitle grow">Playlists</div>${c.owner_id===state.user.id?`<button class="btn primary small" onclick="openPlaylistModal('${cid}')">＋ New playlist</button>`:''}</div>${(data||[]).map(p=>`<button class="sideitem" onclick="openPlaylist('${p.id}')"><span>▶</span><span><b>${esc(p.title)}</b><div class="muted">${esc(p.description||'')} · ${esc(p.visibility)}</div></span></button>`).join('')||'<div class="empty">No playlists yet.</div>'}</div>`}
-function openPlaylistModal(cid){modal('Create playlist',`<form id="playlistForm"><div class="label">Title</div><input class="field" id="playlistTitle" maxlength="100" required><div class="label">Description</div><textarea class="textarea" id="playlistDesc" maxlength="500"></textarea><div class="label">Visibility</div><select class="field" id="playlistVisibility"><option value="public">Public</option><option value="unlisted">Unlisted</option><option value="private">Private</option></select><button class="btn primary full" style="margin-top:14px">Create</button></form>`);$('#playlistForm').onsubmit=async e=>{e.preventDefault();const {data,error}=await sb.from('kinfolk_playlists').insert({channel_id:cid,owner_id:state.user.id,title:$('#playlistTitle').value.trim(),description:$('#playlistDesc').value.trim(),visibility:$('#playlistVisibility').value}).select().single();if(error)return toast(error.message,'danger');closeModal();await managePlaylist(data.id)}}
+// Recovery411: playlist creation must belong to the initiating account and
+// require an exact backend acknowledgment before opening the playlist editor.
+function openPlaylistModal(cid){
+ const ownerId=state.user?.id,authEpoch=kf129Epoch;
+ if(!ownerId||!cid)return;
+ modal('Create playlist',`<form id="playlistForm"><div class="label">Title</div><input class="field" id="playlistTitle" maxlength="100" required><div class="label">Description</div><textarea class="textarea" id="playlistDesc" maxlength="500"></textarea><div class="label">Visibility</div><select class="field" id="playlistVisibility"><option value="public">Public</option><option value="unlisted">Unlisted</option><option value="private">Private</option></select><button class="btn primary full" style="margin-top:14px">Create</button></form>`);
+ const form=$('#playlistForm'),modalEpoch=kf300MessageRequest;
+ if(!form)return;
+ const active=()=>state.user?.id===ownerId&&kf129Epoch===authEpoch&&
+   kf300MessageRequest===modalEpoch&&form===document.getElementById('playlistForm')&&form.isConnected;
+ form.onsubmit=async e=>{
+   e.preventDefault();
+   if(!active()||form.dataset.kfPlaylistCreatePending==='1')return;
+   const title=String(form.querySelector('#playlistTitle')?.value||'').trim();
+   const description=String(form.querySelector('#playlistDesc')?.value||'').trim();
+   const visibility=String(form.querySelector('#playlistVisibility')?.value||'');
+   if(!title||title.length>100||description.length>500||!['public','unlisted','private'].includes(visibility)){
+     toast('Check the playlist title, description and visibility.','danger');return;
+   }
+   // A lost response may hide a committed INSERT. Never retry from this form.
+   form.dataset.kfPlaylistCreatePending='1';
+   const button=form.querySelector('button.btn.primary');
+   if(button)button.disabled=true;
+   let confirmed=false;
+   try{
+     const {data,error,count}=await sb.from('kinfolk_playlists')
+       .insert({channel_id:cid,owner_id:ownerId,title,description,visibility},{count:'exact'})
+       .select('id,owner_id,channel_id').single();
+     if(!active())return;
+     if(error||count!==1||!data?.id||data.owner_id!==ownerId||data.channel_id!==cid){
+       toast('Playlist creation could not be confirmed. Check your channel playlists before retrying.','danger');
+       return;
+     }
+     confirmed=true;
+     // The editor may itself await backend reads; recheck the original modal
+     // before it renders so an account switch cannot reopen private UI.
+     await managePlaylist(data.id,active);
+   }catch(error){
+     if(active())toast(confirmed?
+       'Playlist created, but its editor could not open. Check your channel playlists.':
+       'Playlist creation could not be confirmed. Check your channel playlists before retrying.','danger');
+   }
+ };
+}
 async function openPlaylist(id){const {data:p,error}=await sb.from('kinfolk_playlists').select('*').eq('id',id).single();if(error)return toast(error.message,'danger');const {data:items}=await sb.from('kinfolk_playlist_items').select('*').eq('playlist_id',id).order('position',{ascending:true});const vids=(items||[]).map(i=>state.videos.find(v=>v.id===i.video_id)).filter(Boolean);modal(p.title,`<div class="muted">${esc(p.description||'')} · ${esc(p.visibility)}</div><div class="divider"></div><div id="playlistVideos" class="videoGrid"></div>${p.owner_id===state.user.id?`<button class="btn primary full" style="margin-top:14px" onclick="managePlaylist('${id}')">Manage playlist</button>`:''}`);await renderVideoGrid($('#playlistVideos'),vids)}
-async function managePlaylist(id){const {data:p,error}=await sb.from('kinfolk_playlists').select('*').eq('id',id).single();if(error)return toast(error.message,'danger');const {data:items}=await sb.from('kinfolk_playlist_items').select('*').eq('playlist_id',id);const selected=new Set((items||[]).map(i=>i.video_id));const candidates=state.videos.filter(v=>!p.channel_id||v.channel_id===p.channel_id);modal('Manage playlist',`<form id="playlistManageForm"><div class="label">Choose videos</div>${candidates.map(v=>`<label class="checkrow"><input type="checkbox" name="vid" value="${v.id}" ${selected.has(v.id)?'checked':''}><span><b>${esc(v.title)}</b><div class="muted">${esc(v.kind||'video')}</div></span></label>`).join('')||'<div class="empty">Upload videos to this channel first.</div>'}<button class="btn primary full" style="margin-top:12px">Save playlist</button></form>`);$('#playlistManageForm').onsubmit=async e=>{e.preventDefault();const ids=[...e.target.querySelectorAll('input[name=vid]:checked')].map(x=>x.value);const del=await sb.from('kinfolk_playlist_items').delete().eq('playlist_id',id);if(del.error)return toast(del.error.message,'danger');if(ids.length){const ins=await sb.from('kinfolk_playlist_items').insert(ids.map((video_id,position)=>({playlist_id:id,video_id,position})));if(ins.error)return toast(ins.error.message,'danger')}await openPlaylist(id);toast('Playlist updated','good')}}
+async function managePlaylist(id,guard=()=>true){const {data:p,error}=await sb.from('kinfolk_playlists').select('*').eq('id',id).single();if(!guard())return;if(error)return toast(error.message,'danger');const {data:items}=await sb.from('kinfolk_playlist_items').select('*').eq('playlist_id',id);if(!guard())return;const selected=new Set((items||[]).map(i=>i.video_id));const candidates=state.videos.filter(v=>!p.channel_id||v.channel_id===p.channel_id);modal('Manage playlist',`<form id="playlistManageForm"><div class="label">Choose videos</div>${candidates.map(v=>`<label class="checkrow"><input type="checkbox" name="vid" value="${v.id}" ${selected.has(v.id)?'checked':''}><span><b>${esc(v.title)}</b><div class="muted">${esc(v.kind||'video')}</div></span></label>`).join('')||'<div class="empty">Upload videos to this channel first.</div>'}<button class="btn primary full" style="margin-top:12px">Save playlist</button></form>`);$('#playlistManageForm').onsubmit=async e=>{e.preventDefault();const ids=[...e.target.querySelectorAll('input[name=vid]:checked')].map(x=>x.value);const del=await sb.from('kinfolk_playlist_items').delete().eq('playlist_id',id);if(del.error)return toast(del.error.message,'danger');if(ids.length){const ins=await sb.from('kinfolk_playlist_items').insert(ids.map((video_id,position)=>({playlist_id:id,video_id,position})));if(ins.error)return toast(ins.error.message,'danger')}await openPlaylist(id);toast('Playlist updated','good')}}
 // Recovery406: group-list responses must not cross account, auth or modal boundaries.
 let kf406GroupListRequest=0;
 async function openGroups(){
