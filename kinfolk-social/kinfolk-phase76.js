@@ -185,7 +185,83 @@ const oldOpen=window.openKinfolkSettings;window.openKinfolkSettings=async functi
 const css=document.createElement('style');css.textContent=`.kfwUpload{margin-top:12px;padding:14px;border:1px dashed color-mix(in srgb,var(--accent) 52%,rgba(255,255,255,.18));border-radius:16px;background:color-mix(in srgb,var(--accent) 7%,transparent)}.kfwUploadBtn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:11px 16px;background:var(--accent,#e85a9b);color:#fff;font-weight:900}.kfwUploadMeta{margin-top:8px;color:var(--muted,#999);font-size:13px;line-height:1.4}.kfwProgress{height:5px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:10px;display:none}.kfwProgress>i{display:block;height:100%;width:0;background:var(--accent,#e85a9b);transition:width .2s}`;document.head.appendChild(css);
 const validTypes=new Set(['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm']);
 const extFor=f=>{const byType={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','video/mp4':'mp4','video/webm':'webm'};return byType[f.type]||String(f.name||'').split('.').pop().toLowerCase()||'bin'};
-window.uploadKinfolkWallpaper=async function(input){const file=input?.files?.[0];if(!file||!state?.user)return;if(!validTypes.has(file.type))return toast('Use JPG, PNG, WebP, GIF, MP4 or WebM','danger');if(file.size>15*1024*1024)return toast('Wallpaper must be 15 MB or smaller','danger');const box=input.closest('.kfwUpload'),meta=box?.querySelector('.kfwUploadMeta'),bar=box?.querySelector('.kfwProgress'),fill=bar?.querySelector('i'),btn=box?.querySelector('.kfwUploadBtn');if(btn)btn.textContent='Uploading…';if(bar)bar.style.display='block';if(fill)fill.style.width='35%';if(meta)meta.textContent='Uploading securely to your Kinfolk wallpaper folder…';const ext=extFor(file),path=`${state.user.id}/profile-wallpaper-${Date.now()}.${ext}`;const {error:upErr}=await sb.storage.from('kinfolk-wallpapers').upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type});if(upErr){if(btn)btn.textContent='Choose from phone';if(fill)fill.style.width='0';if(meta)meta.textContent=upErr.message;return toast(upErr.message,'danger')}if(fill)fill.style.width='70%';const {data:signed,error:signErr}=await sb.storage.from('kinfolk-wallpapers').createSignedUrl(path,31536000);if(signErr){if(btn)btn.textContent='Choose from phone';if(meta)meta.textContent=signErr.message;return toast(signErr.message,'danger')}const signedUrl=signed?.signedUrl||'';const {error:saveErr}=await sb.from('kinfolk_safety_settings').upsert({user_id:state.user.id,animated_wallpaper_url:signedUrl,wallpaper_motion_enabled:true},{onConflict:'user_id'});if(saveErr){if(btn)btn.textContent='Choose from phone';if(meta)meta.textContent=saveErr.message;return toast(saveErr.message,'danger')}const urlBox=document.getElementById('kfsAnimatedUrl');if(urlBox)urlBox.value=signedUrl;const motion=document.getElementById('kfsMotion');if(motion)motion.checked=true;if(fill)fill.style.width='100%';if(btn)btn.textContent='Change wallpaper';if(meta)meta.textContent=`Saved ${file.name}. Your animated profile wallpaper is ready.`;toast('Wallpaper uploaded','good')};
+// Recovery420: bind each upload to its initiating account and exact Auth token.
+// Do not let a delayed upload or signed URL write into another member's settings.
+window.uploadKinfolkWallpaper=async function(input){
+  const file=input?.files?.[0],accountId=state?.user?.id;
+  if(!file||!accountId)return;
+  if(window.__kf420WallpaperPending)return toast('A wallpaper upload is already finishing.','danger');
+  if(!validTypes.has(file.type))return toast('Use JPG, PNG, WebP, GIF, MP4 or WebM','danger');
+  if(file.size>15*1024*1024)return toast('Wallpaper must be 15 MB or smaller','danger');
+  const box=input.closest('.kfwUpload'),meta=box?.querySelector('.kfwUploadMeta'),
+    bar=box?.querySelector('.kfwProgress'),fill=bar?.querySelector('i'),
+    btn=box?.querySelector('.kfwUploadBtn');
+  const operation={accountId};
+  window.__kf420WallpaperPending=operation;
+  if(btn){btn.disabled=true;btn.textContent='Uploading…'}
+  if(bar)bar.style.display='block';
+  if(fill)fill.style.width='20%';
+  if(meta)meta.textContent='Verifying your Kinfolk session…';
+  let accessToken='';
+  const sameAccount=()=>state?.user?.id===accountId&&input.isConnected!==false;
+  const current=async()=>{
+    if(!sameAccount())return false;
+    const {data,error}=await sb.auth.getSession();
+    if(error)throw error;
+    return sameAccount()&&data?.session?.user?.id===accountId&&
+      typeof data.session.access_token==='string'&&
+      data.session.access_token===accessToken;
+  };
+  const stale=()=>{if(sameAccount())toast('Your login changed. Check the wallpaper before trying again.','danger')};
+  try{
+    if(typeof sb?.auth?.getSession!=='function')throw new Error('Kinfolk login is unavailable. Try again.');
+    const first=await sb.auth.getSession();
+    if(first?.error)throw first.error;
+    if(!sameAccount()||first?.data?.session?.user?.id!==accountId||
+       typeof first.data.session.access_token!=='string'||!first.data.session.access_token)
+      return stale();
+    accessToken=first.data.session.access_token;
+    if(!(await current()))return stale();
+    const ext=extFor(file),path=`${accountId}/profile-wallpaper-${Date.now()}.${ext}`;
+    if(meta)meta.textContent='Uploading securely to your Kinfolk wallpaper folder…';
+    if(fill)fill.style.width='35%';
+    const {error:upErr}=await sb.storage.from('kinfolk-wallpapers').upload(path,file,{
+      cacheControl:'3600',upsert:false,contentType:file.type
+    });
+    if(upErr)throw upErr;
+    // Uploaded media is left untouched if session identity becomes uncertain.
+    // Removing it here could delete an object that another request references.
+    if(!(await current()))return stale();
+    if(fill)fill.style.width='70%';
+    const {data:signed,error:signErr}=await sb.storage.from('kinfolk-wallpapers').createSignedUrl(path,31536000);
+    if(signErr)throw signErr;
+    if(!(await current()))return stale();
+    const signedUrl=signed?.signedUrl||'';
+    if(!signedUrl)throw new Error('Kinfolk did not receive a wallpaper link.');
+    // Always write to the initiating owner, never the mutable global state.user.
+    const {error:saveErr}=await sb.from('kinfolk_safety_settings').upsert({
+      user_id:accountId,animated_wallpaper_url:signedUrl,wallpaper_motion_enabled:true
+    },{onConflict:'user_id'});
+    if(saveErr)throw saveErr;
+    if(!(await current()))return stale();
+    const urlBox=document.getElementById('kfsAnimatedUrl');
+    if(urlBox)urlBox.value=signedUrl;
+    const motion=document.getElementById('kfsMotion');
+    if(motion)motion.checked=true;
+    if(fill)fill.style.width='100%';
+    if(meta)meta.textContent=`Saved ${file.name}. Your animated profile wallpaper is ready.`;
+    toast('Wallpaper uploaded','good');
+  }catch(error){
+    if(sameAccount()){
+      if(fill)fill.style.width='0';
+      if(meta)meta.textContent=error?.message||'Wallpaper upload could not be confirmed.';
+      toast(error?.message||'Wallpaper upload could not be confirmed.','danger');
+    }
+  }finally{
+    if(window.__kf420WallpaperPending===operation)window.__kf420WallpaperPending=null;
+    if(btn){btn.disabled=false;if(sameAccount())btn.textContent='Choose from phone'}
+  }
+};
 const oldOpen=window.openKinfolkSettings;window.openKinfolkSettings=async function(){await oldOpen();const animated=[...document.querySelectorAll('#kinfolkSettingsScreen .kfsSection')].find(x=>x.textContent.includes('Animated profile'));if(!animated||animated.querySelector('.kfwUpload'))return;const urlField=animated.querySelector('#kfsAnimatedUrl')?.closest('.kfsField');if(!urlField)return;const wrap=document.createElement('div');wrap.className='kfwUpload';wrap.innerHTML=`<input id="kfwFileInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" hidden onchange="uploadKinfolkWallpaper(this)"><button type="button" class="kfwUploadBtn" onclick="document.getElementById('kfwFileInput').click()">📱 Choose from phone</button><div class="kfwUploadMeta">Upload a photo, GIF, MP4 or WebM. Maximum 15 MB. Animated files can play behind your profile.</div><div class="kfwProgress"><i></i></div>`;urlField.after(wrap)};
 })();
 ;
