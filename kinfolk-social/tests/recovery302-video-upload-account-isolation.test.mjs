@@ -15,7 +15,7 @@ async function waitForInsert(h){
  for(let attempt=0;attempt<40&&h.inserts.length===0;attempt++)await new Promise(resolve=>setTimeout(resolve,1));
  assert.equal(h.inserts.length,1,'metadata insert should begin after storage upload resolves');
 }
-function deferred(){let resolve;const promise=new Promise(r=>{resolve=r});return {promise,resolve}}
+function deferred(){let resolve,reject;const promise=new Promise((r,j)=>{resolve=r;reject=j});return {promise,resolve,reject}}
 function harness({channel=null,failLoad=false,file={name:'demo.mp4',type:'video/mp4',size:123}}={}){
  const uploads=[],inserts=[],removals=[],toasts=[];
  const state={user:{id:'A'},channels:[{id:'chan-A',owner_id:'A'},{id:'chan-B',owner_id:'B'}]};
@@ -211,9 +211,7 @@ test('Recovery413: wrong owner, path or missing row identity cannot confirm uplo
 test('Recovery413: rejected metadata promise preserves media and blocks duplicate submission',async()=>{
  const h=harness(),pending=h.submit();
  h.uploads[0].resolve({error:null});await waitForInsert(h);
- // The deferred fixture only resolves; a malformed result exercises the same
- // fail-closed path as an unavailable acknowledgment.
- h.inserts[0].resolve(undefined);await pending;
+ h.inserts[0].reject(new Error('network acknowledgment lost'));await pending;
  assert.equal(h.button.disabled,true);
  assert.deepEqual(h.removals,[]);
  await h.submit();
