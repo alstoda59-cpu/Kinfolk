@@ -61,7 +61,8 @@ async function authRequest(config, path, { method = 'GET', body, token, fetchImp
     method,
     headers: {
       apikey: config.key,
-      Authorization: 'Bearer ' + (token || config.key),
+      // Publishable keys are API keys, not JWTs. Only actual sessions are Bearer tokens.
+      ...(token ? { Authorization: 'Bearer ' + token } : {}),
       'Content-Type': 'application/json',
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
