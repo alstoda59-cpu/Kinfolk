@@ -13,7 +13,7 @@ Date: 2026-11-02 (America/Los_Angeles). Scope: FULL MAIN Kinfolk Social in `kinf
 - Updated the `profiles` update to request `count:'exact'` and the five upserts (`kinfolk_profile_extras`, `kinfolk_safety_settings`, `user_settings`, `kinfolk_user_preferences`, `notification_preferences`) to request `count:'exact'`.
 - Save success now requires exactly one affected row from all six writes **and** a returned profile row owned by the initiating account. Missing, zero, multiple, null, or wrong-owner acknowledgments fail closed with refresh guidance, never a false saved toast.
 - Network rejection restores the Save control only for the still-active Settings screen and session. Old activations cannot show stale errors or apply results. Existing teen-private enforcement and duplicate-submission guards remain.
-- Added seven source-executed synthetic regression cases to the existing Settings test, covering all six counts, zero/multi counts, foreign profile row, network rejection, stale rejection, and null response, plus a source contract check.
+- Added six new source-executed synthetic behavior regressions to the existing Settings test, covering all six counts, zero/multi counts, foreign profile row, network rejection, stale rejection and null response, plus one source contract check.
 - Updated the Recovery228 static test to recognize the new guarded write syntax without dropping its six-account-ID and post-save session checks.
 - Added this isolated branch to offline Android/iOS workflow allowlist. Existing native `alpha:profile:source:test` already includes the expanded Settings regression.
 
