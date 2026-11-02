@@ -944,18 +944,36 @@ async function openGroup(id){
    const body=String(form.elements.namedItem('body')?.value||'').trim();
    if(!body)return;
    const button=form.querySelector('button[type="submit"],button.btn.primary');
+   // A lost network response may hide a successful INSERT. Never allow a second
+   // submission from the same form until the member checks the saved messages.
    form.dataset.kfSending='1';
    if(button)button.disabled=true;
+   let confirmedNoWrite=false,confirmedSent=false;
    try{
-     const {error}=await sb.from('group_messages').insert({conversation_id:id,sender_id:viewerId,body});
+     const {error,count}=await sb.from('group_messages')
+       .insert({conversation_id:id,sender_id:viewerId,body},{count:'exact'});
      if(!active()||form!==$('#groupMsgForm'))return;
-     if(error)return toast(error.message,'danger');
+     if(!error&&count===0){
+       // An explicit zero-row acknowledgment is the only safe retry case.
+       confirmedNoWrite=true;
+       toast('Message was not saved. Please try again.','danger');
+       return;
+     }
+     if(error||count!==1){
+       toast('Message could not be confirmed. Reopen Group Chats and check before retrying.','danger');
+       return;
+     }
+     confirmedSent=true;
      await openGroup(id);
    }catch(error){
-     if(active()&&form===$('#groupMsgForm'))toast(error?.message||'Message could not be sent.','danger');
+     if(active()&&form===$('#groupMsgForm'))
+       toast(confirmedSent?'Message saved, but the chat could not refresh. Reopen Group Chats.':
+         'Message could not be confirmed. Reopen Group Chats and check before retrying.','danger');
    }finally{
-     // Do not unlock or refresh a replacement modal or another account's form.
-     if(kf129Epoch===authEpoch&&state.user?.id===viewerId&&kf300MessageRequest===modalEpoch&&form===$('#groupMsgForm')){
+     // Only a confirmed zero-row response permits retry. Never unlock after a
+     // thrown request, ambiguous count, or stale authentication/modal change.
+     if(confirmedNoWrite&&kf129Epoch===authEpoch&&state.user?.id===viewerId&&
+       kf300MessageRequest===modalEpoch&&form===$('#groupMsgForm')){
        delete form.dataset.kfSending;
        if(button)button.disabled=false;
      }
