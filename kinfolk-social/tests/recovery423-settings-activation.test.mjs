@@ -154,3 +154,47 @@ test('missing Supabase response fails closed rather than crashing or claiming su
   assert.equal(h.$('#kfsSave').disabled,false);
   assert.match(h.toasts.at(-1).message,/could not be confirmed/);
 });
+
+test('Settings success is suppressed when account activation changes during app refresh',async()=>{
+  const h=harness();
+  let finishRender;
+  h.ctx.renderApp=()=>new Promise(resolve=>{finishRender=resolve});
+  const pending=h.submit(event());
+  h.complete();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(typeof finishRender,'function','refresh began after confirmed writes');
+  h.ctx.kf129Epoch++;
+  finishRender();
+  await pending;
+  assert.equal(h.toasts.filter(x=>x.kind==='good').length,0);
+  assert.equal(h.renders,0);
+});
+test('confirmed Settings save reports a screen refresh failure without claiming data was lost',async()=>{
+  const h=harness();
+  h.ctx.renderApp=async()=>{throw new Error('UI refresh failed')};
+  const pending=h.submit(event());
+  h.complete();
+  await pending;
+  assert.equal(h.closes,1);
+  assert.equal(h.state.profile.id,A);
+  assert.equal(h.toasts.filter(x=>x.kind==='good').length,0);
+  assert.match(h.toasts.at(-1).message,/Settings saved, but the screen could not refresh/);
+});
+test('late refresh rejection from an old activation cannot notify a different session',async()=>{
+  const h=harness();
+  let rejectRender;
+  h.ctx.renderApp=()=>new Promise((_resolve,reject)=>{rejectRender=reject});
+  const pending=h.submit(event());
+  h.complete();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(typeof rejectRender,'function');
+  h.state.user={id:B};
+  rejectRender(new Error('stale render'));
+  await pending;
+  assert.equal(h.toasts.length,0);
+});
+test('post-render Settings success checks the original activation again',()=>{
+  const body=source.slice(start,end);
+  assert.match(body,/try\{await renderApp\(\)\}catch\(_error\)/);
+  assert.match(body,/if\(!settingsCurrent\(\)\)return;setTimeout\(refreshWallpaper,80\);toast\('Profile and settings saved','good'\)/);
+});
