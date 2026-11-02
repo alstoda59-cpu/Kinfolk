@@ -846,7 +846,60 @@ function openPlaylistModal(cid){modal('Create playlist',`<form id="playlistForm"
 async function openPlaylist(id){const {data:p,error}=await sb.from('kinfolk_playlists').select('*').eq('id',id).single();if(error)return toast(error.message,'danger');const {data:items}=await sb.from('kinfolk_playlist_items').select('*').eq('playlist_id',id).order('position',{ascending:true});const vids=(items||[]).map(i=>state.videos.find(v=>v.id===i.video_id)).filter(Boolean);modal(p.title,`<div class="muted">${esc(p.description||'')} · ${esc(p.visibility)}</div><div class="divider"></div><div id="playlistVideos" class="videoGrid"></div>${p.owner_id===state.user.id?`<button class="btn primary full" style="margin-top:14px" onclick="managePlaylist('${id}')">Manage playlist</button>`:''}`);await renderVideoGrid($('#playlistVideos'),vids)}
 async function managePlaylist(id){const {data:p,error}=await sb.from('kinfolk_playlists').select('*').eq('id',id).single();if(error)return toast(error.message,'danger');const {data:items}=await sb.from('kinfolk_playlist_items').select('*').eq('playlist_id',id);const selected=new Set((items||[]).map(i=>i.video_id));const candidates=state.videos.filter(v=>!p.channel_id||v.channel_id===p.channel_id);modal('Manage playlist',`<form id="playlistManageForm"><div class="label">Choose videos</div>${candidates.map(v=>`<label class="checkrow"><input type="checkbox" name="vid" value="${v.id}" ${selected.has(v.id)?'checked':''}><span><b>${esc(v.title)}</b><div class="muted">${esc(v.kind||'video')}</div></span></label>`).join('')||'<div class="empty">Upload videos to this channel first.</div>'}<button class="btn primary full" style="margin-top:12px">Save playlist</button></form>`);$('#playlistManageForm').onsubmit=async e=>{e.preventDefault();const ids=[...e.target.querySelectorAll('input[name=vid]:checked')].map(x=>x.value);const del=await sb.from('kinfolk_playlist_items').delete().eq('playlist_id',id);if(del.error)return toast(del.error.message,'danger');if(ids.length){const ins=await sb.from('kinfolk_playlist_items').insert(ids.map((video_id,position)=>({playlist_id:id,video_id,position})));if(ins.error)return toast(ins.error.message,'danger')}await openPlaylist(id);toast('Playlist updated','good')}}
 async function openGroups(){const {data,error}=await sb.from('group_conversations').select('*').order('created_at',{ascending:false});if(error)return toast(error.message,'danger');modal('Group chats',`<div class="row"><button class="btn" onclick="openMessages()">Direct messages</button><button class="btn primary">Group chats</button><div class="grow"></div><button class="btn small primary" onclick="openGroupCreate()">＋ New group</button></div><div class="divider"></div>${(data||[]).map(g=>`<button class="sideitem" onclick="openGroup('${g.id}')">☻ <b>${esc(g.title)}</b><span class="muted">${g.owner_id===state.user.id?'Owner':'Member'}</span></button>`).join('')||'<div class="empty">No group chats yet.</div>'}`)}
-async function openGroupCreate(){const friendIds=state.friendRequests.filter(r=>r.status==='accepted').map(r=>r.sender_id===state.user.id?r.receiver_id:r.sender_id);await loadProfiles(friendIds);modal('New group chat',`<form id="groupCreateForm"><div class="label">Group name</div><input class="field" id="groupTitle" maxlength="80" required><div class="label">Invite friends</div>${friendIds.map(id=>{const p=state.profiles.get(id);return `<label class="checkrow"><input type="checkbox" name="member" value="${id}"><span>${esc(p?.display_name||p?.username||'Friend')}</span></label>`}).join('')||'<div class="muted">Add friends first, or create the group now and invite later.</div>'}<button class="btn primary full" style="margin-top:12px">Create group</button></form>`);$('#groupCreateForm').onsubmit=async e=>{e.preventDefault();const {data:g,error}=await sb.from('group_conversations').insert({owner_id:state.user.id,title:$('#groupTitle').value.trim()}).select().single();if(error)return toast(error.message,'danger');const members=[...e.target.querySelectorAll('input[name=member]:checked')].map(x=>x.value);if(members.length){const ins=await sb.from('group_members').insert(members.map(user_id=>({conversation_id:g.id,user_id})));if(ins.error)return toast(ins.error.message,'danger')}await openGroup(g.id)}}
+async function openGroupCreate(){
+ const creatorId=state.user?.id,authEpoch=kf129Epoch;
+ if(!creatorId)return;
+ const friendIds=[...new Set(state.friendRequests.filter(r=>r.status==='accepted').map(r=>r.sender_id===creatorId?r.receiver_id:r.sender_id))];
+ await loadProfiles(friendIds);
+ // Do not open another member's Create Group modal after an account switch.
+ if(state.user?.id!==creatorId||kf129Epoch!==authEpoch)return;
+ modal('New group chat',`<form id="groupCreateForm"><div class="label">Group name</div><input class="field" id="groupTitle" maxlength="80" required><div class="label">Invite friends</div>${friendIds.map(id=>{const p=state.profiles.get(id);return `<label class="checkrow"><input type="checkbox" name="member" value="${id}"><span>${esc(p?.display_name||p?.username||'Friend')}</span></label>`}).join('')||'<div class="muted">Add friends first, or create the group now and invite later.</div>'}<button class="btn primary full" style="margin-top:12px">Create group</button></form>`);
+ const form=$('#groupCreateForm');
+ const modalEpoch=kf300MessageRequest;
+ if(!form)return;
+ const active=()=>state.user?.id===creatorId&&kf129Epoch===authEpoch&&
+   kf300MessageRequest===modalEpoch&&form===document.getElementById('groupCreateForm')&&form.isConnected;
+ form.onsubmit=async e=>{
+   e.preventDefault();
+   if(!active()||form.dataset.kfGroupCreatePending==='1')return;
+   const title=String(form.querySelector('#groupTitle')?.value||'').trim();
+   if(!title||title.length>80){toast('Enter a group name (up to 80 characters).','danger');return}
+   const members=[...new Set([...form.querySelectorAll('input[name=member]:checked')]
+     .map(el=>el.value).filter(id=>friendIds.includes(id)))];
+   // Once an INSERT is attempted, a lost response may still mean a group exists.
+   // Keep this form locked; inspect Group Chats instead of creating duplicates.
+   form.dataset.kfGroupCreatePending='1';
+   const button=form.querySelector('button.btn.primary');
+   if(button)button.disabled=true;
+   try{
+     const {data:g,error}=await sb.from('group_conversations')
+       .insert({owner_id:creatorId,title}).select('id,owner_id').single();
+     if(!active())return;
+     if(error||!g?.id||g.owner_id!==creatorId){
+       toast('Group creation could not be confirmed. Check Group Chats before trying again.','danger');
+       return;
+     }
+     if(members.length){
+       let invited;
+       try{
+         invited=await sb.from('group_members').insert(
+           members.map(user_id=>({conversation_id:g.id,user_id})),{count:'exact'});
+       }catch(error){
+         if(active())toast('Group created, but invitations could not be confirmed. Check members before retrying.','danger');
+         return;
+       }
+       if(!active())return;
+       if(invited.error||invited.count!==members.length){
+         toast('Group created, but invitations could not be confirmed. Check members before retrying.','danger');
+         return;
+       }
+     }
+     if(active())await openGroup(g.id);
+   }catch(error){
+     if(active())toast('Group creation could not be confirmed. Check Group Chats before trying again.','danger');
+   }
+ };
+}
 // Recovery343: group chats must remain bound to the account and modal that opened them.
 let kf343GroupRequest=0;
 async function openGroup(id){
