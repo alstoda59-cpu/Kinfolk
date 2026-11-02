@@ -114,6 +114,8 @@ on:
       - kinfolk-social/recovery417-threaded-comment-write-integrity-20261102
       # Recovery418: offline Android/iOS packages with guarded video/photo comments.
       - kinfolk-social/recovery418-media-comment-privacy-20261102
+      # Recovery419: offline packages gated on isolated media comment target deletion cleanup.
+      - kinfolk-social/recovery419-media-comment-orphan-cleanup-20261102
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
