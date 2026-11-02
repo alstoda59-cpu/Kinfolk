@@ -124,6 +124,8 @@ on:
       - kinfolk-social/recovery422-wallpaper-private-short-links-20261102
       # Recovery423: offline native packages must pass isolated Auth confirmation smoke regressions.
       - kinfolk-social/recovery423-auth-smoke-confirmation-gate-20261102
+      # Recovery424: require exact six-table Settings acknowledgments before offline native builds.
+      - kinfolk-social/recovery424-settings-write-ack-20261102
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
