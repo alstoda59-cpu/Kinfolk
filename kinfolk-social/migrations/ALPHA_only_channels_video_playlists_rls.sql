@@ -9,8 +9,14 @@ create table public.kinfolk_pages (
   slug text check (slug is null or slug ~ '^[A-Za-z0-9_]{3,30}$'),
   description text not null default '' check (char_length(description) <= 600),
   category text not null default 'creator' check (char_length(category) between 1 and 80),
-  avatar_url text,
-  banner_url text,
+  avatar_url text check (
+    avatar_url is null or
+    left(avatar_url,char_length(owner_id::text||'/channels/avatar/'))=owner_id::text||'/channels/avatar/'
+  ),
+  banner_url text check (
+    banner_url is null or
+    left(banner_url,char_length(owner_id::text||'/channels/banner/'))=owner_id::text||'/channels/banner/'
+  ),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique(id,owner_id)
@@ -49,9 +55,10 @@ create table public.kinfolk_videos (
       and storage_path is not null
       and left(storage_path,char_length(creator_id::text||'/videos/'))=creator_id::text||'/videos/'
       and char_length(storage_path)>char_length(creator_id::text||'/videos/')
+      and video_url is null
       and source_mime in ('video/mp4','video/webm')
       and source_size between 1 and 52428800)
-    or (source_type='external' and video_url ~ '^https://')
+    or (source_type='external' and storage_path is null and video_url ~ '^https://')
   )
 );
 create index kinfolk_videos_creator_created_idx on public.kinfolk_videos(creator_id,created_at desc);
