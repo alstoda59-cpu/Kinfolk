@@ -27,7 +27,8 @@ test('signup birthdate keeps ages 13–17 private and handles birthdays correctl
 
 test('settings do not render stale account data after asynchronous fetch', () => {
   assert.match(settings, /const settingsAccountId=state\.user\.id/);
-  assert.match(settings, /if\(state\.user\?\.id!==settingsAccountId\)return;closeKinfolkSettings/);
+  assert.match(settings, /const settingsEpoch=typeof kf129Epoch==='number'\?kf129Epoch:null/);
+  assert.match(settings, /if\(!settingsCurrent\(\)\)return;closeKinfolkSettings/);
 });
 
 test('teen settings lock private toggle and force private on save', () => {
@@ -37,9 +38,9 @@ test('teen settings lock private toggle and force private on save', () => {
 });
 
 test('settings save writes are pinned to the account that opened the screen', () => {
-  assert.match(settings, /Account changed\. Reopen Settings before saving/);
+  assert.match(settings, /Your session changed\. Reopen Settings before saving/);
   const start = settings.indexOf('const [a,b,c1,d,e1,f]=await Promise.all(');
-  const end = settings.indexOf(']);if(state.user?.id!==settingsAccountId)return;', start);
+  const end = settings.indexOf(']);if(!settingsCurrent()||el.isConnected===false)return;', start);
   assert.ok(start >= 0 && end > start, 'guarded writes and post-save identity check');
   const writes = settings.slice(start, end);
   assert.equal((writes.match(/settingsAccountId/g) || []).length, 6);
