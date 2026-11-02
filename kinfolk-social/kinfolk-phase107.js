@@ -31,6 +31,9 @@
   for(const el of form.querySelectorAll('input,textarea')){
     if(el.__kf107EnterHandler)continue;
     const onEnter=e=>{
+      // Android/iOS IME confirmation and held Enter are not message submissions.
+      // In particular, Android keyboards may report keyCode 229 during composition.
+      if(e.isComposing||e.keyCode===229||e.repeat)return;
       if(e.key==='Enter'&&!(el.tagName==='TEXTAREA'&&e.shiftKey)){
         e.preventDefault();
         e.stopImmediatePropagation();

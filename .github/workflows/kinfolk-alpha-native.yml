@@ -130,6 +130,8 @@ on:
       - kinfolk-social/recovery425-settings-postrender-session-guard-20261102
       # Recovery426: block stale profile wallpaper after auth reactivation; repair source/native regression gate.
       - kinfolk-social/recovery426-wallpaper-activation-isolation-20261102
+      # Recovery427: suppress IME composition and repeated Enter in native message forms.
+      - kinfolk-social/recovery427-mobile-message-ime-guard-20261102
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
