@@ -38,14 +38,14 @@ function harness(){
     })}
   };
   function write(table,payload){
-    let resolve;
-    const promise=new Promise(r=>{resolve=r});
-    writes.push({table,payload,resolve});
+    let resolve,reject;
+    const promise=new Promise((r,j)=>{resolve=r;reject=j});
+    writes.push({table,payload,resolve,reject});
     return promise;
   }
   const submit=vm.runInNewContext('('+handler+')',ctx,{timeout:1000});
-  const complete=()=>{for(const write of writes)write.resolve({
-    data:{id:A,accent_color:'#e85a9b'},error:null
+  const complete=(overrides={})=>{for(const [i,write] of writes.entries())write.resolve(overrides[i]??{
+    data:{id:A,accent_color:'#e85a9b'},error:null,count:1
   })};
   return {ctx,state,el,writes,toasts,themes,$,submit,complete,
     get closes(){return closes},get renders(){return renders}};
@@ -91,4 +91,57 @@ test('Settings hydration checks activation epoch before mounting stale screen',(
   assert.match(source,/const settingsEpoch=typeof kf129Epoch==='number'\?kf129Epoch:null/);
   assert.match(source,/if\(!settingsCurrent\(\)\)return;closeKinfolkSettings\(\)/);
   assert.match(source,/if\(!settingsCurrent\(\)\|\|el\.isConnected===false\)return;const er=/);
+});
+
+test('Settings requests exact counts for profile update and five preference upserts',()=>{
+  const handler=source.slice(start,end);
+  assert.match(handler,/accent_color:c\},\{count:'exact'\}\)\.eq\('id',settingsAccountId\)/);
+  assert.equal(handler.split("{onConflict:'user_id',count:'exact'}").length-1,5);
+});
+test('all six Settings writes require an exact one-row acknowledgment',async()=>{
+  for(let i=0;i<6;i++){
+    const h=harness(),pending=h.submit(event());
+    h.complete({[i]:{data:{id:A,accent_color:'#e85a9b'},error:null}});
+    await pending;
+    assert.equal(h.closes,0,'unconfirmed table index '+i);
+    assert.equal(h.renders,0);
+    assert.equal(h.$('#kfsSave').disabled,false);
+    assert.match(h.toasts.at(-1).message,/could not be confirmed/);
+  }
+});
+test('zero or multiple Settings rows cannot report success',async()=>{
+  for(const count of [0,2]){
+    const h=harness(),pending=h.submit(event());
+    h.complete({2:{data:{id:A},error:null,count}});
+    await pending;
+    assert.equal(h.closes,0);
+    assert.equal(h.toasts.filter(x=>x.kind==='good').length,0);
+  }
+});
+test('profile update returning a foreign account cannot overwrite active profile',async()=>{
+  const h=harness(),pending=h.submit(event());
+  h.complete({0:{data:{id:B},error:null,count:1}});
+  await pending;
+  assert.equal(h.state.profile,null);
+  assert.equal(h.closes,0);
+  assert.equal(h.toasts.filter(x=>x.kind==='good').length,0);
+});
+test('rejected Settings write restores the Save button without false success',async()=>{
+  const h=harness(),pending=h.submit(event());
+  h.writes[0].reject(new Error('Connection lost'));
+  for(const w of h.writes.slice(1))w.resolve({data:{id:A},error:null,count:1});
+  await pending;
+  assert.equal(h.$('#kfsSave').disabled,false);
+  assert.equal(h.$('#kfsSave').textContent,'Save changes');
+  assert.equal(h.closes,0);
+  assert.match(h.toasts.at(-1).message,/Unable to confirm Settings save/);
+});
+test('late rejection after account reactivation cannot show an old-session toast',async()=>{
+  const h=harness(),pending=h.submit(event());
+  h.ctx.kf129Epoch++;
+  h.writes[0].reject(new Error('Connection lost'));
+  for(const w of h.writes.slice(1))w.resolve({data:{id:A},error:null,count:1});
+  await pending;
+  assert.equal(h.toasts.length,0);
+  assert.equal(h.closes,0);
 });
