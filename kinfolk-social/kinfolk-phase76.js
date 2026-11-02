@@ -191,6 +191,10 @@ window.uploadKinfolkWallpaper=async function(input){
   const file=input?.files?.[0],accountId=state?.user?.id;
   if(!file||!accountId)return;
   if(window.__kf420WallpaperPending)return toast('A wallpaper upload is already finishing.','danger');
+  // An ambiguous previous database acknowledgment may already reference its uploaded file.
+  // Do not create another object until Settings is reloaded and the saved value checked.
+  if(window.__kf421WallpaperUncertain?.accountId===accountId)
+    return toast('Wallpaper save is unconfirmed. Reload Settings and check it before uploading again.','danger');
   if(!validTypes.has(file.type))return toast('Use JPG, PNG, WebP, GIF, MP4 or WebM','danger');
   if(file.size>15*1024*1024)return toast('Wallpaper must be 15 MB or smaller','danger');
   const box=input.closest('.kfwUpload'),meta=box?.querySelector('.kfwUploadMeta'),
@@ -239,11 +243,16 @@ window.uploadKinfolkWallpaper=async function(input){
     const signedUrl=signed?.signedUrl||'';
     if(!signedUrl)throw new Error('Kinfolk did not receive a wallpaper link.');
     // Always write to the initiating owner, never the mutable global state.user.
-    const {error:saveErr}=await sb.from('kinfolk_safety_settings').upsert({
+    // A network failure after commit is ambiguous. Preserve the media and lock retries
+    // until a fresh Settings load, rather than silently creating duplicate uploads.
+    window.__kf421WallpaperUncertain={accountId,path};
+    const {error:saveErr,count:saveCount}=await sb.from('kinfolk_safety_settings').upsert({
       user_id:accountId,animated_wallpaper_url:signedUrl,wallpaper_motion_enabled:true
-    },{onConflict:'user_id'});
-    if(saveErr)throw saveErr;
+    },{onConflict:'user_id',count:'exact'});
+    if(saveErr||saveCount!==1)
+      throw new Error('Wallpaper save could not be confirmed. Reload Settings before trying another upload.');
     if(!(await current()))return stale();
+    window.__kf421WallpaperUncertain=null;
     const urlBox=document.getElementById('kfsAnimatedUrl');
     if(urlBox)urlBox.value=signedUrl;
     const motion=document.getElementById('kfsMotion');
