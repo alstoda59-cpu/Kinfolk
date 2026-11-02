@@ -38,7 +38,30 @@ function harness(kind,{file=true,mediaFile=null,failInsert=false,failRefresh=fal
     upload:(path,blob,opts)=>{uploads.push({path,blob,opts});if(deferUpload){const d=deferred();uploads.at(-1).deferred=d;return d.promise}return Promise.resolve({error:null})},
     remove:paths=>{removals.push([...paths]);return Promise.resolve({error:null})}
    }}},
-   from:name=>{assert.equal(name,table);return {insert:(payload,opts)=>{const entry={payload,opts};inserts.push(entry);return {select:columns=>{assert.equal(columns,`id,${owner},media_url`);return {single:()=>{if(deferInsert){entry.deferred=deferred();return entry.deferred.promise}if(rejectInsert)return Promise.reject(new Error('network acknowledgment lost'));return Promise.resolve(insertResult??{error:failInsert?new Error('write rejected'):null,count:1,data:{id:'saved-row', [owner]:'A',media_url:payload.media_url}})}}}}}}
+   from:name=>{
+    assert.equal(name,table);
+    return {
+     insert:(payload,opts)=>{
+      const entry={payload,opts};
+      inserts.push(entry);
+      return {
+       select:columns=>{
+        assert.equal(columns,`id,${owner},media_url`);
+        return {
+         single:()=>{
+          if(deferInsert){entry.deferred=deferred();return entry.deferred.promise}
+          if(rejectInsert)return Promise.reject(new Error('network acknowledgment lost'));
+          return Promise.resolve(insertResult??{
+           error:failInsert?new Error('write rejected'):null,
+           count:1,data:{id:'saved-row',[owner]:'A',media_url:payload.media_url}
+          });
+         }
+        };
+       }
+      };
+     }
+    };
+   }
   }
  };
  vm.createContext(ctx);
