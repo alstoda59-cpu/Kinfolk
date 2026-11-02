@@ -44,7 +44,7 @@ function harness(){
     return promise;
   }
   const submit=vm.runInNewContext('('+handler+')',ctx,{timeout:1000});
-  const complete=(overrides={})=>{for(const [i,write] of writes.entries())write.resolve(overrides[i]??{
+  const complete=(overrides={})=>{for(const [i,write] of writes.entries())write.resolve(Object.prototype.hasOwnProperty.call(overrides,i)?overrides[i]:{
     data:{id:A,accent_color:'#e85a9b'},error:null,count:1
   })};
   return {ctx,state,el,writes,toasts,themes,$,submit,complete,
@@ -144,4 +144,13 @@ test('late rejection after account reactivation cannot show an old-session toast
   await pending;
   assert.equal(h.toasts.length,0);
   assert.equal(h.closes,0);
+});
+
+test('missing Supabase response fails closed rather than crashing or claiming success',async()=>{
+  const h=harness(),pending=h.submit(event());
+  h.complete({4:null});
+  await pending;
+  assert.equal(h.closes,0);
+  assert.equal(h.$('#kfsSave').disabled,false);
+  assert.match(h.toasts.at(-1).message,/could not be confirmed/);
 });
