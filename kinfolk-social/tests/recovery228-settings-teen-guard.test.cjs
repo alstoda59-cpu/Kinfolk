@@ -39,9 +39,11 @@ test('teen settings lock private toggle and force private on save', () => {
 
 test('settings save writes are pinned to the account that opened the screen', () => {
   assert.match(settings, /Your session changed\. Reopen Settings before saving/);
-  const start = settings.indexOf('const [a,b,c1,d,e1,f]=await Promise.all(');
-  const end = settings.indexOf(']);if(!settingsCurrent()||el.isConnected===false)return;', start);
-  assert.ok(start >= 0 && end > start, 'guarded writes and post-save identity check');
+  const start = settings.indexOf('let results;try{results=await Promise.all(');
+  const end = settings.indexOf(']);}catch(_error)', start);
+  assert.ok(start >= 0 && end > start, 'guarded writes and error handling');
+  assert.match(settings.slice(end), /if\(!settingsCurrent\(\)\|\|el\.isConnected===false\)return;/,
+    'post-save session identity check must remain in place');
   const writes = settings.slice(start, end);
   assert.equal((writes.match(/settingsAccountId/g) || []).length, 6);
   assert.doesNotMatch(writes, /state\.user\.id/);
