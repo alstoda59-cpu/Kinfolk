@@ -1310,6 +1310,8 @@ dmForm.onsubmit=async e=>{
     return h;
   };
 
+  // Recovery417: only an exact, matching backend row confirms a posted comment.
+  // An ambiguous insert response must not unlock a form for duplicate submission.
   window.addComment=async function(e,pid){
     e.preventDefault();
     const form=e.currentTarget||e.target,epoch=kf129Epoch,uid=state.user?.id,view=state.view;
@@ -1323,22 +1325,46 @@ dmForm.onsubmit=async e=>{
     form.dataset.kfCommentSending='1';
     const button=form.querySelector('button[type="submit"],button:not([type])');
     if(button)button.disabled=true;
+    let saved=false,retryable=false;
     try{
-      const {error}=await sb.from('comments').insert({post_id:pid,author_id:uid,body,parent_id});
+      const result=await sb.from('comments')
+        .insert({post_id:pid,author_id:uid,body,parent_id},{count:'exact'})
+        .select('id,post_id,author_id,parent_id,body');
       if(!current())return;
-      if(error)throw error;
+      if(result?.error)throw result.error;
+      const rows=Array.isArray(result?.data)?result.data:null;
+      if(result?.count===0&&rows?.length===0){
+        retryable=true;
+        toast('Comment was not saved. Please try again.','danger');
+        return;
+      }
+      const row=rows?.[0];
+      if(result?.count!==1||rows?.length!==1||!row?.id||
+         row.post_id!==pid||row.author_id!==uid||row.parent_id!==parent_id||row.body!==body){
+        throw new Error('Unconfirmed comment insert');
+      }
+      saved=true;
       delete postReplyParents[pid];
-      await loadFeed();
-      if(!current())return;
-      await renderApp();
-      if(kfAlphaLoadCurrent(epoch,uid)&&state.view===view){
-        document.getElementById('comments-'+pid)?.classList.remove('hide');
+      if(field)field.value='';
+      try{
+        await loadFeed();
+        if(!current())return;
+        await renderApp();
+        if(kfAlphaLoadCurrent(epoch,uid)&&state.view===view){
+          document.getElementById('comments-'+pid)?.classList.remove('hide');
+        }
+      }catch(refreshError){
+        if(current())toast('Comment saved. Refresh the post to see it.','danger');
       }
     }catch(err){
-      if(current())toast(err?.message||String(err),'danger');
+      if(current())toast('Comment status is uncertain. Refresh the post before trying again.','danger');
     }finally{
-      delete form.dataset.kfCommentSending;
-      if(button)button.disabled=false;
+      // Keep uncertain writes locked, even on network errors or malformed success.
+      // A verified save clears the original text; a verified zero-row write may retry.
+      if(saved||retryable){
+        delete form.dataset.kfCommentSending;
+        if(button)button.disabled=false;
+      }
     }
   };
 
