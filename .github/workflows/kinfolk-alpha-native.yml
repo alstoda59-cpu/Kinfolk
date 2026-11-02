@@ -90,6 +90,8 @@ on:
       - kinfolk-social/recovery359-signup-session-token-20261030
       # Recovery360: refuse unconfirmed signup sessions before offline mobile compilation.
       - kinfolk-social/recovery360-signup-confirmed-session-20261030
+      # Recovery407: offline-only native packages after isolated group RLS migration.
+      - kinfolk-social/recovery407-isolated-group-rls-20261101
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
