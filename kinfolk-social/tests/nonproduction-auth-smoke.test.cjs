@@ -52,7 +52,8 @@ function mockServer({ allowAfterLogout = false, signup = false,
   let refreshed = false, loggedOut = false;
   const fetchImpl = async (url, options) => {
     const u = new URL(url), path = u.pathname + u.search;
-    calls.push({ path, method: options.method, body: options.body && JSON.parse(options.body) });
+    calls.push({ path, method: options.method, headers: options.headers,
+      body: options.body && JSON.parse(options.body) });
     assert.equal(u.hostname, 'viantpfagtbgyyzavmtv.supabase.co');
     if (path === '/auth/v1/signup' && signup) return response({
       user: { id: 'new-user', email_confirmed_at: autoConfirmedSignup ? '2026-11-02T00:00:00Z' : null },
@@ -88,6 +89,12 @@ test('mocked login, user lookup, refresh, logout and revocation all succeed', as
   const server = mockServer(), logs = [];
   await runSmoke(configFromEnv(baseEnv), server.fetchImpl, x => logs.push(x));
   assert.equal(server.calls.length, 6);
+  for (const call of server.calls) {
+    assert.equal(call.headers.apikey, 'sb_publishable_test');
+    if (call.path.includes('/token?')) assert.equal(call.headers.Authorization, undefined,
+      'password and refresh grants must not send a publishable key as a Bearer JWT');
+    else assert.match(call.headers.Authorization, /^Bearer (initial-access|fresh-access)$/);
+  }
   assert.equal(logs.length, 5);
   assert.ok(logs.every(x => x.startsWith('PASS')));
 });
@@ -105,6 +112,7 @@ test('optional signup sends only synthetic adult metadata', async () => {
   const server = mockServer({ signup: true }), logs = [];
   await runSmoke(configFromEnv(env), server.fetchImpl, x => logs.push(x));
   assert.equal(server.calls[0].path, '/auth/v1/signup');
+  assert.equal(server.calls[0].headers.Authorization, undefined);
   assert.deepEqual(server.calls[0].body.data, {
     display_name: 'Kinfolk QA', signup_birthdate: '1995-02-01',
   });
