@@ -116,6 +116,8 @@ on:
       - kinfolk-social/recovery418-media-comment-privacy-20261102
       # Recovery419: offline packages gated on isolated media comment target deletion cleanup.
       - kinfolk-social/recovery419-media-comment-orphan-cleanup-20261102
+      # Recovery420: compile offline packages with private wallpaper storage and session-isolated upload.
+      - kinfolk-social/recovery420-wallpaper-upload-isolation-20261102
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
