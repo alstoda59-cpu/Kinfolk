@@ -607,8 +607,8 @@ async function uploadVideo(e){
  const button=form.querySelector('button[type="submit"],button:not([type])');
  if(button)button.disabled=true;
  let metadataAttempted=false,metadataConfirmed=false;
+ const progress=form.querySelector('#videoProgress');
  try{
-  const progress=form.querySelector('#videoProgress');
   if(progress)progress.textContent='Uploading…';
   const path=`${uid}/videos/${crypto.randomUUID()}-${safeName(file.name)}`;
   const {error:up}=await sb.storage.from('kinfolk-video').upload(path,file,{contentType:file.type,upsert:false});
