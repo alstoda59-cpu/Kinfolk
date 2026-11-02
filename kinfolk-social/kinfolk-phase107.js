@@ -1,4 +1,47 @@
-(()=>{if(window.__kinfolkPhase107)return;window.__kinfolkPhase107=true;const FORMS=['dmForm','groupMsgForm','groupCreateForm'];function safeRun(form,handler,raw){if(form.dataset.kf107Busy==='1')return;const ev={preventDefault(){},stopPropagation(){},stopImmediatePropagation(){},target:form,currentTarget:form,originalEvent:raw};try{const out=handler.call(form,ev);if(out&&typeof out.then==='function'){form.dataset.kf107Busy='1';Promise.resolve(out).catch(e=>{console.warn('Kinfolk message submit rejected',e)}).finally(()=>{delete form.dataset.kf107Busy})}}catch(e){console.warn('Kinfolk message form',e);delete form.dataset.kf107Busy}}function bind(form){if(!form)return;const handler=form.onsubmit;if(form.dataset.kf107==='1'){if(typeof handler==='function'&&handler!==form.__kf107BoundHandler){form.__kf107Handler=handler;form.__kf107BoundHandler=handler}return}if(typeof handler!=='function')return;const btn=[...form.querySelectorAll('button')].find(b=>/send|create group/i.test((b.textContent||'').trim()))||form.querySelector('button');if(!btn)return;form.dataset.kf107='1';form.__kf107Handler=handler;form.__kf107BoundHandler=handler;btn.type='button';btn.dataset.kf107='1';const run=e=>{e.preventDefault();e.stopImmediatePropagation();safeRun(form,form.__kf107Handler,e)};btn.onclick=run;btn.onpointerup=null;btn.ontouchend=null;btn.onkeydown=null;for(const el of form.querySelectorAll('input,textarea')){if(el.dataset.kf107Enter==='1')continue;el.dataset.kf107Enter='1';el.addEventListener('keydown',e=>{if(e.key==='Enter'&&!(el.tagName==='TEXTAREA'&&e.shiftKey)){e.preventDefault();e.stopImmediatePropagation();safeRun(form,form.__kf107Handler,e)}},true)}}const pendingBlocks=new Set();
+(()=>{if(window.__kinfolkPhase107)return;window.__kinfolkPhase107=true;const FORMS=['dmForm','groupMsgForm','groupCreateForm'];function safeRun(form,handler,raw){if(form.dataset.kf107Busy==='1')return;const ev={preventDefault(){},stopPropagation(){},stopImmediatePropagation(){},target:form,currentTarget:form,originalEvent:raw};try{const out=handler.call(form,ev);if(out&&typeof out.then==='function'){form.dataset.kf107Busy='1';Promise.resolve(out).catch(e=>{console.warn('Kinfolk message submit rejected',e)}).finally(()=>{delete form.dataset.kf107Busy})}}catch(e){console.warn('Kinfolk message form',e);delete form.dataset.kf107Busy}}function bind(form){
+  if(!form)return;
+  // Keep the latest underlying form submit handler, including after a modal
+  // rerender replaces onsubmit without replacing the form itself.
+  const handler=form.onsubmit;
+  if(typeof handler==='function'&&handler!==form.__kf107BoundHandler){
+    form.__kf107Handler=handler;
+    form.__kf107BoundHandler=handler;
+  }
+  if(typeof form.__kf107Handler!=='function')return;
+  const btn=[...form.querySelectorAll('button')].find(b=>/send|create group/i.test((b.textContent||'').trim()))||form.querySelector('button');
+  if(!btn)return;
+  form.dataset.kf107='1';
+  // The form can survive while its Send button is replaced, cloned, or has
+  // onclick cleared. A one-time dataset flag must not strand mobile messaging.
+  if(!form.__kf107Run){
+    form.__kf107Run=e=>{
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      safeRun(form,form.__kf107Handler,e);
+    };
+  }
+  btn.type='button';
+  btn.dataset.kf107='1';
+  if(btn.onclick!==form.__kf107Run)btn.onclick=form.__kf107Run;
+  btn.onpointerup=null;
+  btn.ontouchend=null;
+  btn.onkeydown=null;
+  // cloneNode copies dataset attributes, not addEventListener registrations.
+  // Use an element-owned sentinel so replacement inputs regain Enter-to-send.
+  for(const el of form.querySelectorAll('input,textarea')){
+    if(el.__kf107EnterHandler)continue;
+    const onEnter=e=>{
+      if(e.key==='Enter'&&!(el.tagName==='TEXTAREA'&&e.shiftKey)){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        safeRun(form,form.__kf107Handler,e);
+      }
+    };
+    el.addEventListener('keydown',onEnter,true);
+    el.__kf107EnterHandler=onEnter;
+    el.dataset.kf107Enter='1';
+  }
+}const pendingBlocks=new Set();
 async function blockPeer(peer,originForm){
   const accountId=window.state?.user?.id;
   if(!peer||!accountId)return;
