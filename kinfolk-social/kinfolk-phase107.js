@@ -1,4 +1,4 @@
-(()=>{if(window.__kinfolkPhase107)return;window.__kinfolkPhase107=true;const FORMS=['dmForm','groupMsgForm','groupCreateForm'];function safeRun(form,handler,raw){if(form.dataset.kf107Busy==='1')return;const ev={preventDefault(){},stopPropagation(){},stopImmediatePropagation(){},target:form,currentTarget:form,originalEvent:raw};try{const out=handler.call(form,ev);if(out&&typeof out.then==='function'){form.dataset.kf107Busy='1';Promise.resolve(out).catch(e=>{console.warn('Kinfolk message submit rejected',e)}).finally(()=>{delete form.dataset.kf107Busy})}}catch(e){console.warn('Kinfolk message form',e);delete form.dataset.kf107Busy}}function bind(form){
+(()=>{if(window.__kinfolkPhase107)return;window.__kinfolkPhase107=true;const FORMS=['dmForm','groupMsgForm','groupCreateForm'];function safeRun(form,handler,raw){if(form.dataset.kf107Busy==='1'||form.isConnected===false||form.__kf107SendButton?.disabled)return;const ev={preventDefault(){},stopPropagation(){},stopImmediatePropagation(){},target:form,currentTarget:form,originalEvent:raw};try{const out=handler.call(form,ev);if(out&&typeof out.then==='function'){form.dataset.kf107Busy='1';Promise.resolve(out).catch(e=>{console.warn('Kinfolk message submit rejected',e)}).finally(()=>{delete form.dataset.kf107Busy})}}catch(e){console.warn('Kinfolk message form',e);delete form.dataset.kf107Busy}}function bind(form){
   if(!form)return;
   // Keep the latest underlying form submit handler, including after a modal
   // rerender replaces onsubmit without replacing the form itself.
@@ -20,6 +20,26 @@
       safeRun(form,form.__kf107Handler,e);
     };
   }
+  form.__kf107SendButton=btn;
+  // Hardware keyboard submit, iOS Go and accessibility requestSubmit() can
+  // bypass keydown and button onclick. Route the native submit event through
+  // the same pending-request lock, before the original onsubmit executes.
+  if(!form.__kf107SubmitHandler&&typeof form.addEventListener==='function'){
+    form.__kf107SubmitHandler=e=>{
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if(form.__kf107Composing||Date.now()<(form.__kf107ImeUntil||0))return;
+      safeRun(form,form.__kf107Handler,e);
+    };
+    form.addEventListener('submit',form.__kf107SubmitHandler,true);
+    // Some iOS keyboards dispatch a submit immediately after compositionend,
+    // with isComposing=false and keyCode=13. Ignore that confirmation briefly.
+    form.addEventListener('compositionstart',()=>{form.__kf107Composing=true},true);
+    form.addEventListener('compositionend',()=>{
+      form.__kf107Composing=false;
+      form.__kf107ImeUntil=Date.now()+200;
+    },true);
+  }
   btn.type='button';
   btn.dataset.kf107='1';
   if(btn.onclick!==form.__kf107Run)btn.onclick=form.__kf107Run;
@@ -33,7 +53,7 @@
     const onEnter=e=>{
       // Android/iOS IME confirmation and held Enter are not message submissions.
       // In particular, Android keyboards may report keyCode 229 during composition.
-      if(e.isComposing||e.keyCode===229||e.repeat)return;
+      if(e.isComposing||e.keyCode===229||e.repeat||form.__kf107Composing||Date.now()<(form.__kf107ImeUntil||0))return;
       if(e.key==='Enter'&&!(el.tagName==='TEXTAREA'&&e.shiftKey)){
         e.preventDefault();
         e.stopImmediatePropagation();
