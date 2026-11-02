@@ -234,7 +234,9 @@ test('isolated alpha migration enforces same-post threaded replies and visible p
  assert.match(sql,/add column if not exists parent_id uuid/i);
  assert.match(sql,/foreign key\(parent_id, post_id\)/i);
  assert.match(sql,/references public\.comments\(id, post_id\)/i);
- assert.match(sql,/parent\.id=comments\.parent_id/i);
- assert.match(sql,/parent\.post_id=comments\.post_id/i);
+ assert.match(sql,/security definer set search_path = ''/i);
+ assert.match(sql,/kinfolk_alpha_private\.visible_comment_parent\(comments\.parent_id,comments\.post_id\)/i);
+ assert.match(sql,/c\.id=p_parent and c\.post_id=p_post/i);
+ assert.match(sql,/kinfolk_alpha_private\.not_blocked\(c\.author_id\)/i);
  assert.match(sql,/never apply to shared live/i);
 });
