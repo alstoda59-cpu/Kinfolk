@@ -27,8 +27,10 @@ function harness() {
     body: { prepend(el) { layer = el; } }
   };
   const one = () => new Promise(resolve => pending.push(resolve));
-  const refresh = new Function('state', 'one', 'theme', 'document', 'H',
-    wallpaperSource + ';return refreshWallpaper;')(state, one, () => {}, document, String);
+  // Private wallpaper references resolve asynchronously; legacy external URLs stay unchanged.
+  const window = { resolveKinfolkWallpaper: async reference => reference };
+  const refresh = new Function('state', 'one', 'theme', 'document', 'H', 'window',
+    wallpaperSource + ';return refreshWallpaper;')(state, one, () => {}, document, String, window);
   return { state, pending, refresh, getLayer: () => layer };
 }
 

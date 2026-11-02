@@ -81,7 +81,9 @@ test('owner upload saves only the initiating user and updates its own form',asyn
   assert.match(h.calls.upload[0].path,/^11111111-1111-4111-8111-111111111111\/profile-wallpaper-\d+\.png$/);
   assert.equal(h.calls.save.length,1);
   assert.equal(h.calls.save[0].row.user_id,h.state.user.id);
-  assert.equal(h.urlBox.value,'https://alpha.invalid/signed-wallpaper');
+  assert.match(h.urlBox.value,/^kinfolk-wallpapers:11111111-1111-4111-8111-111111111111\/profile-wallpaper-\d+\.png$/);
+  assert.equal(h.calls.sign[0].ttl,300);
+  assert.equal(h.calls.save[0].row.animated_wallpaper_url,h.urlBox.value);
   assert.equal(h.motion.checked,true);
   assert.equal(h.btn.disabled,false);
   assert.equal(h.calls.toast.at(-1)[0],'Wallpaper uploaded');
@@ -170,6 +172,8 @@ test('wallpaper settings upsert requires an exact one-row acknowledgment',async(
   assert.equal(h.calls.save.length,1);
   assert.equal(h.calls.save[0].opts.count,'exact');
   assert.equal(h.calls.save[0].opts.onConflict,'user_id');
+  assert.ok(h.calls.save[0].row.animated_wallpaper_url.startsWith('kinfolk-wallpapers:'));
+  assert.equal(h.calls.sign[0].ttl,300);
   assert.equal(h.window.__kf421WallpaperUncertain,null);
 });
 

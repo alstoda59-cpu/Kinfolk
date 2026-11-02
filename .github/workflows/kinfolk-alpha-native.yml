@@ -120,6 +120,8 @@ on:
       - kinfolk-social/recovery420-wallpaper-upload-isolation-20261102
       # Recovery421: require exact wallpaper settings acknowledgments before offline native builds.
       - kinfolk-social/recovery421-wallpaper-write-ack-20261102
+      # Recovery422: compile private-reference and short-lived signing fixes offline.
+      - kinfolk-social/recovery422-wallpaper-private-short-links-20261102
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
