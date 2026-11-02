@@ -3,7 +3,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { configFromEnv, runSmoke } = require('./nonproduction-auth-smoke.cjs');
 const baseEnv = {
-  KINFOLK_TEST_SUPABASE_URL: 'https://isolated-qa.supabase.co',
+  KINFOLK_TEST_SUPABASE_URL: 'https://viantpfagtbgyyzavmtv.supabase.co',
   KINFOLK_TEST_CONFIRM_ISOLATED: 'YES',
   KINFOLK_TEST_ANON_KEY: 'sb_publishable_test',
   KINFOLK_TEST_EMAIL: 'qa@example.test',
@@ -46,20 +46,25 @@ test('signup is disabled by default and requires separate authorized adult test 
     KINFOLK_TEST_SIGNUP_BIRTHDATE: '1995-02-01' }).signup);
 });
 
-function mockServer({ allowAfterLogout = false, signup = false } = {}) {
+function mockServer({ allowAfterLogout = false, signup = false,
+  autoConfirmedSignup = false, unconfirmedLogin = false, wrongEmail = false } = {}) {
   const calls = [];
   let refreshed = false, loggedOut = false;
   const fetchImpl = async (url, options) => {
     const u = new URL(url), path = u.pathname + u.search;
     calls.push({ path, method: options.method, body: options.body && JSON.parse(options.body) });
-    assert.equal(u.hostname, 'isolated-qa.supabase.co');
-    if (path === '/auth/v1/signup' && signup) return response({ user: { id: 'new-user' } });
+    assert.equal(u.hostname, 'viantpfagtbgyyzavmtv.supabase.co');
+    if (path === '/auth/v1/signup' && signup) return response({
+      user: { id: 'new-user', email_confirmed_at: autoConfirmedSignup ? '2026-11-02T00:00:00Z' : null },
+      ...(autoConfirmedSignup ? { access_token: 'unwanted-signup-token' } : {})
+    });
     if (path === '/auth/v1/token?grant_type=password') {
       return response({ access_token: 'initial-access', refresh_token: 'initial-refresh', user: { id: 'qa-user' } });
     }
     if (path === '/auth/v1/user') {
-      assert.equal(options.headers.Authorization, 'Bearer initial-access');
-      return response({ id: 'qa-user' });
+      assert.ok(['Bearer initial-access','Bearer fresh-access'].includes(options.headers.Authorization));
+      return response({ id: 'qa-user', email: wrongEmail ? 'other@example.test' : 'qa@example.test',
+        email_confirmed_at: unconfirmedLogin ? null : '2026-11-01T00:00:00Z' });
     }
     if (path === '/auth/v1/token?grant_type=refresh_token') {
       if (loggedOut) return allowAfterLogout
@@ -82,7 +87,7 @@ function mockServer({ allowAfterLogout = false, signup = false } = {}) {
 test('mocked login, user lookup, refresh, logout and revocation all succeed', async () => {
   const server = mockServer(), logs = [];
   await runSmoke(configFromEnv(baseEnv), server.fetchImpl, x => logs.push(x));
-  assert.equal(server.calls.length, 5);
+  assert.equal(server.calls.length, 6);
   assert.equal(logs.length, 5);
   assert.ok(logs.every(x => x.startsWith('PASS')));
 });
@@ -104,4 +109,38 @@ test('optional signup sends only synthetic adult metadata', async () => {
     display_name: 'Kinfolk QA', signup_birthdate: '1995-02-01',
   });
   assert.equal(logs.length, 6);
+});
+
+// Recovery423: an opt-in signup without confirmation is a security failure, not a pass.
+test('rejects any Supabase project other than the designated isolated Alpha Test', () => {
+  for (const ref of ['another-project','aaaaaaaaaaaaaaaaaaaa','zojajuzmfjpvubzibzgg']) {
+    assert.throws(() => configFromEnv({ ...baseEnv,
+      KINFOLK_TEST_SUPABASE_URL: 'https://' + ref + '.supabase.co' }), /Refusing/);
+  }
+});
+
+test('rejects secret keys even when the isolated project URL is correct', () => {
+  assert.throws(() => configFromEnv({ ...baseEnv,
+    KINFOLK_TEST_ANON_KEY: 'sb_secret_sensitive' }), /publishable/);
+});
+
+test('fails closed if a login account has no confirmed email', async () => {
+  const server = mockServer({ unconfirmedLogin: true });
+  await assert.rejects(() => runSmoke(configFromEnv(baseEnv), server.fetchImpl, () => {}), /verified email/);
+  assert.ok(!server.calls.some(call => call.path.includes('/logout')));
+});
+
+test('fails closed if the authenticated account email does not match the test account', async () => {
+  const server = mockServer({ wrongEmail: true });
+  await assert.rejects(() => runSmoke(configFromEnv(baseEnv), server.fetchImpl, () => {}), /identity or email changed/);
+});
+
+test('rejects auto-confirmed signup and never treats it as verified email delivery', async () => {
+  const env = { ...baseEnv, KINFOLK_TEST_ALLOW_SIGNUP: 'YES',
+    KINFOLK_TEST_SIGNUP_EMAIL: 'new@example.test',
+    KINFOLK_TEST_SIGNUP_PASSWORD: 'new-password',
+    KINFOLK_TEST_SIGNUP_BIRTHDATE: '1995-02-01' };
+  const server = mockServer({ signup: true, autoConfirmedSignup: true });
+  await assert.rejects(() => runSmoke(configFromEnv(env), server.fetchImpl, () => {}), /bypassed mandatory email confirmation/);
+  assert.equal(server.calls.length, 1);
 });
