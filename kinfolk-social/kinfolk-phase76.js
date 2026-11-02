@@ -205,7 +205,7 @@ window.resolveKinfolkWallpaper=async function(reference,ownerId){
   if(!token)return '';
   const key=ownerId+'|'+path+'|'+token;
   let entry=wallpaperSignedCache.get(key);
-  if(!entry||entry.expires<=Date.now()){
+  if(!entry||(!entry.promise&&entry.expires<=Date.now())){
     if(wallpaperSignedCache.size>12)wallpaperSignedCache.clear();
     entry={url:'',expires:0,promise:sb.storage.from('kinfolk-wallpapers').createSignedUrl(path,300)};
     wallpaperSignedCache.set(key,entry);
