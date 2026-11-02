@@ -108,7 +108,7 @@ test('same-account relogin invalidates an in-flight wallpaper query', async () =
   const current = h.refresh();
   h.pending[1]({ animated_wallpaper_url: 'https://example.test/fresh.gif' });
   await current;
-  assert.match(h.getLayer().innerHTML, /fresh\\.gif/);
+  assert.match(h.getLayer().innerHTML, /fresh\.gif/);
 });
 test('same-account relogin removes the previous wallpaper before loading the next', async () => {
   const h = harness();
@@ -121,7 +121,7 @@ test('same-account relogin removes the previous wallpaper before loading the nex
   assert.equal(h.getLayer(), null, 'previous session media removed synchronously');
   h.pending[1]({ animated_wallpaper_url: 'https://example.test/current.gif' });
   await next;
-  assert.match(h.getLayer().innerHTML, /current\\.gif/);
+  assert.match(h.getLayer().innerHTML, /current\.gif/);
 });
 test('account switch clears previous wallpaper before new account fetch resolves', async () => {
   const h = harness();
@@ -133,7 +133,7 @@ test('account switch clears previous wallpaper before new account fetch resolves
   assert.equal(h.getLayer(), null, 'A wallpaper not visible while B loads');
   h.pending[1]({ animated_wallpaper_url: 'https://example.test/B.gif' });
   await next;
-  assert.match(h.getLayer().innerHTML, /B\\.gif/);
+  assert.match(h.getLayer().innerHTML, /B\.gif/);
 });
 test('failed wallpaper signing removes old media without unhandled rejection', async () => {
   const h = harness();
