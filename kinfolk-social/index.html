@@ -470,7 +470,28 @@ async function createStory(e){
    }
  }
 }
-async function viewStory(id){const s=state.stories.find(x=>x.id===id);if(!s)return;const p=state.profiles.get(s.owner_id),u=s.media_url?await signed('kinfolk-media',s.media_url):null;modal(p?.display_name||'Story',`${u?`<img src="${esc(u)}" style="width:100%;max-height:70vh;object-fit:contain;background:#0b0a0d;border-radius:14px">`:''}<div style="padding:12px 2px;font-size:17px">${esc(s.body)}</div><div class="muted">${fmt(s.created_at)} · expires in 24h</div>`)}
+// Recovery416: a delayed signed Story URL must never open a modal after
+// logout, account reactivation, navigation, modal replacement, or another tap.
+let kf416StoryViewRequest=0;
+async function viewStory(id){
+ const request=++kf416StoryViewRequest,epoch=kf129Epoch,uid=state.user?.id;
+ const modalEpoch=kf300MessageRequest,view=state.view;
+ if(!kfAlphaLoadCurrent(epoch,uid)||view!=='home')return;
+ const s=state.stories.find(x=>x.id===id);
+ if(!s||!(Date.parse(s.expires_at)>Date.now()))return;
+ const current=()=>kf416StoryViewRequest===request&&
+   kfAlphaLoadCurrent(epoch,uid)&&state.view===view&&
+   kf300MessageRequest===modalEpoch&&state.stories.includes(s)&&
+   Date.parse(s.expires_at)>Date.now();
+ const p=state.profiles.get(s.owner_id);
+ let u=null;
+ if(s.media_url){
+   try{u=await signed('kinfolk-media',s.media_url)}
+   catch(error){if(current())toast('Story photo could not be loaded.','danger');return}
+ }
+ if(!current())return;
+ modal(p?.display_name||'Story',`${u?`<img src="${esc(u)}" style="width:100%;max-height:70vh;object-fit:contain;background:#0b0a0d;border-radius:14px">`:''}<div style="padding:12px 2px;font-size:17px">${esc(s.body)}</div><div class="muted">${fmt(s.created_at)} · expires in 24h</div>`);
+}
 // Recovery295: never silently fall back to the old grid when the immersive player is missing.
 let kf295ReelsLoadPromise=null;
 function kf295EnsureReelsRenderer(){
