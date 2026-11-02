@@ -1368,13 +1368,22 @@ dmForm.onsubmit=async e=>{
     }
   };
 
-  let mediaReplyParent=null;
+  // Recovery418: keep media comment loads, replies and saves bound to one
+  // account activation, screen and mounted modal. Lost INSERT responses are
+  // uncertain, not permission to send the same comment twice.
+  let mediaReplyParent=null,mediaCommentsRequest=0,mediaCommentContext=null;
   window.setMediaReply=function(id){
+    const ctx=mediaCommentContext;
+    const form=document.querySelector('#mediaCommentForm');
+    if(!ctx||!form||form!==ctx.form||form.isConnected===false||
+       form.dataset.kfMediaSending==='1'||!ctx.parents.has(id)||
+       !kfAlphaLoadCurrent(ctx.epoch,ctx.uid)||state.view!==ctx.view||
+       kf300MessageRequest!==ctx.modalEpoch)return;
     mediaReplyParent=id;
-    const f=document.querySelector('#mediaCommentForm');
-    if(!f)return;
-    const input=f.querySelector('[name=body]'); if(input){input.placeholder='Write a reply…';input.focus();}
-    const lab=document.querySelector('#mediaReplyLabel'); if(lab){lab.classList.remove('hide');lab.textContent='Replying to a comment';}
+    const input=form.querySelector('[name=body]');
+    if(input){input.placeholder='Write a reply…';input.focus();}
+    const lab=document.querySelector('#mediaReplyLabel');
+    if(lab){lab.classList.remove('hide');lab.textContent='Replying to a comment';}
   };
 
   async function mediaCommentsHtml(rows){
@@ -1391,16 +1400,86 @@ dmForm.onsubmit=async e=>{
   }
 
   window.openMediaComments=async function(type,id){
+    if(type!=='video'&&type!=='photo')return;
+    const uid=state.user?.id,epoch=kf129Epoch,view=state.view;
+    const request=++mediaCommentsRequest,modalEpoch=kf300MessageRequest;
     mediaReplyParent=null;
-    const {data,error}=await sb.from('media_comments').select('*').eq('target_type',type).eq('target_id',id).order('created_at',{ascending:true});
-    if(error)return toast(error.message,'danger');
-    const list=await mediaCommentsHtml(data||[]);
-    modal('Comments',`<div id="mediaCommentsList">${list||'<div class="empty">No comments yet.</div>'}</div><form id="mediaCommentForm" class="commentForm"><div id="mediaReplyLabel" class="replyingTo hide"></div><input class="field" name="body" placeholder="Write a comment…" required><button class="btn small primary">Post</button></form>`);
-    $('#mediaCommentForm').onsubmit=async e=>{
-      e.preventDefault();const body=e.target.body.value.trim();if(!body)return;
-      const {error}=await sb.from('media_comments').insert({target_type:type,target_id:id,parent_id:mediaReplyParent,author_id:state.user.id,body});
-      if(error)return toast(error.message,'danger');
-      await openMediaComments(type,id);
+    mediaCommentContext=null;
+    const loadingCurrent=()=>kfAlphaLoadCurrent(epoch,uid)&&state.view===view&&
+      mediaCommentsRequest===request&&kf300MessageRequest===modalEpoch;
+    if(!loadingCurrent())return;
+    let result;
+    try{
+      result=await sb.from('media_comments').select('*')
+        .eq('target_type',type).eq('target_id',id)
+        .order('created_at',{ascending:true}).limit(200);
+    }catch(error){
+      if(loadingCurrent())toast('Comments could not be loaded. Try again.','danger');
+      return;
+    }
+    if(!loadingCurrent())return;
+    if(result?.error){toast(result.error.message||'Comments could not be loaded.','danger');return;}
+    const rows=Array.isArray(result?.data)?result.data:[];
+    let list;
+    try{list=await mediaCommentsHtml(rows)}
+    catch(error){if(loadingCurrent())toast('Comments could not be displayed.','danger');return;}
+    if(!loadingCurrent())return;
+    modal('Comments','<div id="mediaCommentsList">'+(list||'<div class="empty">No comments yet.</div>')+
+      '</div><form id="mediaCommentForm" class="commentForm"><div id="mediaReplyLabel" class="replyingTo hide"></div>'+
+      '<input class="field" name="body" placeholder="Write a comment…" maxlength="2000" required>'+
+      '<button class="btn small primary" type="submit">Post</button></form>');
+    const form=document.querySelector('#mediaCommentForm');
+    if(!form)return;
+    const ctx={uid,epoch,view,request,modalEpoch:kf300MessageRequest,
+      type,id,form,parents:new Set(rows.map(row=>row.id))};
+    mediaCommentContext=ctx;
+    const current=()=>mediaCommentContext===ctx&&mediaCommentsRequest===request&&
+      kfAlphaLoadCurrent(epoch,uid)&&state.view===view&&
+      kf300MessageRequest===ctx.modalEpoch&&form.isConnected!==false&&
+      document.querySelector('#mediaCommentForm')===form;
+    form.onsubmit=async e=>{
+      e.preventDefault();
+      if(!current()||form.dataset.kfMediaSending==='1')return;
+      const field=form.querySelector('[name=body]');
+      const body=String(field?.value||'').trim();
+      if(!body)return;
+      if(body.length>2000){toast('Comments must be 2,000 characters or fewer.','danger');return;}
+      const parent_id=mediaReplyParent;
+      if(parent_id&&!ctx.parents.has(parent_id)){
+        toast('That reply is no longer available. Reopen Comments.','danger');
+        return;
+      }
+      const button=form.querySelector('button[type=submit]');
+      form.dataset.kfMediaSending='1';
+      if(button)button.disabled=true;
+      let retryable=false;
+      try{
+        const response=await sb.from('media_comments').insert(
+          {target_type:type,target_id:id,parent_id,author_id:uid,body},
+          {count:'exact'}).select('id,target_type,target_id,parent_id,author_id,body');
+        if(!current())return;
+        if(response?.error)throw response.error;
+        const savedRows=Array.isArray(response?.data)?response.data:null;
+        if(response?.count===0&&savedRows?.length===0){
+          retryable=true;
+          toast('Comment was not saved. Please try again.','danger');
+          return;
+        }
+        const saved=savedRows?.[0];
+        if(response?.count!==1||savedRows?.length!==1||!saved?.id||
+           saved.target_type!==type||saved.target_id!==id||
+           saved.parent_id!==parent_id||saved.author_id!==uid||saved.body!==body)
+          throw new Error('Unconfirmed media comment insert');
+        if(field)field.value='';
+        await openMediaComments(type,id);
+      }catch(error){
+        if(current())toast('Comment status is uncertain. Reopen Comments to check before retrying.','danger');
+      }finally{
+        if(retryable&&current()){
+          delete form.dataset.kfMediaSending;
+          if(button)button.disabled=false;
+        }
+      }
     };
   };
 

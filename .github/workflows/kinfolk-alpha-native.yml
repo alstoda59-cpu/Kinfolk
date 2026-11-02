@@ -112,6 +112,8 @@ on:
       - kinfolk-social/recovery416-story-view-session-privacy-20261102
       # Recovery417: compile offline packages after threaded comment integrity and exact-write guards.
       - kinfolk-social/recovery417-threaded-comment-write-integrity-20261102
+      # Recovery418: offline Android/iOS packages with guarded video/photo comments.
+      - kinfolk-social/recovery418-media-comment-privacy-20261102
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
