@@ -2,6 +2,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const vm = require('node:vm');
 
 const source = fs.readFileSync('kinfolk-social/kinfolk-phase76.js', 'utf8');
 const start = source.indexOf("let cache='',wallpaperRequest=0;async function refreshWallpaper()");
@@ -29,9 +30,9 @@ function harness() {
   const one = () => new Promise(resolve => pending.push(resolve));
   // Private wallpaper references resolve asynchronously; legacy external URLs stay unchanged.
   const window = { resolveKinfolkWallpaper: async reference => reference };
-  const refresh = new Function('state', 'one', 'theme', 'document', 'H', 'window',
-    wallpaperSource + ';return refreshWallpaper;')(state, one, () => {}, document, String, window);
-  return { state, pending, refresh, getLayer: () => layer };
+  const ctx = { state, one, theme: () => {}, document, H: String, window, kf129Epoch: 1 };
+  const refresh = vm.runInNewContext(wallpaperSource + ';refreshWallpaper', ctx, {timeout: 1000});
+  return { state, pending, refresh, window, bumpEpoch: () => {ctx.kf129Epoch++}, getLayer: () => layer };
 }
 
 test('old account wallpaper cannot overwrite newly signed-in account', async () => {
@@ -94,5 +95,54 @@ test('navigating away from profile removes wallpaper', async () => {
   const second = h.refresh();
   h.pending[1]({ animated_wallpaper_url: 'https://example.test/one.gif' });
   await second;
+  assert.equal(h.getLayer(), null);
+});
+
+test('same-account relogin invalidates an in-flight wallpaper query', async () => {
+  const h = harness();
+  const old = h.refresh();
+  h.bumpEpoch();
+  h.pending[0]({ animated_wallpaper_url: 'https://example.test/stale.gif' });
+  await old;
+  assert.equal(h.getLayer(), null, 'previous activation cannot render stale wallpaper');
+  const current = h.refresh();
+  h.pending[1]({ animated_wallpaper_url: 'https://example.test/fresh.gif' });
+  await current;
+  assert.match(h.getLayer().innerHTML, /fresh\\.gif/);
+});
+test('same-account relogin removes the previous wallpaper before loading the next', async () => {
+  const h = harness();
+  const first = h.refresh();
+  h.pending[0]({ animated_wallpaper_url: 'https://example.test/previous.gif' });
+  await first;
+  assert.ok(h.getLayer());
+  h.bumpEpoch();
+  const next = h.refresh();
+  assert.equal(h.getLayer(), null, 'previous session media removed synchronously');
+  h.pending[1]({ animated_wallpaper_url: 'https://example.test/current.gif' });
+  await next;
+  assert.match(h.getLayer().innerHTML, /current\\.gif/);
+});
+test('account switch clears previous wallpaper before new account fetch resolves', async () => {
+  const h = harness();
+  const first = h.refresh();
+  h.pending[0]({ animated_wallpaper_url: 'https://example.test/A.gif' });
+  await first;
+  h.state.user = {id: 'account-B'};
+  const next = h.refresh();
+  assert.equal(h.getLayer(), null, 'A wallpaper not visible while B loads');
+  h.pending[1]({ animated_wallpaper_url: 'https://example.test/B.gif' });
+  await next;
+  assert.match(h.getLayer().innerHTML, /B\\.gif/);
+});
+test('failed wallpaper signing removes old media without unhandled rejection', async () => {
+  const h = harness();
+  const first = h.refresh();
+  h.pending[0]({ animated_wallpaper_url: 'https://example.test/previous.gif' });
+  await first;
+  h.window.resolveKinfolkWallpaper = async () => {throw new Error('signature unavailable')};
+  const next = h.refresh();
+  h.pending[1]({ animated_wallpaper_url: 'kinfolk-wallpapers:private/path.mp4' });
+  await next;
   assert.equal(h.getLayer(), null);
 });
