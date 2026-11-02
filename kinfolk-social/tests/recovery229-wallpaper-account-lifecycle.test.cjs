@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const source = fs.readFileSync('kinfolk-social/kinfolk-phase76.js', 'utf8');
-const start = source.indexOf("let cache='',wallpaperRequest=0;async function refreshWallpaper()");
+const start = source.indexOf("let cache='',wallpaperRequest=0,wallpaperVisibleAccountId=");
 const end = source.indexOf('new MutationObserver(', start);
 assert.ok(start >= 0 && end > start, 'Recovery229 wallpaper lifecycle must be present');
 const wallpaperSource = source.slice(start, end);
