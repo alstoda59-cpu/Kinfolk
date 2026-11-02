@@ -25,6 +25,7 @@ function harness(){
   $('#kfsAccentText').value='#e85a9b';
   const ctx={
     state,el,settingsAccountId:A,settingsEpoch:9,kf129Epoch:9,isTeen:false,$,
+    t:$('#kfsAccentText'),refreshWallpaper:()=>{},
     settingsCurrent:()=>state.user?.id===A&&ctx.kf129Epoch===9,
     toast:(message,kind)=>toasts.push({message,kind}),
     theme:color=>themes.push(color),
