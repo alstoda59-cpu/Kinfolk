@@ -98,6 +98,8 @@ on:
       - kinfolk-social/recovery409-group-invite-friend-scope-20261101
       # Recovery410: offline-only Android/iOS packages with exact direct-message write acknowledgments.
       - kinfolk-social/recovery410-dm-send-ack-20261101
+      # Recovery411: offline-only native compilation with playlist session and exact-write guards.
+      - kinfolk-social/recovery411-playlist-create-session-ack-20261101
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
