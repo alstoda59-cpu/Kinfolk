@@ -92,6 +92,8 @@ on:
       - kinfolk-social/recovery360-signup-confirmed-session-20261030
       # Recovery407: offline-only native packages after isolated group RLS migration.
       - kinfolk-social/recovery407-isolated-group-rls-20261101
+      # Recovery408: offline-only Android/iOS compile with exact group message write checks.
+      - kinfolk-social/recovery408-group-message-ack-20261101
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
