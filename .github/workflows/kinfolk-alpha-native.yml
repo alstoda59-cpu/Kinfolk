@@ -108,6 +108,8 @@ on:
       - kinfolk-social/recovery414-post-story-write-ack-20261102
       # Recovery415: compile offline packages with isolated Stories expiry and RLS contracts.
       - kinfolk-social/recovery415-isolated-stories-rls-20261102
+      # Recovery416: compile offline packages after Story viewer session guards.
+      - kinfolk-social/recovery416-story-view-session-privacy-20261102
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
