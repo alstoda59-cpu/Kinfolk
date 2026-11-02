@@ -132,6 +132,8 @@ on:
       - kinfolk-social/recovery426-wallpaper-activation-isolation-20261102
       # Recovery427: suppress IME composition and repeated Enter in native message forms.
       - kinfolk-social/recovery427-mobile-message-ime-guard-20261102
+      # Recovery428: guard native submit events and post-composition ghost sends.
+      - kinfolk-social/recovery428-native-submit-ime-guard-20261102
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'

@@ -13,11 +13,12 @@ const safeRun=vm.runInNewContext(code+'\nsafeRun',{document:{contains:()=>false}
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 
 test('rejected async submit is handled and releases lock after detached form',async()=>{
- const form={dataset:{},isConnected:false};
+ const form={dataset:{},isConnected:true};
  let reject;
  const promise=new Promise((_,r)=>{reject=r});
  safeRun(form,()=>promise,{});
  assert.equal(form.dataset.kf107Busy,'1');
+ form.isConnected=false; // Modal closes only after the request has begun.
  reject(new Error('network failure'));
  await tick();
  assert.equal(form.dataset.kf107Busy,undefined);
