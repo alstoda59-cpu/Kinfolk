@@ -32,7 +32,18 @@ function setup(kind='post',opts={}){
  const document={getElementById(id){return id===formId?opts.activeForm?.()||form:null}};
  const sb={
   storage:{from(bucket){assert.equal(bucket,'kinfolk-media');return {upload(p,f){uploads.push({p,f});return uploadPending?uploadPending.promise:Promise.resolve({error:null})}}}},
-  from(table){return {insert(row){inserts.push({table,row});return insertPending?insertPending.promise:Promise.resolve({error:null})}}}
+  from(table){return {insert(row,options){
+   inserts.push({table,row,options});
+   return {select(columns){
+    const owner=table==='posts'?'author_id':'owner_id';
+    assert.equal(columns,`id,${owner},media_url`);
+    return {single(){
+     return insertPending?insertPending.promise:Promise.resolve({
+      error:null,count:1,data:{id:'saved-row',[owner]:row[owner],media_url:row.media_url}
+     });
+    }};
+   }};
+  }}}
  };
  const factory=new Function('state','sb','document','crypto','safeName','toast','closeModal','loadFeed','loadStories','renderApp',
   'let kf129Epoch=1;'+guard+composer+';return {createPost,createStory,setEpoch(n){kf129Epoch=n}};');
@@ -81,6 +92,7 @@ test('successful post and story use captured authors and render once',async()=>{
   const x=setup(kind);await x.submit();
   assert.equal(x.inserts.length,1);
   assert.equal(x.inserts[0].row[kind==='post'?'author_id':'owner_id'],'account-a');
+  assert.equal(x.inserts[0].options.count,'exact');
   assert.equal(x.closes,1);assert.equal(x.loads,1);assert.equal(x.renders,1);
   assert.equal(x.toasts.length,1);
  }
