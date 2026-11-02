@@ -3,6 +3,9 @@
 // Never run against Kinfolk's shared live project. No credentials are committed.
 // Usage is documented in RECOVERY178.md.
 const LIVE_REF = 'zojajuzmfjpvubzibzgg';
+// Recovery423: allow only the existing, explicitly isolated Alpha Test project.
+// An arbitrary Supabase hostname could otherwise point at another live project.
+const ALPHA_REF = 'viantpfagtbgyyzavmtv';
 
 function configFromEnv(env = process.env) {
   let url;
@@ -10,7 +13,8 @@ function configFromEnv(env = process.env) {
   catch { throw Error('Set KINFOLK_TEST_SUPABASE_URL to an isolated Supabase project.'); }
   if (url.protocol !== 'https:' ||
       !/^[a-z0-9-]+\.supabase\.co$/i.test(url.hostname) ||
-      url.hostname.split('.')[0].toLowerCase() === LIVE_REF ||
+      (url.hostname.split('.')[0].toLowerCase() === LIVE_REF ||
+       url.hostname.split('.')[0].toLowerCase() !== ALPHA_REF) ||
       url.pathname !== '/' || url.search || url.hash || url.username || url.password) {
     throw Error('Refusing non-isolated or unrecognized Supabase URL.');
   }
@@ -23,7 +27,9 @@ function configFromEnv(env = process.env) {
   if (!key || !email || !password) {
     throw Error('Missing isolated project publishable key or authorized test-account credentials.');
   }
-  if (/service_role/i.test(key)) throw Error('Do not use a service-role key.');
+  if (!/^sb_publishable_[A-Za-z0-9_-]+$/.test(key)) {
+    throw Error('Use only the isolated project publishable client key, never a secret or service-role key.');
+  }
   let signup = null;
   if (env.KINFOLK_TEST_ALLOW_SIGNUP === 'YES') {
     const { KINFOLK_TEST_SIGNUP_EMAIL: signupEmail,
@@ -82,10 +88,13 @@ async function runSmoke(config, fetchImpl = fetch, log = console.log) {
         data: { display_name: 'Kinfolk QA', signup_birthdate: s.birthdate } },
     });
     if (!result?.user?.id) throw Error('Signup did not return a user.');
-    if (result.access_token) {
-      await send('/logout?scope=local', { method: 'POST', token: result.access_token });
+    // A signup response must not already contain a session when email verification
+    // is required. A returned user alone does not prove that an email was delivered.
+    if (result.access_token || result.refresh_token || result.user.email_confirmed_at ||
+        result.user.confirmed_at) {
+      throw Error('Signup bypassed mandatory email confirmation.');
     }
-    log('PASS isolated synthetic signup request (confirmation may still be required)');
+    log('PASS isolated signup requires confirmation (email delivery unverified)');
   }
   const session = await send('/token?grant_type=password', {
     method: 'POST', body: { email: config.email, password: config.password },
@@ -95,8 +104,12 @@ async function runSmoke(config, fetchImpl = fetch, log = console.log) {
   }
   log('PASS isolated test-account login');
   const user = await send('/user', { token: session.access_token });
-  if (user?.id !== session.user.id) throw Error('Authenticated user identity changed.');
-  log('PASS authenticated user lookup');
+  if (user?.id !== session.user.id ||
+      String(user?.email||'').toLowerCase() !== config.email.toLowerCase()) {
+    throw Error('Authenticated user identity or email changed.');
+  }
+  if (!user.email_confirmed_at) throw Error('Authenticated account has no verified email.');
+  log('PASS authenticated user and confirmed email lookup');
   const refreshed = await send('/token?grant_type=refresh_token', {
     method: 'POST', body: { refresh_token: session.refresh_token },
   });
@@ -104,7 +117,13 @@ async function runSmoke(config, fetchImpl = fetch, log = console.log) {
       refreshed?.user?.id !== session.user.id) {
     throw Error('Session refresh did not preserve the test account.');
   }
-  log('PASS session refresh / restoration token');
+  const refreshedUser = await send('/user', { token: refreshed.access_token });
+  if (refreshedUser?.id !== user.id ||
+      String(refreshedUser?.email||'').toLowerCase() !== config.email.toLowerCase() ||
+      !refreshedUser.email_confirmed_at) {
+    throw Error('Refreshed session did not preserve verified account identity.');
+  }
+  log('PASS session refresh / restoration token and verified identity');
   await send('/logout?scope=local', { method: 'POST', token: refreshed.access_token });
   log('PASS logout endpoint');
   try {
