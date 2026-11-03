@@ -138,3 +138,26 @@ test('Recovery430 native submit ignores disabled or foreign submitters',()=>{
   h.nativeSubmit(h.firstButton);
   assert.deepEqual(h.calls,['send']);
 });
+
+test('Recovery431 rejects Enter and native submits during deferred Send replacement',()=>{
+  const h=harness(),replacement=h.button();
+  h.form.buttons=[replacement]; // MutationObserver has not rebound the form yet
+  h.enter(h.firstField);
+  h.nativeSubmit();
+  assert.deepEqual(h.calls,[]);
+  bind(h.form);
+  h.enter(h.firstField);
+  h.nativeSubmit();
+  assert.deepEqual(h.calls,['send','send']);
+});
+
+test('Recovery431 rejects submits while current Send button is disconnected',()=>{
+  const h=harness();
+  h.firstButton.isConnected=false;
+  h.enter(h.firstField);
+  h.nativeSubmit();
+  assert.deepEqual(h.calls,[]);
+  h.firstButton.isConnected=true;
+  h.nativeSubmit();
+  assert.deepEqual(h.calls,['send']);
+});
