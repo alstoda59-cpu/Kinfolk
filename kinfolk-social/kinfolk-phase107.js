@@ -33,6 +33,11 @@
       e.preventDefault();
       e.stopImmediatePropagation();
       if(form.__kf107Composing||Date.now()<(form.__kf107ImeUntil||0))return;
+      // requestSubmit(oldButton) may fire after a modal swaps Send controls.
+      // Reject a stale/foreign/disabled submitter, including detached nodes.
+      const submitter=e.submitter;
+      if(submitter&&(submitter!==form.__kf107SendButton||submitter.isConnected===false||submitter.disabled||
+         (typeof form.contains==='function'&&!form.contains(submitter))))return;
       safeRun(form,form.__kf107Handler,e);
     };
     form.addEventListener('submit',form.__kf107SubmitHandler,true);
