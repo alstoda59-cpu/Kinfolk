@@ -1,4 +1,10 @@
-(()=>{if(window.__kinfolkPhase107)return;window.__kinfolkPhase107=true;const FORMS=['dmForm','groupMsgForm','groupCreateForm'];function safeRun(form,handler,raw){if(form.dataset.kf107Busy==='1'||form.isConnected===false||form.__kf107SendButton?.disabled)return;const ev={preventDefault(){},stopPropagation(){},stopImmediatePropagation(){},target:form,currentTarget:form,originalEvent:raw};try{const out=handler.call(form,ev);if(out&&typeof out.then==='function'){form.dataset.kf107Busy='1';Promise.resolve(out).catch(e=>{console.warn('Kinfolk message submit rejected',e)}).finally(()=>{delete form.dataset.kf107Busy})}}catch(e){console.warn('Kinfolk message form',e);delete form.dataset.kf107Busy}}function bind(form){
+(()=>{if(window.__kinfolkPhase107)return;window.__kinfolkPhase107=true;const FORMS=['dmForm','groupMsgForm','groupCreateForm'];function safeRun(form,handler,raw){
+  // MutationObserver rebinding is deferred. During that gap, a retained input
+  // or native submit can still reach this handler after Send was replaced.
+  // Do not submit until the current button has been rebound to this form.
+  const send=form.__kf107SendButton;
+  if(form.dataset.kf107Busy==='1'||form.isConnected===false||!send||send.isConnected===false||send.disabled||
+     (typeof form.contains==='function'&&!form.contains(send)))return;const ev={preventDefault(){},stopPropagation(){},stopImmediatePropagation(){},target:form,currentTarget:form,originalEvent:raw};try{const out=handler.call(form,ev);if(out&&typeof out.then==='function'){form.dataset.kf107Busy='1';Promise.resolve(out).catch(e=>{console.warn('Kinfolk message submit rejected',e)}).finally(()=>{delete form.dataset.kf107Busy})}}catch(e){console.warn('Kinfolk message form',e);delete form.dataset.kf107Busy}}function bind(form){
   if(!form)return;
   // Keep the latest underlying form submit handler, including after a modal
   // rerender replaces onsubmit without replacing the form itself.
