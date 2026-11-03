@@ -1,0 +1,33 @@
+'use strict';
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const source=fs.readFileSync('kinfolk-social/index.html','utf8');
+const start=source.indexOf("function renderAuth(mode='login')");
+const end=source.indexOf('function layout()',start);
+assert.ok(start>=0&&end>start,'auth renderer exists');
+const auth=source.slice(start,end);
+test('Recovery436 pending auth submit rejects duplicate native form submission',async()=>{
+ const elements={app:{innerHTML:''},loginTab:{},signupTab:{},authForm:{isConnected:true},authBtn:{disabled:false},authMsg:{textContent:'',className:'danger'},email:{value:'synthetic@example.invalid'},password:{value:'long-enough-test-password'}};
+ let calls=0,finish;
+ const pending=new Promise(resolve=>finish=resolve);
+ const sb={auth:{signInWithPassword:()=>{calls++;return pending;}}};
+ const $=selector=>elements[selector.slice(1)];
+ const context={$,sb,document:{getElementById:id=>elements[id]},location:{origin:'https://alpha.example.invalid'},kfAlphaSignupRedirectOptions:()=>({}),toast:()=>{}};
+ vm.runInNewContext(auth+';this.renderAuth=renderAuth;',context);
+ context.renderAuth('login');
+ const event={preventDefault(){}};
+ const first=elements.authForm.onsubmit(event);
+ const second=elements.authForm.onsubmit(event);
+ assert.equal(calls,1,'only one Supabase sign-in request is allowed');
+ assert.equal(elements.authBtn.disabled,true);
+ finish({error:null});
+ await Promise.all([first,second]);
+ assert.equal(elements.authBtn.disabled,false,'button is restored after request');
+ await elements.authForm.onsubmit(event);
+ assert.equal(calls,2,'later submit is allowed after completion');
+});
+test('Recovery436 guards before initiating auth network request',()=>{
+ assert.match(auth,/if\(btn\.disabled\)return;btn\.disabled=true/);
+});
