@@ -124,11 +124,11 @@ test('Recovery404 pending async send remains locked after button replacement',as
   let resolve;
   h.form.onsubmit=()=>{h.calls.push('send');return new Promise(r=>{resolve=r})};
   bind(h.form);
+  h.click(h.first); // Start the async request while the original button is mounted.
   const replacement=button('Send');
   h.form.buttons=[replacement];
   bind(h.form);
-  h.click(h.first);
-  h.click(replacement);
+  h.click(replacement); // A new button cannot duplicate the in-flight request.
   assert.deepEqual(h.calls,['send']);
   assert.equal(h.form.dataset.kf107Busy,'1');
   resolve();
