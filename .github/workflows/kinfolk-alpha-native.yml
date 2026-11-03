@@ -134,6 +134,8 @@ on:
       - kinfolk-social/recovery427-mobile-message-ime-guard-20261102
       # Recovery428: guard native submit events and post-composition ghost sends.
       - kinfolk-social/recovery428-native-submit-ime-guard-20261102
+      # Recovery429: stale replaced Send buttons and message fields must not submit.
+      - kinfolk-social/recovery429-stale-message-controls-20261102
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-alpha-native.yml'
