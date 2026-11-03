@@ -14,9 +14,13 @@
   // The form can survive while its Send button is replaced, cloned, or has
   // onclick cleared. A one-time dataset flag must not strand mobile messaging.
   if(!form.__kf107Run){
-    form.__kf107Run=e=>{
+    form.__kf107Run=function(e){
       e.preventDefault();
       e.stopImmediatePropagation();
+      // A replaced Send button can retain onclick while its form stays live.
+      // Only the current, still-mounted button may start a message request.
+      if(this!==form.__kf107SendButton||this.isConnected===false||
+         (typeof form.contains==='function'&&!form.contains(this)))return;
       safeRun(form,form.__kf107Handler,e);
     };
   }
@@ -51,6 +55,10 @@
   for(const el of form.querySelectorAll('input,textarea')){
     if(el.__kf107EnterHandler)continue;
     const onEnter=e=>{
+      // A removed or replaced field retains its old listener. Do not let it
+      // submit through a still-connected form after a modal rerender.
+      if(el.isConnected===false||
+         (typeof form.contains==='function'&&!form.contains(el)))return;
       // Android/iOS IME confirmation and held Enter are not message submissions.
       // In particular, Android keyboards may report keyCode 229 during composition.
       if(e.isComposing||e.keyCode===229||e.repeat||form.__kf107Composing||Date.now()<(form.__kf107ImeUntil||0))return;
