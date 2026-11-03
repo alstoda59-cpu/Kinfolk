@@ -31,3 +31,27 @@ test('Recovery436 pending auth submit rejects duplicate native form submission',
 test('Recovery436 guards before initiating auth network request',()=>{
  assert.match(auth,/if\(btn\.disabled\)return;btn\.disabled=true/);
 });
+
+test('Recovery437 pending signup rejects duplicate submits and preserves native-safe redirect',async()=>{
+ const elements={app:{innerHTML:''},loginTab:{},signupTab:{},authForm:{isConnected:true},authBtn:{disabled:false},authMsg:{textContent:'',className:'danger'},email:{value:'signup@example.invalid'},password:{value:'synthetic-long-password'},username:{value:'synthetic_user'},displayName:{value:'Synthetic User'}};
+ let calls=0,finish,options;
+ const pending=new Promise(resolve=>finish=resolve);
+ const sb={auth:{signUp:args=>{calls++;options=args.options;return pending;}}};
+ const $=selector=>elements[selector.slice(1)];
+ const context={$,sb,document:{getElementById:id=>elements[id]},location:{origin:'capacitor://localhost'},kfAlphaSignupRedirectOptions:origin=>/^https?:/.test(origin)?{emailRedirectTo:origin}:{},toast:()=>{}};
+ vm.runInNewContext(auth+';this.renderAuth=renderAuth;',context);
+ context.renderAuth('signup');
+ const event={preventDefault(){}};
+ const first=elements.authForm.onsubmit(event);
+ const second=elements.authForm.onsubmit(event);
+ assert.equal(calls,1,'only one signup request while pending');
+ assert.equal(elements.authBtn.disabled,true);
+ assert.equal(options.emailRedirectTo,undefined,'native origin must not be sent as email redirect');
+ assert.equal(options.data.username,'synthetic_user');
+ finish({data:{session:null},error:null});
+ await Promise.all([first,second]);
+ assert.equal(elements.authBtn.disabled,false);
+ assert.match(elements.authMsg.textContent,/check your email/i);
+ await elements.authForm.onsubmit(event);
+ assert.equal(calls,2,'signup may retry after pending request completes');
+});
