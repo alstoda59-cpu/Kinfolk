@@ -43,8 +43,8 @@ function harness(){
       shiftKey:false,preventDefault(){prevented++},stopImmediatePropagation(){stopped++}});
     return {prevented,stopped};
   };
-  const nativeSubmit=()=>{
-    for(const fn of listeners.submit||[])fn({preventDefault(){},stopImmediatePropagation(){}});
+  const nativeSubmit=(submitter)=>{
+    for(const fn of listeners.submit||[])fn({submitter,preventDefault(){},stopImmediatePropagation(){}});
   };
   return {calls,form,firstButton,firstField,button,field,click,enter,nativeSubmit};
 }
@@ -112,5 +112,29 @@ test('Recovery429 native submit still routes through the current live form',()=>
   h.form.buttons=[newButton];h.form.fields=[newField];
   bind(h.form);
   h.nativeSubmit();
+  assert.deepEqual(h.calls,['send']);
+});
+
+
+test('Recovery430 native submit ignores replaced or detached Send submitters',()=>{
+  const h=harness(),replacement=h.button();
+  h.form.buttons=[replacement];bind(h.form);
+  h.nativeSubmit(h.firstButton);
+  assert.deepEqual(h.calls,[]);
+  h.firstButton.isConnected=false;
+  h.nativeSubmit(h.firstButton);
+  assert.deepEqual(h.calls,[]);
+  h.nativeSubmit(replacement);
+  assert.deepEqual(h.calls,['send']);
+});
+
+test('Recovery430 native submit ignores disabled or foreign submitters',()=>{
+  const h=harness(),foreign=h.button();
+  h.nativeSubmit(foreign);
+  h.firstButton.disabled=true;
+  h.nativeSubmit(h.firstButton);
+  assert.deepEqual(h.calls,[]);
+  h.firstButton.disabled=false;
+  h.nativeSubmit(h.firstButton);
   assert.deepEqual(h.calls,['send']);
 });
