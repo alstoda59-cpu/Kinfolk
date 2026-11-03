@@ -11,9 +11,16 @@ const code=source.slice(start,end);
 const warnings=[];
 const safeRun=vm.runInNewContext(code+'\nsafeRun',{document:{contains:()=>false},console:{warn:(...a)=>warnings.push(a)}});
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
+// Recovery431 requires a live, currently bound Send control before safeRun.
+// These legacy tests exercise the request lock, so provide that control.
+function liveForm(){
+ const send={isConnected:true,disabled:false};
+ return {dataset:{},isConnected:true,__kf107SendButton:send,contains:node=>node===send};
+}
+
 
 test('rejected async submit is handled and releases lock after detached form',async()=>{
- const form={dataset:{},isConnected:true};
+ const form=liveForm();
  let reject;
  const promise=new Promise((_,r)=>{reject=r});
  safeRun(form,()=>promise,{});
@@ -26,7 +33,7 @@ test('rejected async submit is handled and releases lock after detached form',as
 });
 
 test('successful async submit releases lock even if form is detached',async()=>{
- const form={dataset:{}};
+ const form=liveForm();
  let resolve;
  const promise=new Promise(r=>{resolve=r});
  safeRun(form,()=>promise,{});
@@ -37,7 +44,7 @@ test('successful async submit releases lock even if form is detached',async()=>{
 });
 
 test('pending submit blocks duplicate handler invocation',async()=>{
- const form={dataset:{}};
+ const form=liveForm();
  let resolve;
  const promise=new Promise(r=>{resolve=r});
  let calls=0;
@@ -51,7 +58,7 @@ test('pending submit blocks duplicate handler invocation',async()=>{
 });
 
 test('synchronous handler exception does not leave form locked',()=>{
- const form={dataset:{}};
+ const form=liveForm();
  safeRun(form,()=>{throw Error('sync failure')},{});
  assert.equal(form.dataset.kf107Busy,undefined);
 });
