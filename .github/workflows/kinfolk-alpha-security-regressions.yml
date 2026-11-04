@@ -1,20 +1,14 @@
 name: Kinfolk alpha auth and preview isolation regressions
+# Run on every Recovery branch push, not only selected file paths:
+# authentication/security behavior may change in other app modules.
 on:
   push:
     branches:
       - 'kinfolk-social/recovery*'
-    paths:
-      - 'kinfolk-social/index.html'
-      - 'kinfolk-social/kinfolk-preview-isolation.js'
-      - 'kinfolk-social/tests/recovery442-confirmed-session.test.cjs'
-      - 'kinfolk-social/tests/recovery444-preview-isolation.test.cjs'
-      - '.github/workflows/kinfolk-alpha-security-regressions.yml'
   pull_request:
     paths:
-      - 'kinfolk-social/index.html'
-      - 'kinfolk-social/kinfolk-preview-isolation.js'
-      - 'kinfolk-social/tests/recovery442-confirmed-session.test.cjs'
-      - 'kinfolk-social/tests/recovery444-preview-isolation.test.cjs'
+      - 'kinfolk-social/**'
+      - '.github/workflows/kinfolk-alpha-security-regressions.yml'
   workflow_dispatch:
 
 permissions:
