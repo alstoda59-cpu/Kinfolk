@@ -122,7 +122,7 @@ function kf316ClearPreviousAccount(){
 // single gate. Phase95 login already verifies email, but restored sessions and
 // older recovery handlers must not bypass that protection.
 function kf338ConfirmedSession(session){
-  return !!(session?.user?.id&&typeof session.user.email_confirmed_at==='string'&&session.user.email_confirmed_at.trim());
+  return !!(typeof session?.user?.id==='string'&&session.user.id.trim()&&typeof session.user.email_confirmed_at==='string'&&session.user.email_confirmed_at.trim());
 }
 async function kf338RejectUnconfirmedSession(uid){
   // Clear private UI synchronously before any asynchronous Supabase operation.
