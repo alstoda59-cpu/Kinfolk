@@ -12,7 +12,7 @@
   // A visual overlay alone would NOT stop background auth/session requests.
   const policy=document.createElement('meta');
   policy.setAttribute('http-equiv','Content-Security-Policy');
-  policy.setAttribute('content',"default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; form-action 'none'; frame-src 'none'; object-src 'none'");
+  policy.setAttribute('content',"default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'none'; worker-src 'none'; img-src 'self' data: blob:; media-src 'self' blob:; form-action 'none'; frame-src 'none'; object-src 'none'");
   document.head.prepend(policy);
 
   document.addEventListener('submit',event=>{
