@@ -13,6 +13,7 @@ function run(host, readyState='complete', preseedBlocked=false, missingBody=fals
   const nodes = [];
   const listeners = {};
   const windowListeners = {};
+  const observers = [];
   const make = tag => ({
     tag, attrs: {}, children: [], style: {},
     setAttribute(key, value) { this.attrs[key] = value; },
@@ -20,6 +21,7 @@ function run(host, readyState='complete', preseedBlocked=false, missingBody=fals
   });
   const document = {
     readyState,
+    documentElement: {},
     body: missingBody ? null : {style: {}, appendChild(node) { nodes.push(node); }},
     head: {prepend(node) { nodes.push(node); }},
     createElement: make,
@@ -28,8 +30,14 @@ function run(host, readyState='complete', preseedBlocked=false, missingBody=fals
   };
   const window = {location: {hostname: host}, addEventListener(type, fn) { windowListeners[type] = fn; }};
   if (preseedBlocked) window.__kinfolkPreviewBackendBlocked = true;
-  vm.runInNewContext(source, {window, document}, {timeout: 1000});
-  return {window, document, nodes, listeners, windowListeners};
+  class MutationObserver {
+    constructor(callback) { this.callback = callback; observers.push(this); }
+    observe(target, options) { this.target = target; this.options = options; }
+    disconnect() { this.disconnected = true; }
+    trigger() { this.callback(); }
+  }
+  vm.runInNewContext(source, {window, document, MutationObserver}, {timeout: 1000});
+  return {window, document, nodes, listeners, windowListeners, observers};
 }
 for (const host of ['kinfolk-social-demo-abc.vercel.app', 'vercel.app', 'TEST.VERCEL.APP', 'kinfolk-social-demo-abc.vercel.app.', 'VERCEL.APP..']) {
   const result = run(host);
@@ -71,7 +79,13 @@ assert.ok(lateBody.nodes.some(n => n.tag === 'meta'), 'network CSP installed wit
 assert.ok(lateBody.listeners.DOMContentLoaded, 'late body gets DOM-ready retry');
 assert.ok(lateBody.windowListeners.pageshow, 'late body gets pageshow fallback');
 assert.equal(lateBody.nodes.some(n => n.id === 'kf317PreviewBlocked'), false);
+assert.equal(lateBody.observers.length, 1, 'observe missing body');
+lateBody.listeners.DOMContentLoaded();
+lateBody.windowListeners.pageshow();
+assert.equal(lateBody.nodes.some(n => n.id === 'kf317PreviewBlocked'), false, 'events before body do not mount overlay');
 lateBody.document.body = {style:{}, appendChild(node) {lateBody.nodes.push(node);}};
+lateBody.observers[0].trigger();
+assert.equal(lateBody.observers[0].disconnected, true, 'observer stops after overlay mounts');
 lateBody.listeners.DOMContentLoaded();
 lateBody.windowListeners.pageshow();
 assert.equal(lateBody.nodes.filter(n => n.id === 'kf317PreviewBlocked').length, 1, 'overlay installed once');
