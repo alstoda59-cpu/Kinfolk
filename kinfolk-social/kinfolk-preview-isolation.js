@@ -3,7 +3,7 @@
 // This runs before the external SDK and all main-app startup scripts.
 // Native Capacitor localhost and the production custom domain are unchanged.
 (()=>{
-  const host=String(window.location?.hostname||'').toLowerCase();
+  const host=String(window.location?.hostname||'').toLowerCase().replace(/\.+$/, '');
   if(!/(^|\.)vercel\.app$/.test(host)||window.__kinfolkPreviewBackendBlocked)return;
   window.__kinfolkPreviewBackendBlocked=true;
 
