@@ -15,7 +15,7 @@ async function scenario({switchAccount=false,error=null,duplicate=false}={}){
  sb:{from:(table)=>{assert.equal(table,'post_likes');return {insert:(row)=>{assert.equal(row.user_id,'account-a');writes++;return new Promise(r=>resolveQuery=r)}}}},
  toast:(msg)=>toasts.push(msg),loadFeed:async()=>{loads++},renderApp:async()=>{renders++}
  };
- vm.runInNewContext(source+'\nthis.runLike=toggleLike;',ctx);
+ vm.runInNewContext(source+'\nthis.runLike=toggleLike;this.pendingLikes=kf459PendingLikes;',ctx);
  const first=ctx.runLike('post-a');
  if(duplicate)await ctx.runLike('post-a');
  assert.equal(writes,1,'one in-flight mutation per account and post');
@@ -25,7 +25,7 @@ async function scenario({switchAccount=false,error=null,duplicate=false}={}){
  assert.equal(loads,switchAccount||error?0:1);
  assert.equal(renders,switchAccount||error?0:1);
  assert.equal(toasts.length,switchAccount?0:error?1:0);
- assert.equal(ctx.kf459PendingLikes.size,0,'pending request released');
+ assert.equal(ctx.pendingLikes.size,0,'pending request released');
 }
 (async()=>{
  await scenario();
