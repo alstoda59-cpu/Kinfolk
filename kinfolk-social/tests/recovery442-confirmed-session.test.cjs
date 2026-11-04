@@ -14,6 +14,8 @@ const cases = [
   ['empty session', {}, false],
   ['missing user', {access_token:'synthetic'}, false],
   ['missing id', user('', '2026-11-03T10:00:00Z'), false],
+  ['whitespace-only id', user('   ', '2026-11-03T10:00:00Z'), false],
+  ['non-string id', user(123, '2026-11-03T10:00:00Z'), false],
   ['missing confirmation', {user:{id:'synthetic-user'}}, false],
   ['null confirmation', user('synthetic-user', null), false],
   ['empty confirmation', user('synthetic-user', ''), false],
@@ -24,4 +26,4 @@ const cases = [
 for (const [label, session, expected] of cases) {
   assert.equal(Boolean(confirmed(session)), expected, label);
 }
-console.log('Recovery442: 10 synthetic confirmed-session behavior cases passed');
+console.log('Recovery443: 12 synthetic confirmed-session behavior cases passed');
