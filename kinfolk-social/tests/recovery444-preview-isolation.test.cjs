@@ -9,7 +9,7 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 assert.ok(html.indexOf('/kinfolk-preview-isolation.js') >= 0, 'guard must be loaded');
 assert.ok(html.indexOf('/kinfolk-preview-isolation.js') < html.indexOf('https://cdn.jsdelivr.net/npm/@supabase/supabase-js'), 'guard must run before SDK');
 
-function run(host, readyState='complete') {
+function run(host, readyState='complete', preseedBlocked=false) {
   const nodes = [];
   const listeners = {};
   const make = tag => ({
@@ -26,6 +26,7 @@ function run(host, readyState='complete') {
     addEventListener(type, fn) { listeners[type] = fn; },
   };
   const window = {location: {hostname: host}};
+  if (preseedBlocked) window.__kinfolkPreviewBackendBlocked = true;
   vm.runInNewContext(source, {window, document}, {timeout: 1000});
   return {window, document, nodes, listeners};
 }
@@ -51,6 +52,11 @@ for (const host of ['kinfolk.example.com', 'localhost', '127.0.0.1', 'evilvercel
   assert.equal(result.window.__kinfolkPreviewBackendBlocked, undefined, host);
   assert.equal(result.nodes.length, 0, 'nonpreview behavior untouched');
 }
+// A mutable global flag must not be able to suppress the actual network CSP.
+const preseeded = run('test.vercel.app', 'complete', true);
+assert.ok(preseeded.nodes.some(n => n.tag === 'meta'), 'pre-set global flag cannot bypass preview CSP');
+assert.ok(preseeded.listeners.submit, 'pre-set global flag cannot bypass form interception');
+assert.ok(preseeded.nodes.some(n => n.id === 'kf317PreviewBlocked'), 'pre-set global flag cannot bypass overlay');
 const pending = run('test.vercel.app', 'loading');
 assert.ok(pending.listeners.DOMContentLoaded, 'deferred blocking UI registered');
 assert.equal(pending.nodes.some(n => n.id === 'kf317PreviewBlocked'), false);
