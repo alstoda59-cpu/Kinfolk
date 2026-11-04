@@ -37,7 +37,9 @@ for (const host of ['kinfolk-social-demo-abc.vercel.app', 'vercel.app', 'TEST.VE
   const policy = result.nodes.find(n => n.tag === 'meta');
   assert.ok(policy, 'CSP installed before startup');
   const csp = policy.attrs.content;
-  assert.match(csp, /connect-src 'self'/);
+  assert.match(csp, /connect-src 'none'/);
+  assert.match(csp, /worker-src 'none'/);
+  assert.doesNotMatch(csp, /connect-src 'self'/);
   assert.match(csp, /img-src 'self' data: blob:/);
   assert.match(csp, /media-src 'self' blob:/);
   assert.match(csp, /form-action 'none'/);
