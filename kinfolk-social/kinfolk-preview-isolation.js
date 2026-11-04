@@ -49,13 +49,14 @@
       window.addEventListener('pageshow',show,{once:true});
       // DOMContentLoaded and pageshow can both fire before a delayed webview
       // exposes body. Observe the document until the blocking UI is mounted.
-      if(typeof MutationObserver==='function' && document.documentElement){
+      if(typeof MutationObserver==='function'){
         const observer=new MutationObserver(()=>{
           if(!document.body)return;
           show();
           observer.disconnect();
         });
-        observer.observe(document.documentElement,{childList:true,subtree:true});
+        // Observe the document itself: some WebViews expose neither html nor body yet.
+        observer.observe(document,{childList:true,subtree:true});
       }
     }
   }else show();
