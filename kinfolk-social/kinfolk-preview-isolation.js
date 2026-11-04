@@ -40,6 +40,11 @@
     document.body.appendChild(pane);
     document.body.style.overflow='hidden';
   };
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',show,{once:true});
-  else show();
+  // Some embedded/mobile shells expose the document before body exists.
+  // Keep the network CSP active immediately and retry the visible block when
+  // the document finishes parsing instead of silently losing the overlay.
+  if(document.readyState==='loading'||!document.body){
+    document.addEventListener('DOMContentLoaded',show,{once:true});
+    if(!document.body)window.addEventListener('pageshow',show,{once:true});
+  }else show();
 })();
