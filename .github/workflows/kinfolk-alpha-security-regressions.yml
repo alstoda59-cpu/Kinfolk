@@ -1,0 +1,36 @@
+name: Kinfolk alpha auth and preview isolation regressions
+on:
+  push:
+    branches:
+      - 'kinfolk-social/recovery*'
+    paths:
+      - 'kinfolk-social/index.html'
+      - 'kinfolk-social/kinfolk-preview-isolation.js'
+      - 'kinfolk-social/tests/recovery442-confirmed-session.test.cjs'
+      - 'kinfolk-social/tests/recovery444-preview-isolation.test.cjs'
+      - '.github/workflows/kinfolk-alpha-security-regressions.yml'
+  pull_request:
+    paths:
+      - 'kinfolk-social/index.html'
+      - 'kinfolk-social/kinfolk-preview-isolation.js'
+      - 'kinfolk-social/tests/recovery442-confirmed-session.test.cjs'
+      - 'kinfolk-social/tests/recovery444-preview-isolation.test.cjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-security:
+    name: Synthetic auth and preview isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify confirmed session behavior
+        run: node kinfolk-social/tests/recovery442-confirmed-session.test.cjs
+      - name: Verify Vercel preview backend isolation
+        run: node kinfolk-social/tests/recovery444-preview-isolation.test.cjs
