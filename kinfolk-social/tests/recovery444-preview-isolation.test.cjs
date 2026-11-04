@@ -9,7 +9,7 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 assert.ok(html.indexOf('/kinfolk-preview-isolation.js') >= 0, 'guard must be loaded');
 assert.ok(html.indexOf('/kinfolk-preview-isolation.js') < html.indexOf('https://cdn.jsdelivr.net/npm/@supabase/supabase-js'), 'guard must run before SDK');
 
-function run(host, readyState='complete', preseedBlocked=false, missingBody=false) {
+function run(host, readyState='complete', preseedBlocked=false, missingBody=false, missingRoot=false) {
   const nodes = [];
   const listeners = {};
   const windowListeners = {};
@@ -21,7 +21,7 @@ function run(host, readyState='complete', preseedBlocked=false, missingBody=fals
   });
   const document = {
     readyState,
-    documentElement: {},
+    documentElement: missingRoot ? null : {},
     body: missingBody ? null : {style: {}, appendChild(node) { nodes.push(node); }},
     head: {prepend(node) { nodes.push(node); }},
     createElement: make,
@@ -89,4 +89,14 @@ assert.equal(lateBody.observers[0].disconnected, true, 'observer stops after ove
 lateBody.listeners.DOMContentLoaded();
 lateBody.windowListeners.pageshow();
 assert.equal(lateBody.nodes.filter(n => n.id === 'kf317PreviewBlocked').length, 1, 'overlay installed once');
+
+// A mobile WebView may expose the document before either html or body exists.
+const noRoot = run('test.vercel.app', 'loading', false, true, true);
+assert.equal(noRoot.observers.length, 1, 'observer installed without documentElement');
+assert.equal(noRoot.observers[0].target, noRoot.document, 'observe document to catch root insertion');
+noRoot.document.documentElement = {};
+noRoot.document.body = {style:{}, appendChild(node) {noRoot.nodes.push(node);}};
+noRoot.observers[0].trigger();
+assert.ok(noRoot.nodes.some(n => n.id === 'kf317PreviewBlocked'), 'overlay appears after root and body insertion');
+assert.equal(noRoot.observers[0].disconnected, true, 'observer disconnects after mounting');
 console.log('Recovery444: preview isolation smoke cases passed');
