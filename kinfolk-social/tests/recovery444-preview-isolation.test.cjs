@@ -29,7 +29,7 @@ function run(host, readyState='complete') {
   vm.runInNewContext(source, {window, document}, {timeout: 1000});
   return {window, document, nodes, listeners};
 }
-for (const host of ['kinfolk-social-demo-abc.vercel.app', 'vercel.app', 'TEST.VERCEL.APP']) {
+for (const host of ['kinfolk-social-demo-abc.vercel.app', 'vercel.app', 'TEST.VERCEL.APP', 'kinfolk-social-demo-abc.vercel.app.', 'VERCEL.APP..']) {
   const result = run(host);
   assert.equal(result.window.__kinfolkPreviewBackendBlocked, true, host);
   const policy = result.nodes.find(n => n.tag === 'meta');
@@ -46,7 +46,7 @@ for (const host of ['kinfolk-social-demo-abc.vercel.app', 'vercel.app', 'TEST.VE
   assert.ok(prevented && stopped);
   assert.ok(result.nodes.some(n => n.id === 'kf317PreviewBlocked'), 'blocking UI shown');
 }
-for (const host of ['kinfolk.example.com', 'localhost', '127.0.0.1', 'evilvercel.app', 'vercel.app.evil.test']) {
+for (const host of ['kinfolk.example.com', 'localhost', '127.0.0.1', 'evilvercel.app', 'vercel.app.evil.test', 'vercel.app.evil.test.']) {
   const result = run(host);
   assert.equal(result.window.__kinfolkPreviewBackendBlocked, undefined, host);
   assert.equal(result.nodes.length, 0, 'nonpreview behavior untouched');
