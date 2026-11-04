@@ -8,15 +8,18 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const match = html.match(/function kf338ConfirmedSession\(session\)\s*\{[^}]*\}/);
 assert.ok(match, 'confirmed-session predicate must exist');
 const confirmed = vm.runInNewContext(match[0] + '\n kf338ConfirmedSession;', Object.create(null), {timeout: 1000});
-const user = (id, email_confirmed_at) => ({user:{id,email_confirmed_at}});
+const user = (id, email_confirmed_at) => ({access_token:'synthetic-token',user:{id,email_confirmed_at}});
 const cases = [
   ['null session', null, false],
   ['empty session', {}, false],
   ['missing user', {access_token:'synthetic'}, false],
+  ['missing access token', {user:{id:'synthetic-user',email_confirmed_at:'2026-11-03T10:00:00Z'}}, false],
+  ['blank access token', {access_token:'  ',user:{id:'synthetic-user',email_confirmed_at:'2026-11-03T10:00:00Z'}}, false],
+  ['non-string access token', {access_token:123,user:{id:'synthetic-user',email_confirmed_at:'2026-11-03T10:00:00Z'}}, false],
   ['missing id', user('', '2026-11-03T10:00:00Z'), false],
   ['whitespace-only id', user('   ', '2026-11-03T10:00:00Z'), false],
   ['non-string id', user(123, '2026-11-03T10:00:00Z'), false],
-  ['missing confirmation', {user:{id:'synthetic-user'}}, false],
+  ['missing confirmation', {access_token:'synthetic-token',user:{id:'synthetic-user'}}, false],
   ['null confirmation', user('synthetic-user', null), false],
   ['empty confirmation', user('synthetic-user', ''), false],
   ['whitespace confirmation', user('synthetic-user', '   '), false],
@@ -26,4 +29,4 @@ const cases = [
 for (const [label, session, expected] of cases) {
   assert.equal(Boolean(confirmed(session)), expected, label);
 }
-console.log('Recovery443: 12 synthetic confirmed-session behavior cases passed');
+console.log('Recovery453: 15 synthetic confirmed-session behavior cases passed');
