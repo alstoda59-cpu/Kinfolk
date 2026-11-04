@@ -9,9 +9,10 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 assert.ok(html.indexOf('/kinfolk-preview-isolation.js') >= 0, 'guard must be loaded');
 assert.ok(html.indexOf('/kinfolk-preview-isolation.js') < html.indexOf('https://cdn.jsdelivr.net/npm/@supabase/supabase-js'), 'guard must run before SDK');
 
-function run(host, readyState='complete', preseedBlocked=false) {
+function run(host, readyState='complete', preseedBlocked=false, missingBody=false) {
   const nodes = [];
   const listeners = {};
+  const windowListeners = {};
   const make = tag => ({
     tag, attrs: {}, children: [], style: {},
     setAttribute(key, value) { this.attrs[key] = value; },
@@ -19,16 +20,16 @@ function run(host, readyState='complete', preseedBlocked=false) {
   });
   const document = {
     readyState,
-    body: {style: {}, appendChild(node) { nodes.push(node); }},
+    body: missingBody ? null : {style: {}, appendChild(node) { nodes.push(node); }},
     head: {prepend(node) { nodes.push(node); }},
     createElement: make,
     getElementById(id) { return nodes.find(n => n.id === id); },
     addEventListener(type, fn) { listeners[type] = fn; },
   };
-  const window = {location: {hostname: host}};
+  const window = {location: {hostname: host}, addEventListener(type, fn) { windowListeners[type] = fn; }};
   if (preseedBlocked) window.__kinfolkPreviewBackendBlocked = true;
   vm.runInNewContext(source, {window, document}, {timeout: 1000});
-  return {window, document, nodes, listeners};
+  return {window, document, nodes, listeners, windowListeners};
 }
 for (const host of ['kinfolk-social-demo-abc.vercel.app', 'vercel.app', 'TEST.VERCEL.APP', 'kinfolk-social-demo-abc.vercel.app.', 'VERCEL.APP..']) {
   const result = run(host);
@@ -62,4 +63,14 @@ assert.ok(pending.listeners.DOMContentLoaded, 'deferred blocking UI registered')
 assert.equal(pending.nodes.some(n => n.id === 'kf317PreviewBlocked'), false);
 pending.listeners.DOMContentLoaded();
 assert.ok(pending.nodes.some(n => n.id === 'kf317PreviewBlocked'));
+// A document may report complete before its body is exposed by an embedded shell.
+const lateBody = run('test.vercel.app', 'complete', false, true);
+assert.ok(lateBody.nodes.some(n => n.tag === 'meta'), 'network CSP installed without body');
+assert.ok(lateBody.listeners.DOMContentLoaded, 'late body gets DOM-ready retry');
+assert.ok(lateBody.windowListeners.pageshow, 'late body gets pageshow fallback');
+assert.equal(lateBody.nodes.some(n => n.id === 'kf317PreviewBlocked'), false);
+lateBody.document.body = {style:{}, appendChild(node) {lateBody.nodes.push(node);}};
+lateBody.listeners.DOMContentLoaded();
+lateBody.windowListeners.pageshow();
+assert.equal(lateBody.nodes.filter(n => n.id === 'kf317PreviewBlocked').length, 1, 'overlay installed once');
 console.log('Recovery444: preview isolation smoke cases passed');
