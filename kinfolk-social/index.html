@@ -361,7 +361,28 @@ async function renderFeed(root,posts){const epoch=kf129Epoch,uid=state.user?.id;
 function linkify(text){return esc(text).replace(/(^|\s)(#[A-Za-z0-9_]+)/g,'$1<span style="color:#ff92be">$2</span>')}
 async function commentsHtml(pid,comments){let h='';for(const c of comments){const p=state.profiles.get(c.author_id);const av=await avatarHtml(p,'sm');h+=`<div class="comment">${av}<div class="bubble"><b>${esc(p?.display_name||p?.username||'User')}</b><div>${esc(c.body)}</div></div></div>`}h+=`<form class="commentForm" onsubmit="addComment(event,'${pid}')"><input class="field" name="body" placeholder="Write a comment…" required><button class="btn small primary">Post</button></form>`;return h}
 function toggleComments(id){$('#comments-'+id)?.classList.toggle('hide')}
-async function toggleLike(pid){const liked=(state.likes.get(pid)||[]).some(l=>l.user_id===state.user.id);const q=liked?sb.from('post_likes').delete().eq('post_id',pid).eq('user_id',state.user.id):sb.from('post_likes').insert({post_id:pid,user_id:state.user.id});const {error}=await q;if(error)return toast(error.message,'danger');await loadFeed();await renderApp()}
+const kf459PendingLikes=new Set();
+async function toggleLike(pid){
+ const epoch=kf129Epoch,uid=state.user?.id;
+ if(!kfAlphaLoadCurrent(epoch,uid)||!pid)return;
+ const key=uid+':'+pid;
+ if(kf459PendingLikes.has(key))return;
+ kf459PendingLikes.add(key);
+ try{
+  const liked=(state.likes.get(pid)||[]).some(l=>l.user_id===uid);
+  const q=liked?sb.from('post_likes').delete().eq('post_id',pid).eq('user_id',uid):sb.from('post_likes').insert({post_id:pid,user_id:uid});
+  const {error}=await q;
+  if(!kfAlphaLoadCurrent(epoch,uid))return;
+  if(error){toast(error.message,'danger');return;}
+  await loadFeed();
+  if(!kfAlphaLoadCurrent(epoch,uid))return;
+  await renderApp();
+ }catch(error){
+  if(kfAlphaLoadCurrent(epoch,uid))toast('Could not update like. Refresh and try again.','danger');
+ }finally{
+  kf459PendingLikes.delete(key);
+ }
+}
 async function addComment(e,pid){
  e.preventDefault();
  const form=e.currentTarget||e.target,epoch=kf129Epoch,uid=state.user?.id;
