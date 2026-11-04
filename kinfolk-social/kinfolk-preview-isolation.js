@@ -45,6 +45,18 @@
   // the document finishes parsing instead of silently losing the overlay.
   if(document.readyState==='loading'||!document.body){
     document.addEventListener('DOMContentLoaded',show,{once:true});
-    if(!document.body)window.addEventListener('pageshow',show,{once:true});
+    if(!document.body){
+      window.addEventListener('pageshow',show,{once:true});
+      // DOMContentLoaded and pageshow can both fire before a delayed webview
+      // exposes body. Observe the document until the blocking UI is mounted.
+      if(typeof MutationObserver==='function' && document.documentElement){
+        const observer=new MutationObserver(()=>{
+          if(!document.body)return;
+          show();
+          observer.disconnect();
+        });
+        observer.observe(document.documentElement,{childList:true,subtree:true});
+      }
+    }
   }else show();
 })();
