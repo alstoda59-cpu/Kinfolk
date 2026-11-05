@@ -31,6 +31,11 @@ function harness(hostname, bodyReady = true) {
   };
   const window = {
     location:{hostname},
+    fetch(){return Promise.resolve('unsafe');},
+    XMLHttpRequest:function OriginalXHR(){},
+    WebSocket:function OriginalSocket(){},
+    EventSource:function OriginalEvents(){},
+    navigator:{sendBeacon(){return true;}},
     addEventListener(name,callback){windowListeners.set(name,callback);}
   };
   class MutationObserver {
@@ -131,3 +136,17 @@ webview.window.observer.callback();
 assert.equal(webview.nodes.has('kf317PreviewBlocked'),true);
 assert.equal(webview.window.observer.disconnected,true,'observer must disconnect after mount');
 console.log('Recovery471: hostname and delayed WebView scenarios passed');
+
+// Recovery472: the shipped guard must also deny network APIs in WebViews
+// that fail to enforce a dynamically inserted CSP. Native hosts are exempt.
+const apiPreview=harness('mobile-preview.vercel.app');
+assert.throws(()=>new apiPreview.window.XMLHttpRequest(),/network access is disabled/);
+assert.throws(()=>new apiPreview.window.WebSocket('wss:\/\/example.invalid'),/network access is disabled/);
+assert.throws(()=>new apiPreview.window.EventSource('https:\/\/example.invalid'),/network access is disabled/);
+assert.equal(apiPreview.window.navigator.sendBeacon('https:\/\/example.invalid','x'),false);
+assert.equal(native.window.navigator.sendBeacon('https:\/\/example.invalid','x'),true);
+assert.equal(native.window.fetch().constructor,Promise);
+apiPreview.window.fetch('https:\/\/example.invalid').then(
+  ()=>{throw new Error('preview fetch unexpectedly succeeded');},
+  error=>assert.match(error.message,/network access is disabled/)
+).then(()=>console.log('Recovery472: WebView network API fallback scenarios passed'));
