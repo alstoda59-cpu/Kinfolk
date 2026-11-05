@@ -1,0 +1,33 @@
+name: Kinfolk preview isolation runtime regression
+
+on:
+  push:
+    branches:
+      - 'kinfolk-social/recovery*'
+    paths:
+      - 'kinfolk-social/kinfolk-preview-isolation.js'
+      - 'kinfolk-social/tests/recovery468-preview-isolation-runtime.test.cjs'
+      - '.github/workflows/kinfolk-preview-isolation.yml'
+  pull_request:
+    paths:
+      - 'kinfolk-social/kinfolk-preview-isolation.js'
+      - 'kinfolk-social/tests/recovery468-preview-isolation-runtime.test.cjs'
+      - '.github/workflows/kinfolk-preview-isolation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preview-isolation:
+    name: Synthetic DOM preview isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Show Node version
+        run: node --version
+      - name: Execute isolation regression (offline, no credentials)
+        run: node kinfolk-social/tests/recovery468-preview-isolation-runtime.test.cjs
