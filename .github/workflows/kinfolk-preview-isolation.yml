@@ -6,11 +6,13 @@ on:
       - 'kinfolk-social/recovery*'
     paths:
       - 'kinfolk-social/kinfolk-preview-isolation.js'
+      - 'kinfolk-social/index.html'
       - 'kinfolk-social/tests/recovery468-preview-isolation-runtime.test.cjs'
       - '.github/workflows/kinfolk-preview-isolation.yml'
   pull_request:
     paths:
       - 'kinfolk-social/kinfolk-preview-isolation.js'
+      - 'kinfolk-social/index.html'
       - 'kinfolk-social/tests/recovery468-preview-isolation-runtime.test.cjs'
       - '.github/workflows/kinfolk-preview-isolation.yml'
   workflow_dispatch:
