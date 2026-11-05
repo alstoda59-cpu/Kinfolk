@@ -11,12 +11,16 @@ function harness(hostname, bodyReady = true) {
   const windowListeners = new Map();
   const nodes = new Map();
   const inserted = [];
-  const element = tag => ({
-    tag, attributes: {}, children: [], style: {}, textContent: '',
-    setAttribute(k,v){this.attributes[k]=v; if(k==='id')nodes.set(v,this);},
-    append(...children){this.children.push(...children);},
-    appendChild(child){this.children.push(child);}
-  });
+  const element = tag => {
+    const node = {
+      tag, attributes: {}, children: [], style: {}, textContent: '',
+      setAttribute(k,v){this.attributes[k]=v; if(k==='id')this.id=v;},
+      append(...children){this.children.push(...children);},
+      appendChild(child){this.children.push(child);}
+    };
+    Object.defineProperty(node,'id',{get(){return this.attributes.id;},set(v){this.attributes.id=v;nodes.set(v,this);}});
+    return node;
+  };
   const body = bodyReady ? element('body') : null;
   const document = {
     body, readyState: bodyReady ? 'complete' : 'loading',
