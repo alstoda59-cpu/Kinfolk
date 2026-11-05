@@ -1954,18 +1954,48 @@ dmForm.onsubmit=async e=>{
     return renderChannelList(root,state.channels||[]);
   };
 
+  // A subscription write belongs to the account that initiated it, not whichever
+  // account is active when the network response eventually arrives.
+  const subscriptionWritesInFlight=new Set();
+  const subscriptionWritesUncertain=new Set();
   toggleSubscribe=async function(cid){
+    const ownerId=state.user?.id,authEpoch=kf129Epoch;
+    if(!ownerId||!cid)return;
+    const key=ownerId+':'+cid;
+    if(subscriptionWritesInFlight.has(key))return;
+    if(subscriptionWritesUncertain.has(key)){
+      toast('Subscription status is uncertain. Reload before trying again.','danger');
+      return;
+    }
     const c=state.channels.find(x=>x.id===cid);
-    const is=!!c?.is_subscribed || (state.subscriptions.get(cid)||[]).some(s=>s.user_id===state.user.id);
-    const q=is
-      ?sb.from('kinfolk_channel_subscriptions').delete().eq('channel_id',cid).eq('user_id',state.user.id)
-      :sb.from('kinfolk_channel_subscriptions').insert({channel_id:cid,user_id:state.user.id,notify_level:'all'});
-    const {error}=await q;
-    if(error)return toast(error.message,'danger');
-    await loadChannels();
-    if(state.channelViewId===cid) await openChannel(cid);
-    else await renderApp();
-    toast(is?'Unsubscribed':'Subscribed','good');
+    if(!c)return toast('Channel is unavailable.','danger');
+    const is=!!c.is_subscribed || (state.subscriptions.get(cid)||[]).some(s=>s.user_id===ownerId);
+    const stillCurrent=()=>state.user?.id===ownerId&&kf129Epoch===authEpoch;
+    subscriptionWritesInFlight.add(key);
+    try{
+      const q=is
+        ?sb.from('kinfolk_channel_subscriptions').delete().eq('channel_id',cid).eq('user_id',ownerId).select('channel_id,user_id')
+        :sb.from('kinfolk_channel_subscriptions').insert({channel_id:cid,user_id:ownerId,notify_level:'all'}).select('channel_id,user_id');
+      const {data,error}=await q;
+      if(!stillCurrent())return;
+      if(error||!Array.isArray(data)||data.length!==1||data[0]?.channel_id!==cid||data[0]?.user_id!==ownerId){
+        subscriptionWritesUncertain.add(key);
+        toast('Subscription change could not be confirmed. Reload before retrying.','danger');
+        return;
+      }
+      await loadChannels();
+      if(!stillCurrent())return;
+      if(state.channelViewId===cid)await openChannel(cid);
+      else await renderApp();
+      if(stillCurrent())toast(is?'Unsubscribed':'Subscribed','good');
+    }catch(err){
+      if(stillCurrent()){
+        subscriptionWritesUncertain.add(key);
+        toast('Subscription status is uncertain. Reload before retrying.','danger');
+      }
+    }finally{
+      subscriptionWritesInFlight.delete(key);
+    }
   };
 
   async function renderReelFeed(root,arr){
