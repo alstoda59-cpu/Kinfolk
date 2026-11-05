@@ -4,7 +4,7 @@ export function verifyLocalCapacitorConfig(config) {
   if (!config || typeof config !== 'object' || Array.isArray(config)) throw new Error('Capacitor config must be an object');
   // Reject non-JSON-like objects before reading any fields. Inherited overrides
   // and accessor properties can otherwise evade Object.keys or execute code.
-  for (const [name, value] of [['config', config], ['server', config.server]]) {
+  for (const [name, value] of [['config', config], ['server', Object.getOwnPropertyDescriptor(config, 'server')?.value]]) {
     if (value === undefined) continue;
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Capacitor '+name+' settings are invalid');
     const prototype = Object.getPrototypeOf(value);
