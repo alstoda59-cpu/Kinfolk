@@ -29,7 +29,7 @@
   // Workers and WebRTC can initiate traffic outside the ordinary fetch/XHR path.
   // Deny their creation on previews before application startup.
   const denyNetworkConstructor=()=>{throw new Error('Kinfolk preview network access is disabled');};
-  for(const api of ['Worker','SharedWorker','RTCPeerConnection','webkitRTCPeerConnection']){
+  for(const api of ['Worker','SharedWorker','RTCPeerConnection','webkitRTCPeerConnection','WebTransport','WebSocketStream']){
     if(typeof window[api]==='function'){
       try{window[api]=denyNetworkConstructor;}catch(_error){/* CSP still blocks workers. */}
     }
