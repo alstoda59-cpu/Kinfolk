@@ -35,7 +35,10 @@ function harness(hostname, bodyReady = true) {
     XMLHttpRequest:function OriginalXHR(){},
     WebSocket:function OriginalSocket(){},
     EventSource:function OriginalEvents(){},
-    navigator:{sendBeacon(){return true;}},
+    Worker:function OriginalWorker(){},
+    SharedWorker:function OriginalSharedWorker(){},
+    RTCPeerConnection:function OriginalRTC(){},
+    navigator:{sendBeacon(){return true;},serviceWorker:{register(){return Promise.resolve('unsafe');}}},
     addEventListener(name,callback){windowListeners.set(name,callback);}
   };
   class MutationObserver {
@@ -150,3 +153,16 @@ apiPreview.window.fetch('https:\/\/example.invalid').then(
   ()=>{throw new Error('preview fetch unexpectedly succeeded');},
   error=>assert.match(error.message,/network access is disabled/)
 ).then(()=>console.log('Recovery472: WebView network API fallback scenarios passed'));
+
+// Recovery473: worker/WebRTC creation and service-worker registration are
+// denied only for Vercel previews, leaving native Capacitor unaffected.
+const workerPreview=harness('mobile-preview.vercel.app');
+for(const api of ['Worker','SharedWorker','RTCPeerConnection']){
+  assert.throws(()=>new workerPreview.window[api]('unsafe'),/network access is disabled/,api);
+  assert.doesNotThrow(()=>new native.window[api]('safe'),api+' native exemption');
+}
+assert.equal(native.window.navigator.serviceWorker.register().constructor,Promise);
+workerPreview.window.navigator.serviceWorker.register('/unsafe.js').then(
+  ()=>{throw new Error('preview service worker registration unexpectedly succeeded');},
+  error=>assert.match(error.message,/network access is disabled/)
+).then(()=>console.log('Recovery473: worker, WebRTC and service worker isolation passed'));
