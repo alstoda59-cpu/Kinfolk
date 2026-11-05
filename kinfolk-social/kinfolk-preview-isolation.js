@@ -15,6 +15,17 @@
   policy.setAttribute('content',"default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'none'; worker-src 'none'; img-src 'self' data: blob:; media-src 'self' blob:; form-action 'none'; frame-src 'none'; object-src 'none'");
   document.head.prepend(policy);
 
+  // Defense in depth for embedded WebViews that may not enforce meta CSP.
+  // Preview pages have no approved backend, so deny every outbound API call.
+  const blocked=()=>Promise.reject(new Error('Kinfolk preview network access is disabled'));
+  if(typeof window.fetch==='function')window.fetch=blocked;
+  if(typeof window.XMLHttpRequest==='function')window.XMLHttpRequest=function(){throw new Error('Kinfolk preview network access is disabled');};
+  if(typeof window.WebSocket==='function')window.WebSocket=function(){throw new Error('Kinfolk preview network access is disabled');};
+  if(typeof window.EventSource==='function')window.EventSource=function(){throw new Error('Kinfolk preview network access is disabled');};
+  if(window.navigator&&typeof window.navigator.sendBeacon==='function'){
+    try{window.navigator.sendBeacon=()=>false;}catch(_error){/* CSP remains the primary network gate. */}
+  }
+
   document.addEventListener('submit',event=>{
     event.preventDefault();
     event.stopImmediatePropagation();
