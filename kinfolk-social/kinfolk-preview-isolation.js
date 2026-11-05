@@ -26,6 +26,20 @@
     try{window.navigator.sendBeacon=()=>false;}catch(_error){/* CSP remains the primary network gate. */}
   }
 
+  // Workers and WebRTC can initiate traffic outside the ordinary fetch/XHR path.
+  // Deny their creation on previews before application startup.
+  const denyNetworkConstructor=()=>{throw new Error('Kinfolk preview network access is disabled');};
+  for(const api of ['Worker','SharedWorker','RTCPeerConnection','webkitRTCPeerConnection']){
+    if(typeof window[api]==='function'){
+      try{window[api]=denyNetworkConstructor;}catch(_error){/* CSP still blocks workers. */}
+    }
+  }
+  if(window.navigator?.serviceWorker&&typeof window.navigator.serviceWorker.register==='function'){
+    try{
+      window.navigator.serviceWorker.register=blocked;
+    }catch(_error){/* Existing CSP worker-src none remains in force. */}
+  }
+
   document.addEventListener('submit',event=>{
     event.preventDefault();
     event.stopImmediatePropagation();
