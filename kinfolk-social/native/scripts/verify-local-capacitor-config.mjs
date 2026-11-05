@@ -8,5 +8,12 @@ export function verifyLocalCapacitorConfig(config) {
   if (config.server && Object.hasOwn(config.server,'url')) throw new Error('Remote server.url is forbidden for the offline-bundled alpha');
   if (config.server && Object.hasOwn(config.server,'cleartext')) throw new Error('Cleartext server override is forbidden for the alpha');
   if (config.server?.androidScheme && config.server.androidScheme !== 'https') throw new Error('Android must use the HTTPS local scheme');
+  // Only the reviewed local Android scheme is supported. Other server fields can
+  // widen WebView navigation or change the origin without setting server.url.
+  if (config.server) {
+    for (const key of Object.keys(config.server)) {
+      if (key !== 'androidScheme') throw new Error('Unreviewed Capacitor server setting is forbidden: '+key);
+    }
+  }
   return true;
 }
