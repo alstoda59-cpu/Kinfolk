@@ -424,7 +424,37 @@ async function addComment(e,pid){
   }
  }
 }
-async function deletePost(id){if(!confirm('Delete this post?'))return;const {error}=await sb.from('posts').delete().eq('id',id);if(error)return toast(error.message,'danger');await loadFeed();await renderApp();toast('Post deleted')}
+const kf461PendingDeletes=new Set();
+const kf461UncertainDeletes=new Set();
+async function deletePost(id){
+ const epoch=kf129Epoch,uid=state.user?.id;
+ if(!id||!kfAlphaLoadCurrent(epoch,uid))return;
+ const key=uid+':'+id;
+ if(kf461PendingDeletes.has(key)||kf461UncertainDeletes.has(key))return;
+ if(!confirm('Delete this post?'))return;
+ kf461PendingDeletes.add(key);
+ try{
+  const {error,count}=await sb.from('posts').delete({count:'exact'}).eq('id',id).eq('author_id',uid);
+  if(!kfAlphaLoadCurrent(epoch,uid))return;
+  if(error||count!==1){
+   // A failed/ambiguous response may follow a committed delete. Do not retry blindly.
+   kf461UncertainDeletes.add(key);
+   toast('Post deletion could not be confirmed. Refresh before retrying.','danger');
+   return;
+  }
+  await loadFeed();
+  if(!kfAlphaLoadCurrent(epoch,uid))return;
+  await renderApp();
+  if(kfAlphaLoadCurrent(epoch,uid))toast('Post deleted');
+ }catch(error){
+  if(kfAlphaLoadCurrent(epoch,uid)){
+   kf461UncertainDeletes.add(key);
+   toast('Post deletion could not be confirmed. Refresh before retrying.','danger');
+  }
+ }finally{
+  kf461PendingDeletes.delete(key);
+ }
+}
 function sharePost(id){navigator.clipboard?.writeText(location.origin+'/#post-'+id);toast('Post link copied')}
 function openPostModal(photo=false){modal('Create post',`<form id="postForm"><textarea class="textarea" id="postBody" placeholder="What’s happening?"></textarea><div class="label">Photo (optional)</div><input class="field" id="postFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" ${photo?'autofocus':''}><div class="muted" style="font-size:12px;margin:7px 0">JPG, PNG, WebP or GIF, up to 50 MiB on the alpha backend.</div><div id="postProgress" class="muted" style="margin:10px 0"></div><button class="btn primary full">Post</button></form>`);$('#postForm').onsubmit=createPost}
 // Alpha: a composer belongs to one login generation and one actual modal form.
