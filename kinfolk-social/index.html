@@ -1035,15 +1035,24 @@ async function openDm(peer){
    const button=form.querySelector('button[type="submit"],button.btn.primary');
    if(button?.disabled)return;
    if(button)button.disabled=true;
+   // A failed response does not prove an INSERT was rolled back. Keep this
+   // form locked until the conversation is reopened to avoid duplicate DMs.
+   let confirmed=false;
    try{
-     const {error}=await sb.from('messages').insert({sender_id:uid,receiver_id:peer,body});
+     const {data:sent,error,count}=await sb.from('messages')
+       .insert({sender_id:uid,receiver_id:peer,body},{count:'exact'})
+       .select('id,sender_id,receiver_id,body').single();
      if(!kf300MessageCurrent(epoch,uid,openedRequest))return;
-     if(error)return toast(error.message,'danger');
+     if(error||count!==1||!sent?.id||sent.sender_id!==uid||sent.receiver_id!==peer||sent.body!==body){
+       return toast('Message delivery could not be confirmed. Reopen the conversation before retrying.','danger');
+     }
+     confirmed=true;
      await openDm(peer);
    }catch(error){
-     if(kf300MessageCurrent(epoch,uid,openedRequest))toast(error?.message||'Message could not be sent.','danger');
+     if(kf300MessageCurrent(epoch,uid,openedRequest))
+       toast('Message delivery could not be confirmed. Reopen the conversation before retrying.','danger');
    }finally{
-     if(kf300MessageCurrent(epoch,uid,openedRequest)&&button)button.disabled=false;
+     if(confirmed&&kf300MessageCurrent(epoch,uid,openedRequest)&&button)button.disabled=false;
    }
  };
 }
