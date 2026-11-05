@@ -885,8 +885,48 @@ async function renderPeople(main){const {data:people}=await sb.from('profiles').
 async function renderRequests(root,arr){if(!arr.length){root.innerHTML='<div class="muted" style="padding:10px 0">No pending requests.</div>';return}let h='';for(const r of arr){const p=state.profiles.get(r.sender_id),av=await avatarHtml(p,'sm');h+=`<div class="channelCard" style="grid-template-columns:42px 1fr auto">${av}<div><b>${esc(p?.display_name||p?.username)}</b><div class="muted">@${esc(p?.username||'')}</div></div><button class="btn small primary" onclick="acceptFriend('${r.id}')">Accept</button></div>`}root.innerHTML=h}
 async function renderPeopleList(root,arr){let h='';for(const p of arr){const av=await avatarHtml(p,'sm');const relation=state.friendRequests.find(r=>(r.sender_id===state.user.id&&r.receiver_id===p.id)||(r.receiver_id===state.user.id&&r.sender_id===p.id));h+=`<div class="channelCard" style="grid-template-columns:42px 1fr auto">${av}<div class="clickable" onclick="openProfile('${p.id}')"><b>${esc(p.display_name||p.username)}</b><div class="muted">@${esc(p.username)}</div></div>${relation?`<span class="muted">${relation.status==='accepted'?'Friends':relation.sender_id===state.user.id?'Requested':'Respond'}</span>`:`<button class="btn small" onclick="sendFriend('${p.id}')">Add friend</button>`}</div>`}root.innerHTML=h||'<div class="empty">No people found.</div>'}
 function kfAlphaCanDm(peer){return !!state.user&&peer!==state.user.id&&state.friendRequests.some(r=>r.status==='accepted'&&((r.sender_id===state.user.id&&r.receiver_id===peer)||(r.receiver_id===state.user.id&&r.sender_id===peer)))}
-async function sendFriend(id){const existing=state.friendRequests.find(r=>(r.sender_id===state.user.id&&r.receiver_id===id)||(r.receiver_id===state.user.id&&r.sender_id===id));if(existing)return toast(existing.status==='accepted'?'You are already friends.':'A friend request already exists.');const {error}=await sb.from('friend_requests').insert({sender_id:state.user.id,receiver_id:id,status:'pending'});if(error)return toast(error.message,'danger');await loadFriendRequests();await renderApp();toast('Friend request sent')}
-async function acceptFriend(id){const {error}=await sb.from('friend_requests').update({status:'accepted'}).eq('id',id);if(error)return toast(error.message,'danger');await loadFriendRequests();await renderApp();toast('Friend added','good')}
+// Recovery463: bind friendship writes and subsequent private UI refreshes to their initiating account.
+const kf463FriendPending=new Set();
+async function sendFriend(id){
+ const epoch=kf129Epoch,uid=state.user?.id;
+ if(!id||id===uid||!kfAlphaLoadCurrent(epoch,uid))return;
+ const key=uid+':send:'+id;
+ if(kf463FriendPending.has(key))return;
+ const existing=state.friendRequests.find(r=>(r.sender_id===uid&&r.receiver_id===id)||(r.receiver_id===uid&&r.sender_id===id));
+ if(existing)return toast(existing.status==='accepted'?'You are already friends.':'A friend request already exists.');
+ kf463FriendPending.add(key);
+ try{
+  const {error}=await sb.from('friend_requests').insert({sender_id:uid,receiver_id:id,status:'pending'});
+  if(!kfAlphaLoadCurrent(epoch,uid))return;
+  if(error)return toast(error.message||'Friend request could not be confirmed.','danger');
+  await loadFriendRequests();
+  if(!kfAlphaLoadCurrent(epoch,uid))return;
+  await renderApp();
+  if(kfAlphaLoadCurrent(epoch,uid))toast('Friend request sent');
+ }catch(error){
+  if(kfAlphaLoadCurrent(epoch,uid))toast('Friend request could not be confirmed. Refresh before retrying.','danger');
+ }finally{kf463FriendPending.delete(key)}
+}
+async function acceptFriend(id){
+ const epoch=kf129Epoch,uid=state.user?.id;
+ if(!id||!kfAlphaLoadCurrent(epoch,uid))return;
+ const request=state.friendRequests.find(r=>r.id===id&&r.receiver_id===uid&&r.status==='pending');
+ if(!request)return toast('This friend request is no longer available.','danger');
+ const key=uid+':accept:'+id;
+ if(kf463FriendPending.has(key))return;
+ kf463FriendPending.add(key);
+ try{
+  const {error,count}=await sb.from('friend_requests').update({status:'accepted'},{count:'exact'}).eq('id',id).eq('receiver_id',uid).eq('status','pending');
+  if(!kfAlphaLoadCurrent(epoch,uid))return;
+  if(error||count!==1)return toast('Friend acceptance could not be confirmed. Refresh before retrying.','danger');
+  await loadFriendRequests();
+  if(!kfAlphaLoadCurrent(epoch,uid))return;
+  await renderApp();
+  if(kfAlphaLoadCurrent(epoch,uid))toast('Friend added','good');
+ }catch(error){
+  if(kfAlphaLoadCurrent(epoch,uid))toast('Friend acceptance could not be confirmed. Refresh before retrying.','danger');
+ }finally{kf463FriendPending.delete(key)}
+}
 async function renderNotifications(main){main.innerHTML=`<div class="card"><div class="cardpad"><div style="display:flex"><div class="sectionTitle">Notifications</div><div class="spacer"></div><button class="btn small" onclick="markAllRead()">Mark all read</button></div><div id="notifs"></div></div></div>`;const root=$('#notifs');if(!state.notifications.length){root.innerHTML='<div class="empty">Nothing new yet.</div>';return}let h='';for(const n of state.notifications){const p=state.profiles.get(n.actor_id);h+=`<div class="trend"><b>${esc(n.kind.replaceAll('_',' '))}</b><div>${p?esc(p.display_name||p.username)+' ':''}${esc(n.data?.message||'')}</div><small class="muted">${fmt(n.created_at)} ${n.read_at?'':'· new'}</small></div>`}root.innerHTML=h}
 async function markAllRead(){
  const epoch=kf129Epoch,uid=state.user?.id;
