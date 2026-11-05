@@ -1,0 +1,14 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const source=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+const match=source.match(/async function toggleLike\(pid\)\{[\s\S]*?\n\}\nasync function addComment/);
+assert.ok(match,'Home Like handler must exist');
+const body=match[0];
+assert.match(body,/if\(kf459PendingLikes\.has\(key\)\|\|kf460UncertainLikes\.has\(key\)\)return/);
+assert.match(body,/if\(error\)\{kf460UncertainLikes\.add\(key\);/);
+assert.match(body,/if\(count!==1\)\{kf460UncertainLikes\.add\(key\);/);
+assert.match(body,/catch\(error\)\{\s*if\(kfAlphaLoadCurrent\(epoch,uid\)\)\{kf460UncertainLikes\.add\(key\);/);
+assert.match(body,/\.eq\('user_id',uid\)/);
+console.log('Recovery462 source regression: ambiguous Like failures lock duplicate retries');
