@@ -24,7 +24,7 @@ export function verifyLocalCapacitorConfig(config) {
   // Only the reviewed local Android scheme is supported. Other server fields can
   // widen WebView navigation or change the origin without setting server.url.
   if (config.server) {
-    for (const key of Object.keys(config.server)) {
+    for (const key of Reflect.ownKeys(config.server)) {
       if (key !== 'androidScheme') throw new Error('Unreviewed Capacitor server setting is forbidden: '+key);
     }
   }
