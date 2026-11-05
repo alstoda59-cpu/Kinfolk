@@ -15,7 +15,7 @@ async function scenario({switchAccount=false,error=null,duplicate=false,count=1}
  sb:{from:(table)=>{assert.equal(table,'post_likes');return {insert:(row)=>{assert.equal(row.user_id,'account-a');writes++;return new Promise(r=>resolveQuery=r)}}}},
  toast:(msg)=>toasts.push(msg),loadFeed:async()=>{loads++},renderApp:async()=>{renders++}
  };
- vm.runInNewContext(source+'\nthis.runLike=toggleLike;this.pendingLikes=kf459PendingLikes;',ctx);
+ vm.runInNewContext(source+'\nthis.runLike=toggleLike;this.pendingLikes=kf459PendingLikes;this.uncertainLikes=kf460UncertainLikes;',ctx);
  const first=ctx.runLike('post-a');
  if(duplicate)await ctx.runLike('post-a');
  assert.equal(writes,1,'one in-flight mutation per account and post');
@@ -26,6 +26,7 @@ async function scenario({switchAccount=false,error=null,duplicate=false,count=1}
  assert.equal(renders,switchAccount||error||count!==1?0:1);
  assert.equal(toasts.length,switchAccount?0:error||count!==1?1:0);
  assert.equal(ctx.pendingLikes.size,0,'pending request released');
+ if(count!==1&&!switchAccount&&!error){assert.equal(ctx.uncertainLikes.size,1);await ctx.runLike('post-a');assert.equal(writes,1,'uncertain write cannot be retried blindly');}
 }
 (async()=>{
  await scenario();
