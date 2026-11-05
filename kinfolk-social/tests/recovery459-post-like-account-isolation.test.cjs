@@ -23,7 +23,7 @@ async function scenario({switchAccount=false,error=null,duplicate=false,count=1}
  resolveQuery({error,count});
  await first;
  assert.equal(loads,switchAccount||error||count!==1?0:1);
- assert.equal(renders,switchAccount||error?0:1);
+ assert.equal(renders,switchAccount||error||count!==1?0:1);
  assert.equal(toasts.length,switchAccount?0:error||count!==1?1:0);
  assert.equal(ctx.pendingLikes.size,0,'pending request released');
 }
