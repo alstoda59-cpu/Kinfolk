@@ -21,9 +21,9 @@ const sb={from(table){assert.equal(table,'friend_requests');return {
 const ctx={state,sb,toast:()=>{},kf129Epoch:epoch,kfAlphaLoadCurrent:(e,u)=>e===epoch&&u===uid,loadFriendRequests:async()=>{loads++},renderApp:async()=>{renders++},Set,Promise};
 vm.createContext(ctx);vm.runInContext(code,ctx);
 (async()=>{
- let pending=ctx.sendFriend('bob');
+ let pending=ctx.sendFriend('dana');
  assert.equal(calls[0][1].sender_id,'alice');
- await ctx.sendFriend('bob');assert.equal(calls.length,1,'duplicate request suppressed');
+ await ctx.sendFriend('dana');assert.equal(calls.length,1,'duplicate request suppressed');
  uid='charlie';state.user={id:uid};epoch++;
  resolveWrite({error:null});await pending;
  assert.equal(renders,0,'old account cannot refresh new UI');
