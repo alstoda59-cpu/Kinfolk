@@ -18,3 +18,21 @@ test('rejects invalid package directories and malformed settings',()=>{
   assert.throws(()=>verifyLocalCapacitorConfig({...safe(),server:null,appId:'bad id'}),/appId/);
   assert.throws(()=>verifyLocalCapacitorConfig({...safe(),server:'remote'}),/server settings/);
 });
+
+test('rejects navigation and local-origin overrides that bypass server.url checks',()=>{
+  for(const override of [
+    {hostname:'example.vercel.app'},
+    {hostname:'localhost'},
+    {allowNavigation:['*']},
+    {allowNavigation:['example.com']},
+    {iosScheme:'http'},
+    {errorPath:'https://example.com/error'},
+    {androidScheme:'https',extraFlag:true}
+  ]){
+    assert.throws(()=>verifyLocalCapacitorConfig({...safe(),server:{androidScheme:'https',...override}}),/Unreviewed Capacitor server setting/);
+  }
+});
+test('rejects inherited or malformed server configuration without weakening reviewed settings',()=>{
+  assert.equal(verifyLocalCapacitorConfig({...safe(),server:{}}),true);
+  assert.throws(()=>verifyLocalCapacitorConfig({...safe(),server:[]}),/server settings/);
+});
