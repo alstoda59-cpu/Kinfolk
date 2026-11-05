@@ -110,3 +110,24 @@ assert.throws(()=>assertSafeBootstrap(html.replace(
   '<script src="/kinfolk-preview-isolation.js"></script><script src="/kinfolk-preview-isolation.js"></script>'
 )),/exactly one/);
 console.log('Recovery470: preview bootstrap order and mutation regressions passed');
+
+
+// Recovery471: hostname normalization and delayed WebView mutation coverage.
+// These exercise the shipped guard, not a reimplementation.
+for (const host of ['VERCEL.APP', 'Preview.Vercel.App.', 'preview.vercel.app..']) {
+  const instance=harness(host);
+  assert.equal(instance.window.__kinfolkPreviewBackendBlocked,true,
+    'Vercel hostname case/trailing-dot normalization: '+host);
+  assert.match(instance.inserted[0].attributes.content,/connect-src 'none'/);
+}
+for (const host of ['notvercel.app', 'vercel.app.attacker.invalid', 'localhost', '127.0.0.1']) {
+  const instance=harness(host);
+  assert.equal(instance.inserted.length,0,'non-Vercel host exempt: '+host);
+}
+const webview=harness('preview.vercel.app',false);
+assert.ok(webview.window.observer,'delayed WebView must register DOM observer');
+webview.document.body=webview.element('body');
+webview.window.observer.callback();
+assert.equal(webview.nodes.has('kf317PreviewBlocked'),true);
+assert.equal(webview.window.observer.disconnected,true,'observer must disconnect after mount');
+console.log('Recovery471: hostname and delayed WebView scenarios passed');
