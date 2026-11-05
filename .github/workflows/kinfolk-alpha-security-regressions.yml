@@ -26,5 +26,18 @@ jobs:
           node-version: '22'
       - name: Verify confirmed session behavior
         run: node kinfolk-social/tests/recovery442-confirmed-session.test.cjs
+      - name: Verify email confirmation and auth restoration races
+        run: |
+          node kinfolk-social/tests/recovery360-signup-email-confirmation.test.mjs
+          node kinfolk-social/tests/recovery339-restoration-session-race.test.mjs
+          node kinfolk-social/tests/recovery456-unconfirmed-token-isolation.test.cjs
+      - name: Verify account-isolated posting, messaging and media
+        run: |
+          node kinfolk-social/tests/recovery458-comment-account-isolation.test.cjs
+          node kinfolk-social/tests/recovery464-dm-write-ack.test.cjs
+          node kinfolk-social/tests/recovery466-album-add-photo-isolation.test.cjs
+          node kinfolk-social/tests/recovery467-channel-subscribe-isolation.test.cjs
+      - name: Verify executable preview transport guard
+        run: node kinfolk-social/tests/recovery468-preview-isolation-runtime.test.cjs
       - name: Verify Vercel preview backend isolation
         run: node kinfolk-social/tests/recovery444-preview-isolation.test.cjs
