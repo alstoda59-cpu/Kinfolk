@@ -8,7 +8,10 @@ import { alphaBackendConfig, isolateNativeAsset, LIVE_REF, LIVE_KEY } from './al
 import { verifyNativeStartupScripts, nativeStartupScripts } from './native-startup-scripts.mjs';
 import { assertNativeModuleParity } from './native-module-parity.mjs';
 import { alphaEmailCallback } from './native-email-callback.mjs';
+import { verifyLocalCapacitorConfig } from './verify-local-capacitor-config.mjs';
 const backend=alphaBackendConfig();
+const capacitorConfig=JSON.parse(await readFile(new URL('../capacitor.config.json',import.meta.url),'utf8'));
+verifyLocalCapacitorConfig(capacitorConfig);
 
 const root=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const source=path.resolve(root,'..');
