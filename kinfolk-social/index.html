@@ -20,6 +20,8 @@
   if(window.supabase&&typeof window.supabase.createClient==='function')return;
   const showRecovery=()=>{
     if(window.supabase&&typeof window.supabase.createClient==='function')return;
+    // A blocked nonproduction preview must show its isolation warning, not a misleading sign-in retry.
+    if(window.__kinfolkPreviewBackendBlocked)return;
     if(!document.body||document.getElementById('kf225AuthRecovery'))return;
     const pane=document.createElement('section');
     pane.id='kf225AuthRecovery';
