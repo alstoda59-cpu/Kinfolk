@@ -54,3 +54,17 @@ test('rejects inherited and accessor-based config overrides without executing ge
   assert.throws(()=>verifyLocalCapacitorConfig(config),/accessors/);
   assert.equal(invoked,0);
 });
+
+test('rejects nonenumerable unreviewed server overrides',()=>{
+  for (const [key,value] of [
+    ['allowNavigation',['*']],
+    ['hostname','example.vercel.app'],
+    ['iosScheme','http'],
+    ['errorPath','/remote-error']
+  ]) {
+    const server={androidScheme:'https'};
+    Object.defineProperty(server,key,{value,enumerable:false,configurable:true});
+    assert.throws(()=>verifyLocalCapacitorConfig({...safe(),server}),/Unreviewed Capacitor server setting/);
+  }
+  assert.equal(verifyLocalCapacitorConfig(safe()),true);
+});
