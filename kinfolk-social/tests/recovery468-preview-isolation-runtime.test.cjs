@@ -38,6 +38,8 @@ function harness(hostname, bodyReady = true) {
     Worker:function OriginalWorker(){},
     SharedWorker:function OriginalSharedWorker(){},
     RTCPeerConnection:function OriginalRTC(){},
+    WebTransport:function OriginalWebTransport(){},
+    WebSocketStream:function OriginalWebSocketStream(){},
     navigator:{sendBeacon(){return true;},serviceWorker:{register(){return Promise.resolve('unsafe');}}},
     addEventListener(name,callback){windowListeners.set(name,callback);}
   };
@@ -166,3 +168,11 @@ workerPreview.window.navigator.serviceWorker.register('/unsafe.js').then(
   ()=>{throw new Error('preview service worker registration unexpectedly succeeded');},
   error=>assert.match(error.message,/network access is disabled/)
 ).then(()=>console.log('Recovery473: worker, WebRTC and service worker isolation passed'));
+
+// Recovery474: modern transport constructors must not bypass preview isolation.
+for(const api of ['WebTransport','WebSocketStream']){
+  assert.throws(()=>new workerPreview.window[api]('https://example.invalid'),/network access is disabled/,api);
+  assert.doesNotThrow(()=>new native.window[api]('https://example.invalid'),api+' native exemption');
+  assert.doesNotThrow(()=>new custom.window[api]('https://example.invalid'),api+' custom-domain exemption');
+}
+console.log('Recovery474: transport API isolation scenarios passed');
