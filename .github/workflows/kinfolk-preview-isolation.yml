@@ -8,12 +8,14 @@ on:
       - 'kinfolk-social/kinfolk-preview-isolation.js'
       - 'kinfolk-social/index.html'
       - 'kinfolk-social/tests/recovery468-preview-isolation-runtime.test.cjs'
+      - 'kinfolk-social/tests/recovery476-auth-preview-priority.test.cjs'
       - '.github/workflows/kinfolk-preview-isolation.yml'
   pull_request:
     paths:
       - 'kinfolk-social/kinfolk-preview-isolation.js'
       - 'kinfolk-social/index.html'
       - 'kinfolk-social/tests/recovery468-preview-isolation-runtime.test.cjs'
+      - 'kinfolk-social/tests/recovery476-auth-preview-priority.test.cjs'
       - '.github/workflows/kinfolk-preview-isolation.yml'
   workflow_dispatch:
 
@@ -32,4 +34,6 @@ jobs:
       - name: Show Node version
         run: node --version
       - name: Execute isolation regression (offline, no credentials)
-        run: node kinfolk-social/tests/recovery468-preview-isolation-runtime.test.cjs
+        run: |
+          node kinfolk-social/tests/recovery468-preview-isolation-runtime.test.cjs
+          node kinfolk-social/tests/recovery476-auth-preview-priority.test.cjs
