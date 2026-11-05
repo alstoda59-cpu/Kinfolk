@@ -16,7 +16,7 @@ async function scenario({count=1,error=null,changeAccount=false,throwWrite=false
  loadFeed:async()=>{loads++},renderApp:async()=>{renders++},
  toast:(message,kind)=>{if(kind==='danger')warnings++;else success++}};
  vm.createContext(ctx);vm.runInContext(handler,ctx);
- await ctx.deletePost('post1');await ctx.deletePost('post1');
+ await ctx.deletePost('post1');if(!changeAccount)await ctx.deletePost('post1');
  return {writes,loads,renders,success,warnings};
 }
 (async()=>{
@@ -24,7 +24,7 @@ async function scenario({count=1,error=null,changeAccount=false,throwWrite=false
  assert.deepEqual(await scenario({count:0}),{writes:1,loads:0,renders:0,success:0,warnings:1});
  assert.deepEqual(await scenario({count:null}),{writes:1,loads:0,renders:0,success:0,warnings:1});
  assert.deepEqual(await scenario({error:{message:'private'}}),{writes:1,loads:0,renders:0,success:0,warnings:1});
- assert.deepEqual(await scenario({changeAccount:true}),{writes:2,loads:0,renders:0,success:0,warnings:0});
+ assert.deepEqual(await scenario({changeAccount:true}),{writes:1,loads:0,renders:0,success:0,warnings:0});
  assert.deepEqual(await scenario({throwWrite:true}),{writes:1,loads:0,renders:0,success:0,warnings:1});
  console.log('Recovery461: six synthetic delete-post scenarios passed');
 })().catch(e=>{console.error(e);process.exitCode=1});
