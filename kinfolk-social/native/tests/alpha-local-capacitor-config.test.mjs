@@ -36,3 +36,21 @@ test('rejects inherited or malformed server configuration without weakening revi
   assert.equal(verifyLocalCapacitorConfig({...safe(),server:{}}),true);
   assert.throws(()=>verifyLocalCapacitorConfig({...safe(),server:[]}),/server settings/);
 });
+
+test('rejects inherited and accessor-based config overrides without executing getters',()=>{
+  const inheritedServer=Object.create({url:'https://example.vercel.app'});
+  inheritedServer.androidScheme='https';
+  assert.throws(()=>verifyLocalCapacitorConfig({...safe(),server:inheritedServer}),/plain object/);
+  const inheritedConfig=Object.create({webDir:'www'});
+  inheritedConfig.appId='social.kinfolk.app';
+  inheritedConfig.server={androidScheme:'https'};
+  assert.throws(()=>verifyLocalCapacitorConfig(inheritedConfig),/plain object/);
+  let invoked=0;
+  const server={androidScheme:'https'};
+  Object.defineProperty(server,'url',{enumerable:false,get(){invoked++;return 'https://example.com';}});
+  assert.throws(()=>verifyLocalCapacitorConfig({...safe(),server}),/accessors/);
+  const config=safe();
+  Object.defineProperty(config,'server',{get(){invoked++;return server;}});
+  assert.throws(()=>verifyLocalCapacitorConfig(config),/accessors/);
+  assert.equal(invoked,0);
+});
