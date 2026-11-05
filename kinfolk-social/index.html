@@ -370,10 +370,13 @@ async function toggleLike(pid){
  kf459PendingLikes.add(key);
  try{
   const liked=(state.likes.get(pid)||[]).some(l=>l.user_id===uid);
-  const q=liked?sb.from('post_likes').delete().eq('post_id',pid).eq('user_id',uid):sb.from('post_likes').insert({post_id:pid,user_id:uid});
-  const {error}=await q;
+  const q=liked?sb.from('post_likes').delete({count:'exact'}).eq('post_id',pid).eq('user_id',uid):sb.from('post_likes').insert({post_id:pid,user_id:uid},{count:'exact'});
+  const {error,count}=await q;
   if(!kfAlphaLoadCurrent(epoch,uid))return;
-  if(error){toast(error.message,'danger');return;}
+  if(error){toast('Could not update like. Refresh and try again.','danger');return;}
+  // Never claim a completed toggle when the server did not acknowledge exactly one row.
+  // An unknown count may represent a committed write; refresh rather than retry blindly.
+  if(count!==1){toast('Like status uncertain. Refresh before trying again.','danger');return;}
   await loadFeed();
   if(!kfAlphaLoadCurrent(epoch,uid))return;
   await renderApp();
