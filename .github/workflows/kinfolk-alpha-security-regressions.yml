@@ -93,3 +93,59 @@ jobs:
             kinfolk-social/native/evidence/
           retention-days: 3
           if-no-files-found: error
+
+  android-debug-offline:
+    name: Compile installable Android debug APK (offline stub, NOT functional)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: kinfolk-social/native
+    env:
+      KINFOLK_ALPHA_SUPABASE_URL: https://aaaaaaaaaaaaaaaaaaaa.supabase.co
+      KINFOLK_ALPHA_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_packaging_only_no_auth
+      KINFOLK_ALPHA_PACKAGING_ONLY: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: kinfolk-social/native/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Install locked Capacitor dependencies
+        run: npm ci --ignore-scripts
+      - name: Build and verify isolated complete web app
+        run: |
+          npm run prepare:web
+          npm run alpha:verify
+      - name: Generate temporary Android native project and sync web assets
+        run: |
+          npm run android:init
+          npx cap sync android
+      - name: Compile Android debug APK (not signed for release)
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+      - name: Verify debug APK and label nonfunctional backend
+        run: |
+          test "$KINFOLK_ALPHA_PACKAGING_ONLY" = "1"
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          mkdir -p evidence
+          sha256sum android/app/build/outputs/apk/debug/app-debug.apk > evidence/android-debug-apk.sha256
+          printf 'OFFLINE CI BACKEND: APK is installable for UI/navigation tests only. Signup, login, media, messaging, RLS, and email verification cannot work. Not for distribution. App ID is unconfirmed.\n' > evidence/NOT_FUNCTIONAL_ANDROID_ALPHA.txt
+      - name: Upload offline Android debug APK with warning and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: kinfolk-android-debug-OFFLINE-NOT-FUNCTIONAL
+          path: |
+            kinfolk-social/native/android/app/build/outputs/apk/debug/app-debug.apk
+            kinfolk-social/native/evidence/android-debug-apk.sha256
+            kinfolk-social/native/evidence/NOT_FUNCTIONAL_ANDROID_ALPHA.txt
+          retention-days: 3
+          if-no-files-found: error
