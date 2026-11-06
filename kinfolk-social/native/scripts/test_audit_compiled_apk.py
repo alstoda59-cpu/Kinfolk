@@ -72,5 +72,17 @@ class CompiledApkAuditTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "unsafe or duplicate archive entry"):
                 audit.verify(apk)
 
+    def test_live_ref_in_native_manifest_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d, {"AndroidManifest.xml": b"<manifest>" + audit.LIVE_REF.encode() + b"</manifest>"})
+            with self.assertRaisesRegex(ValueError, "AndroidManifest.xml"):
+                audit.verify(apk)
+
+    def test_live_ref_in_native_metadata_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d, {"META-INF/kinfolk-config": b"backend=" + audit.LIVE_REF.encode()})
+            with self.assertRaisesRegex(ValueError, "META-INF/kinfolk-config"):
+                audit.verify(apk)
+
 if __name__ == "__main__":
     unittest.main()
