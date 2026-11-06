@@ -12,6 +12,7 @@ export async function requireFunctionalRlsProof(config,{env=process.env,fetchImp
     tokenB:env.KINFOLK_ALPHA_TEST_USER_B_JWT,
     idA:env.KINFOLK_ALPHA_TEST_USER_A_ID,
     idB:env.KINFOLK_ALPHA_TEST_USER_B_ID,
+    requireExpiry:true,
     fetchImpl
   });
   if(result.projectRef!==config.projectRef||result.checkedTables!==PRIVATE_TABLES.length||result.readOnly!==true){
