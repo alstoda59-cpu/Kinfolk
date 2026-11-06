@@ -132,7 +132,7 @@ test('older in-flight account activation cannot render after another account bec
 test('unconfirmed startup session never hydrates and clears private UI before local sign-out',async()=>{
   let hydrated=0;
   const h=harness({hydrate:async()=>{hydrated++;return true}});
-  h.auth.session={user:{id:B,email_confirmed_at:null}};
+  h.auth.session={access_token:'synthetic-unconfirmed-token-B',user:{id:B,email_confirmed_at:null}};
   assert.equal(await h.activate(h.auth.session),false);
   assert.equal(hydrated,0);
   assert.equal(h.state.user,null);
@@ -145,7 +145,7 @@ test('unconfirmed startup session never hydrates and clears private UI before lo
 test('stale unconfirmed event cannot sign out a newer verified account',async()=>{
   const h=harness();
   h.auth.session=confirmed(B);
-  assert.equal(await h.activate({user:{id:A}}),false);
+  assert.equal(await h.activate({access_token:'synthetic-stale-token-A',user:{id:A}}),false);
   assert.equal(h.auth.signouts,0);
   assert.equal(h.auth.session.user.id,B);
   assert.equal(h.state.user,null);
@@ -154,7 +154,7 @@ test('stale unconfirmed event cannot sign out a newer verified account',async()=
 test('unconfirmed startup rejects even if the previous account was marked ready',async()=>{
   const h=harness();
   h.context.kf129ReadyUid=A;
-  h.auth.session={user:{id:A}};
+  h.auth.session={access_token:'synthetic-unconfirmed-token-A',user:{id:A}};
   assert.equal(await h.activate(h.auth.session),false);
   assert.equal(h.auth.signouts,1);
   assert.equal(h.state.user,null);
