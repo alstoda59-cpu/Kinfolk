@@ -22,7 +22,14 @@ def verify(apk: Path) -> None:
     if not apk.is_file() or apk.stat().st_size == 0:
         raise ValueError("Compiled Android debug APK missing or empty")
     with zipfile.ZipFile(apk) as archive:
-        names = set(archive.namelist())
+        entries = archive.infolist()
+        names = set()
+        for info in entries:
+            name = info.filename
+            parts = name.replace(chr(92), "/").split("/")
+            if name in names or name.startswith("/") or ".." in parts or chr(92) in name:
+                raise ValueError("Compiled APK has unsafe or duplicate archive entry: " + name)
+            names.add(name)
         missing = set(REQUIRED) - names
         if missing:
             raise ValueError("Compiled APK missing main Kinfolk modules: " + ", ".join(sorted(missing)))
