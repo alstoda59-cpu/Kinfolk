@@ -42,12 +42,12 @@ def verify(apk: Path) -> None:
             raise ValueError("Compiled APK does not load bundled Supabase SDK")
         if "cdn.jsdelivr.net/npm/@supabase/supabase-js" in index:
             raise ValueError("Compiled APK still requires remote Supabase SDK")
-        # Inspect every packaged web asset, not only HTML/JS: config JSON,
-        # source maps, manifests, and CSS can also disclose a live backend.
-        # Stream bytes to avoid loading large user-facing media into memory.
+        # Scan the entire APK, including native manifests, resources, and metadata.
+        # A live backend reference outside assets/public is still a leak.
+        # Stream each entry to avoid loading large assets into memory.
         needle = LIVE_REF.encode("ascii")
         for info in archive.infolist():
-            if not info.filename.startswith(ROOT) or info.is_dir():
+            if info.is_dir():
                 continue
             with archive.open(info) as stream:
                 tail = b""
