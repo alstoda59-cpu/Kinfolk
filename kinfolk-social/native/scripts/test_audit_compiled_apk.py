@@ -54,5 +54,23 @@ class CompiledApkAuditTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "missing main Kinfolk modules"):
                 audit.verify(apk)
 
+
+    def test_duplicate_entry_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d)
+            with zipfile.ZipFile(apk, "a") as z:
+                import warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", UserWarning)
+                    z.writestr(audit.REQUIRED[0], b"duplicate")
+            with self.assertRaisesRegex(ValueError, "duplicate archive entry"):
+                audit.verify(apk)
+
+    def test_traversal_entry_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d, {"assets/public/../secret.txt": b"test"})
+            with self.assertRaisesRegex(ValueError, "unsafe or duplicate archive entry"):
+                audit.verify(apk)
+
 if __name__ == "__main__":
     unittest.main()
