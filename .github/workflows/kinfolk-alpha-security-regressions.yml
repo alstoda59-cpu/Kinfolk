@@ -27,6 +27,9 @@ jobs:
       - name: Verify functional alpha backend and two-user RLS gates (offline synthetic fixtures)
         run: |
           node --test kinfolk-social/native/tests/alpha-functional-backend-gate.test.mjs kinfolk-social/native/tests/alpha-functional-rls-gate.test.mjs kinfolk-social/native/tests/alpha-auth-reachability.test.mjs kinfolk-social/native/tests/alpha-auth-signup-readiness.test.mjs
+      - name: Verify native Capacitor isolation, startup and email callbacks
+        run: |
+          node --test kinfolk-social/native/tests/alpha-local-capacitor-config.test.mjs kinfolk-social/native/tests/alpha-backend-config.test.mjs kinfolk-social/native/tests/alpha-startup-scripts.test.mjs kinfolk-social/native/tests/alpha-email-callback.test.mjs
       - name: Verify confirmed session behavior
         run: node kinfolk-social/tests/recovery442-confirmed-session.test.cjs
       - name: Verify email confirmation and auth restoration races
