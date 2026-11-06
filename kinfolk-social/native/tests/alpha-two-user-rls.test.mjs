@@ -127,3 +127,15 @@ test('future or malformed JWT not-before cannot establish two-account privacy ev
   assert.equal(calls,0);
   assert.equal(jwtSubject(withNbf(now-60)),A);
 });
+
+test('future or malformed JWT issued-at fails before any RLS network call',async()=>{
+  const now=Math.floor(Date.now()/1000);
+  const withIat=iat=>'h.'+Buffer.from(JSON.stringify({sub:A,role:'authenticated',iat})).toString('base64url')+'.s';
+  let calls=0;
+  const fetchImpl=async()=>{calls++;throw Error('unexpected network')};
+  for(const iat of [now+3600,'0',1.5,null]){
+    await assert.rejects(verifyTwoUserRls(config,{...opts,tokenA:withIat(iat),fetchImpl}),/future or invalid issued-at/);
+  }
+  assert.equal(calls,0);
+  assert.equal(jwtSubject(withIat(now-60)),A);
+});
