@@ -17,6 +17,7 @@ const createHarness=(getSession,timeout=async task=>task)=>{
   const context={
     sb:{auth:{getSession}},
     kf129Timeout:timeout,
+    kf338ConfirmedSession:session=>!!(session?.access_token&&session?.user?.id&&session?.user?.email_confirmed_at),
     kf129ActivateSession:async session=>{activations.push(session);return true},
     console:{warn:(...args)=>warnings.push(args)}
   };
@@ -30,7 +31,7 @@ test('SIGNED_OUT with no active session clears private UI',async()=>{
   assert.deepEqual(h.activations,[null]);
 });
 test('late SIGNED_OUT event does not clear a newly authenticated account',async()=>{
-  const h=createHarness(async()=>({data:{session:{user:{id:'synthetic-new-user'}}},error:null}));
+  const h=createHarness(async()=>({data:{session:{access_token:'synthetic-new-token',user:{id:'synthetic-new-user',email_confirmed_at:'2026-11-06T00:00:00Z'}}},error:null}));
   assert.equal(await h.handle(),false);
   assert.deepEqual(h.activations,[]);
 });
