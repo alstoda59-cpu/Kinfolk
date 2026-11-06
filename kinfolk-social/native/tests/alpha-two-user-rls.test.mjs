@@ -115,3 +115,15 @@ test('expired or malformed JWT expiry cannot establish real RLS privacy evidence
   assert.equal(calls,0);
   assert.equal(jwtSubject(withExp(Math.floor(Date.now()/1000)+3600)),A);
 });
+
+test('future or malformed JWT not-before cannot establish two-account privacy evidence',async()=>{
+  const withNbf=nbf=>'h.'+Buffer.from(JSON.stringify({sub:A,role:'authenticated',nbf})).toString('base64url')+'.s';
+  const now=Math.floor(Date.now()/1000);
+  let calls=0;
+  const fetchImpl=async()=>{calls++;throw Error('unexpected network')};
+  for(const nbf of [now+3600,'0',1.5,null]){
+    await assert.rejects(verifyTwoUserRls(config,{...opts,tokenA:withNbf(nbf),fetchImpl}),/not yet valid or has invalid not-before/);
+  }
+  assert.equal(calls,0);
+  assert.equal(jwtSubject(withNbf(now-60)),A);
+});
