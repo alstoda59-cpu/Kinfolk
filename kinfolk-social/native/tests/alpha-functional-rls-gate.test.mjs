@@ -6,7 +6,7 @@ import {requireFunctionalRlsProof} from '../scripts/functional-rls-gate.mjs';
 
 const A='11111111-1111-4111-8111-111111111111';
 const B='22222222-2222-4222-8222-222222222222';
-const jwt=id=>'h.'+Buffer.from(JSON.stringify({sub:id,role:'authenticated'})).toString('base64url')+'.s';
+const jwt=id=>'h.'+Buffer.from(JSON.stringify({sub:id,role:'authenticated',exp:Math.floor(Date.now()/1000)+3600})).toString('base64url')+'.s';
 const tokenA=jwt(A),tokenB=jwt(B);
 const config={projectRef:ALPHA_REF,url:'https://'+ALPHA_REF+'.supabase.co',key:'sb_publishable_synthetic_test',offlineStub:false};
 const env={KINFOLK_ALPHA_SYNTHETIC_ACCOUNTS_ONLY:'1',KINFOLK_ALPHA_TEST_USER_A_JWT:tokenA,KINFOLK_ALPHA_TEST_USER_B_JWT:tokenB,KINFOLK_ALPHA_TEST_USER_A_ID:A,KINFOLK_ALPHA_TEST_USER_B_ID:B};
@@ -48,4 +48,12 @@ test('functional gate rejects absent owner fixtures and foreign project',async()
   const m=mock();
   await assert.rejects(requireFunctionalRlsProof({...config,projectRef:'zojajuzmfjpvubzibzgg'},{env,fetchImpl:m.fetchImpl}),/isolated/);
   assert.equal(m.calls.length,0);
+});
+
+test('functional RLS gate refuses non-expiring JWT fixtures before backend requests',async()=>{
+  let calls=0;
+  const noExpiry=id=>'h.'+Buffer.from(JSON.stringify({sub:id,role:'authenticated'})).toString('base64url')+'.s';
+  const fetchImpl=async()=>{calls++;throw Error('network must not be used')};
+  await assert.rejects(requireFunctionalRlsProof(config,{env:{...env,KINFOLK_ALPHA_TEST_USER_A_JWT:noExpiry(A)},fetchImpl}),/requires expiring authenticated JWTs/);
+  assert.equal(calls,0);
 });
