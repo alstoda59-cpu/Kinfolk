@@ -136,8 +136,11 @@ on:
       - kinfolk-social/recovery428-native-submit-ime-guard-20261102
       # Recovery429: stale replaced Send buttons and message fields must not submit.
       - kinfolk-social/recovery429-stale-message-controls-20261102
+      # Recovery497: execute APK audit regressions and inspect the compiled APK.
+      - kinfolk-social/recovery497-android-ci-audit-gate-20261106
     paths:
       - 'kinfolk-social/**'
+      - '.github/workflows/kinfolk-alpha-native.yml'
       - '.github/workflows/kinfolk-alpha-native.yml'
   workflow_dispatch:
 
@@ -198,12 +201,18 @@ jobs:
         run: |
           npx cap add android
           npx cap sync android
+      - name: Run synthetic compiled APK auditor regressions
+        working-directory: kinfolk-social/native
+        run: python3 -m unittest discover -s scripts -p 'test_audit_compiled_apk.py' -v
       - name: Compile installable debug APK (no release signing)
         working-directory: kinfolk-social/native/android
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon assembleDebug
           test -s app/build/outputs/apk/debug/app-debug.apk
+      - name: Audit compiled APK before artifact publication
+        working-directory: kinfolk-social/native
+        run: python3 scripts/audit-compiled-apk.py android/app/build/outputs/apk/debug/app-debug.apk
       - name: Publish private-test Android APK artifact
         uses: actions/upload-artifact@v4
         with:
