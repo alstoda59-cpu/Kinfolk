@@ -72,3 +72,24 @@ jobs:
         run: npm run prepare:web
       - name: Verify complete native package and feature regressions
         run: npm run alpha:verify
+      - name: Record offline native asset integrity and CI-only marker
+        run: |
+          test "$KINFOLK_ALPHA_PACKAGING_ONLY" = "1"
+          test -f www/index.html
+          test -f www/kinfolk-supabase-sdk.js
+          if grep -R -l 'zojajuzmfjpvubzibzgg' www --include='*.js' --include='*.html'; then
+            echo "Live backend reference leaked into native assets" >&2
+            exit 1
+          fi
+          mkdir -p evidence
+          find www -type f -print0 | sort -z | xargs -0 sha256sum > evidence/offline-native-assets.sha256
+          printf 'OFFLINE PACKAGING ONLY: backend unreachable; authentication, media, messaging and RLS NOT tested.\n' > evidence/NOT_FUNCTIONAL_ALPHA.txt
+      - name: Upload isolated native web assets for reproducible packaging review
+        uses: actions/upload-artifact@v4
+        with:
+          name: kinfolk-native-web-assets-OFFLINE-NOT-FUNCTIONAL
+          path: |
+            kinfolk-social/native/www/
+            kinfolk-social/native/evidence/
+          retention-days: 3
+          if-no-files-found: error
