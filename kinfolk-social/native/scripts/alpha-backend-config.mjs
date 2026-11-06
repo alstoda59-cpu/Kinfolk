@@ -34,6 +34,10 @@ export function isolateNativeAsset(source,config){
  */
 export function requireFunctionalAlphaBackend(env=process.env){
   const config=alphaBackendConfig(env);
+  // A real URL cannot promote an explicitly packaging-only artifact to functional.
+  if(env.KINFOLK_ALPHA_PACKAGING_ONLY==='1') {
+    throw new Error('Packaging-only mode is forbidden for functional alpha verification.');
+  }
   if(config.offlineStub||config.projectRef!==ALPHA_REF){
     throw new Error('Functional native alpha requires the designated isolated Supabase backend; offline CI packaging is not a functional build.');
   }
