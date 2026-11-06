@@ -104,3 +104,14 @@ test('invalid RLS timeouts fail before any backend request',async()=>{
   }
   assert.equal(calls,0);
 });
+
+test('expired or malformed JWT expiry cannot establish real RLS privacy evidence',async()=>{
+  const withExp=exp=>'h.'+Buffer.from(JSON.stringify({sub:A,role:'authenticated',exp})).toString('base64url')+'.s';
+  let calls=0;
+  const fetchImpl=async()=>{calls++;throw Error('unexpected network')};
+  for(const exp of [0,-1,'9999999999',1.5,Math.floor(Date.now()/1000)-1]){
+    await assert.rejects(verifyTwoUserRls(config,{...opts,tokenA:withExp(exp),fetchImpl}),/expired or has invalid expiry/);
+  }
+  assert.equal(calls,0);
+  assert.equal(jwtSubject(withExp(Math.floor(Date.now()/1000)+3600)),A);
+});
