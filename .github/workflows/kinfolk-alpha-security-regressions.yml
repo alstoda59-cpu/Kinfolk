@@ -24,6 +24,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify functional alpha backend and two-user RLS gates (offline synthetic fixtures)
+        run: |
+          node --test kinfolk-social/native/tests/alpha-functional-backend-gate.test.mjs kinfolk-social/native/tests/alpha-functional-rls-gate.test.mjs kinfolk-social/native/tests/alpha-auth-reachability.test.mjs kinfolk-social/native/tests/alpha-auth-signup-readiness.test.mjs
       - name: Verify confirmed session behavior
         run: node kinfolk-social/tests/recovery442-confirmed-session.test.cjs
       - name: Verify email confirmation and auth restoration races
