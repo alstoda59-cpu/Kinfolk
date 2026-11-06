@@ -10,7 +10,7 @@ assert.ok(start>0&&end>start,'use the committed account-switch cleanup and activ
 const source=html.slice(start,end);
 const A='11111111-1111-4111-8111-111111111111';
 const B='22222222-2222-4222-8222-222222222222';
-const confirmed=id=>({user:{id,email_confirmed_at:'2026-10-30T00:00:00Z'}});
+const confirmed=id=>({access_token:'synthetic-confirmed-token-'+id,user:{id,email_confirmed_at:'2026-10-30T00:00:00Z'}});
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve}};
 
 function harness({oldUid=A,hydrate}={}){
