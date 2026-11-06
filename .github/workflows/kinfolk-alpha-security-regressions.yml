@@ -117,6 +117,8 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: android-actions/setup-android@v3
+      - name: Run compiled APK audit regressions before Gradle compilation
+        run: python3 -m unittest discover -s scripts -p 'test_audit_compiled_apk.py' -v
       - name: Install locked Capacitor dependencies
         run: npm ci --ignore-scripts
       - name: Build and verify isolated complete web app
