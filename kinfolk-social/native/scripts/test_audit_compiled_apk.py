@@ -1,5 +1,6 @@
 """Offline regression tests for compiled APK payload isolation."""
 import importlib.util
+import stat
 import tempfile
 import unittest
 import zipfile
@@ -82,6 +83,23 @@ class CompiledApkAuditTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             apk = self.make_apk(d, {"META-INF/kinfolk-config": b"backend=" + audit.LIVE_REF.encode()})
             with self.assertRaisesRegex(ValueError, "META-INF/kinfolk-config"):
+                audit.verify(apk)
+
+    def test_windows_drive_prefix_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d, {"C:/private/config.json": b"unsafe"})
+            with self.assertRaisesRegex(ValueError, "unsafe or duplicate archive entry"):
+                audit.verify(apk)
+
+    def test_symlink_entry_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d)
+            link = zipfile.ZipInfo("assets/public/link")
+            link.create_system = 3
+            link.external_attr = (stat.S_IFLNK | 0o777) << 16
+            with zipfile.ZipFile(apk, "a") as z:
+                z.writestr(link, b"../../private")
+            with self.assertRaisesRegex(ValueError, "symlink entry"):
                 audit.verify(apk)
 
 if __name__ == "__main__":
