@@ -47,3 +47,28 @@ jobs:
         run: node kinfolk-social/tests/recovery468-preview-isolation-runtime.test.cjs
       - name: Verify Vercel preview backend isolation
         run: node kinfolk-social/tests/recovery444-preview-isolation.test.cjs
+
+  native-package-offline:
+    name: Package complete native web assets and run alpha verification (offline only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: kinfolk-social/native
+    env:
+      KINFOLK_ALPHA_SUPABASE_URL: https://aaaaaaaaaaaaaaaaaaaa.supabase.co
+      KINFOLK_ALPHA_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_packaging_only_no_auth
+      KINFOLK_ALPHA_PACKAGING_ONLY: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: kinfolk-social/native/package-lock.json
+      - name: Install locked native dependencies
+        run: npm ci --ignore-scripts
+      - name: Build isolated native web assets (no real backend)
+        run: npm run prepare:web
+      - name: Verify complete native package and feature regressions
+        run: npm run alpha:verify
