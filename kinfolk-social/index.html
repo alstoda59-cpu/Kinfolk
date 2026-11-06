@@ -217,7 +217,7 @@ async function kf286HandleSignedOutEvent(){
     const {data,error}=await kf129Timeout(sb.auth.getSession(),4000,'Sign-out verification');
     if(error)throw error;
     // A different account (or an unconfirmed session) must never retain the previous account's private UI.
-    if(kf338ConfirmedSession(data?.session)&&data.session.user.id===kf129ReadyUid)return false;
+    if(kf338ConfirmedSession(data?.session))return false;
   }catch(error){console.warn('Kinfolk could not verify signed-out session; clearing private UI',error)}
   await kf129ActivateSession(null);
   return true;
