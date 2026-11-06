@@ -4,6 +4,7 @@
 This checks package contents only. It does not prove backend or device behavior.
 """
 import sys
+import stat
 import zipfile
 from pathlib import Path
 
@@ -27,8 +28,13 @@ def verify(apk: Path) -> None:
         for info in entries:
             name = info.filename
             parts = name.replace(chr(92), "/").split("/")
-            if name in names or name.startswith("/") or ".." in parts or chr(92) in name:
+            if (name in names or name.startswith("/") or ".." in parts
+                    or chr(92) in name or (parts[0] and parts[0].endswith(":"))):
                 raise ValueError("Compiled APK has unsafe or duplicate archive entry: " + name)
+            # APK entries must be regular files or directories, never symlinks.
+            mode = (info.external_attr >> 16) & 0xFFFF
+            if info.create_system == 3 and stat.S_IFMT(mode) == stat.S_IFLNK:
+                raise ValueError("Compiled APK contains symlink entry: " + name)
             names.add(name)
         missing = set(REQUIRED) - names
         if missing:
@@ -58,7 +64,7 @@ def verify(apk: Path) -> None:
                     tail = combined[-(len(needle) - 1):]
         if len(archive.read(REQUIRED[1])) < 10000:
             raise ValueError("Compiled APK Supabase SDK is unexpectedly small")
-    print("PASS compiled APK modules, offline backend, and full web-asset live-reference isolation")
+    print("PASS compiled APK modules, offline backend, and whole-archive live-reference isolation")
 
 if __name__ == "__main__":
     try:
