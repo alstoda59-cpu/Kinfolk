@@ -18,6 +18,8 @@ export function jwtSubject(token,{requireExpiry=false}={}){
   // A future not-before claim means the account is not yet authenticated.
   // Reject it before probing the backend, rather than interpreting denials as privacy proof.
   if(payload.nbf!==undefined&&(!Number.isSafeInteger(payload.nbf)||payload.nbf>now))throw Error('Synthetic JWT is not yet valid or has invalid not-before');
+  // A token claiming issuance in the future cannot demonstrate an active session.
+  if(payload.iat!==undefined&&(!Number.isSafeInteger(payload.iat)||payload.iat>now))throw Error('Synthetic JWT has future or invalid issued-at');
   return payload.sub.toLowerCase();
 }
 export async function verifyTwoUserRls(config,{tokenA,tokenB,idA,idB,fetchImpl=globalThis.fetch,tables=PRIVATE_TABLES,timeoutMs=8000,requireExpiry=false}={}){
