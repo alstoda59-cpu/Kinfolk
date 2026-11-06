@@ -10,6 +10,9 @@ export function jwtSubject(token){
   try{payload=JSON.parse(Buffer.from(token.split('.')[1],'base64url').toString('utf8'))}
   catch{throw Error('Synthetic JWT payload is malformed')}
   if(!UUID.test(payload?.sub||'')||payload.role!=='authenticated')throw Error('Expected an authenticated synthetic JWT');
+  // An expired synthetic session cannot prove current cross-account isolation.
+  // Keep optional exp support for offline fixture JWTs; real Supabase JWTs carry exp.
+  if(payload.exp!==undefined&&(!Number.isSafeInteger(payload.exp)||payload.exp<=Math.floor(Date.now()/1000)))throw Error('Synthetic JWT is expired or has invalid expiry');
   return payload.sub.toLowerCase();
 }
 export async function verifyTwoUserRls(config,{tokenA,tokenB,idA,idB,fetchImpl=globalThis.fetch,tables=PRIVATE_TABLES,timeoutMs=8000}={}){
