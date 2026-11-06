@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 
 export const PRIVATE_TABLES=Object.freeze(['kinfolk_safety_settings','user_settings','kinfolk_user_preferences','notification_preferences','kinfolk_profile_extras']);
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-export function jwtSubject(token){
+export function jwtSubject(token,{requireExpiry=false}={}){
   if(typeof token!=='string'||token.split('.').length!==3)throw Error('Synthetic JWT is missing or malformed');
   let payload;
   try{payload=JSON.parse(Buffer.from(token.split('.')[1],'base64url').toString('utf8'))}
@@ -12,14 +12,15 @@ export function jwtSubject(token){
   if(!UUID.test(payload?.sub||'')||payload.role!=='authenticated')throw Error('Expected an authenticated synthetic JWT');
   // An expired synthetic session cannot prove current cross-account isolation.
   // Keep optional exp support for offline fixture JWTs; real Supabase JWTs carry exp.
+  if(requireExpiry&&payload.exp===undefined)throw Error('Functional RLS proof requires expiring authenticated JWTs');
   if(payload.exp!==undefined&&(!Number.isSafeInteger(payload.exp)||payload.exp<=Math.floor(Date.now()/1000)))throw Error('Synthetic JWT is expired or has invalid expiry');
   return payload.sub.toLowerCase();
 }
-export async function verifyTwoUserRls(config,{tokenA,tokenB,idA,idB,fetchImpl=globalThis.fetch,tables=PRIVATE_TABLES,timeoutMs=8000}={}){
+export async function verifyTwoUserRls(config,{tokenA,tokenB,idA,idB,fetchImpl=globalThis.fetch,tables=PRIVATE_TABLES,timeoutMs=8000,requireExpiry=false}={}){
   if(!config||config.projectRef!==ALPHA_REF||config.offlineStub||config.url!=='https://'+ALPHA_REF+'.supabase.co'||!config.key)throw Error('RLS probe requires designated isolated alpha backend');
   if(typeof fetchImpl!=='function')throw Error('RLS probe requires fetch');
   if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>60000)throw Error('RLS probe timeout must be 1 to 60000 ms');
-  const a=jwtSubject(tokenA),b=jwtSubject(tokenB);
+  const a=jwtSubject(tokenA,{requireExpiry}),b=jwtSubject(tokenB,{requireExpiry});
   if(!UUID.test(idA||'')||!UUID.test(idB||'')||a!==idA.toLowerCase()||b!==idB.toLowerCase()||a===b)throw Error('Two distinct synthetic JWT subjects must match designated IDs');
   if(!Array.isArray(tables)||!tables.length||tables.some(t=>!PRIVATE_TABLES.includes(t))||new Set(tables).size!==tables.length)throw Error('Only known owner-private tables may be tested');
   async function count(table,owner,jwt,expected){
