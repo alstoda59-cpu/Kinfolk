@@ -138,9 +138,10 @@ on:
       - kinfolk-social/recovery429-stale-message-controls-20261102
       # Recovery497: execute APK audit regressions and inspect the compiled APK.
       - kinfolk-social/recovery497-android-ci-audit-gate-20261106
+      # Recovery498: automatically test subsequent isolated recovery branches without editing this workflow every run.
+      - 'kinfolk-social/recovery*'
     paths:
       - 'kinfolk-social/**'
-      - '.github/workflows/kinfolk-alpha-native.yml'
       - '.github/workflows/kinfolk-alpha-native.yml'
   workflow_dispatch:
 
