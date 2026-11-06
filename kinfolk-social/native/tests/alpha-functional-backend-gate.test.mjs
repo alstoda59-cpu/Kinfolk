@@ -19,7 +19,7 @@ test('rejects packaging-only mode even with designated real isolated backend',()
   assert.throws(()=>requireFunctionalAlphaBackend(env(ALPHA_REF,key,{KINFOLK_ALPHA_PACKAGING_ONLY:'1'})),/Packaging-only mode is forbidden/);
 });
 test('rejects offline CI stub even with explicit packaging-only permission',()=>{
-  assert.throws(()=>requireFunctionalAlphaBackend(env(CI_REF,CI_KEY,{KINFOLK_ALPHA_PACKAGING_ONLY:'1'})),/offline CI packaging is not a functional build/);
+  assert.throws(()=>requireFunctionalAlphaBackend(env(CI_REF,CI_KEY,{KINFOLK_ALPHA_PACKAGING_ONLY:'1'})),/Packaging-only mode is forbidden for functional alpha verification/);
 });
 test('rejects shared live project or live publishable key',()=>{
   assert.throws(()=>requireFunctionalAlphaBackend(env(LIVE_REF)),/shared live/);
