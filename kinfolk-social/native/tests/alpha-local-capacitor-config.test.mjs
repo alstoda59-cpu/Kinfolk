@@ -15,7 +15,8 @@ test('rejects cleartext override and unexpected schemes',()=>{
 });
 test('rejects invalid package directories and malformed settings',()=>{
   assert.throws(()=>verifyLocalCapacitorConfig({...safe(),webDir:'../web'}),/www/);
-  assert.throws(()=>verifyLocalCapacitorConfig({...safe(),server:null,appId:'bad id'}),/appId/);
+  assert.throws(()=>verifyLocalCapacitorConfig({...safe(),appId:'bad id'}),/appId/);
+  assert.throws(()=>verifyLocalCapacitorConfig({...safe(),server:null}),/server settings/);
   assert.throws(()=>verifyLocalCapacitorConfig({...safe(),server:'remote'}),/server settings/);
 });
 
