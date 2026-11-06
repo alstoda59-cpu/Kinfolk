@@ -214,6 +214,24 @@ jobs:
       - name: Audit compiled APK before artifact publication
         working-directory: kinfolk-social/native
         run: python3 scripts/audit-compiled-apk.py android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Validate APK archive and record package provenance
+        working-directory: kinfolk-social/native
+        run: |
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          unzip -t "$APK" > /dev/null
+          mkdir -p package-evidence
+          sha256sum "$APK" > package-evidence/android-apk.sha256
+          printf 'commit=%s\nref=%s\nbackend=unreachable-synthetic\npackage=offline-debug-not-functional-alpha\n' "$GITHUB_SHA" "$GITHUB_REF" > package-evidence/build.txt
+          cat package-evidence/android-apk.sha256 >> "$GITHUB_STEP_SUMMARY"
+          echo 'Offline-only APK: no connected Auth, RLS or physical-device proof.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish Android build provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: kinfolk-social-android-alpha-offline-evidence
+          path: kinfolk-social/native/package-evidence/
+          if-no-files-found: error
+          retention-days: 7
       - name: Publish private-test Android APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -258,6 +276,20 @@ jobs:
           xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/KinfolkAlphaDerived" CODE_SIGNING_ALLOWED=NO build
           test -d "$RUNNER_TEMP/KinfolkAlphaDerived/Build/Products/Debug-iphonesimulator/App.app"
           ditto -c -k --sequesterRsrc --keepParent "$RUNNER_TEMP/KinfolkAlphaDerived/Build/Products/Debug-iphonesimulator/App.app" "$RUNNER_TEMP/kinfolk-ios-simulator.zip"
+      - name: Verify iOS Simulator archive and record provenance
+        run: |
+          set -euo pipefail
+          unzip -t "$RUNNER_TEMP/kinfolk-ios-simulator.zip" > /dev/null
+          shasum -a 256 "$RUNNER_TEMP/kinfolk-ios-simulator.zip" > "$RUNNER_TEMP/kinfolk-ios-simulator.sha256"
+          cat "$RUNNER_TEMP/kinfolk-ios-simulator.sha256" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Unsigned Simulator build only; not installable on a physical iPhone.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish iOS Simulator checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: kinfolk-social-ios-alpha-offline-evidence
+          path: ${{ runner.temp }}/kinfolk-ios-simulator.sha256
+          if-no-files-found: error
+          retention-days: 7
       - name: Publish iOS Simulator zip (not installable on physical iPhone)
         uses: actions/upload-artifact@v4
         with:
