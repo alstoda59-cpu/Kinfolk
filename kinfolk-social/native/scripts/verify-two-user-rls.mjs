@@ -13,7 +13,11 @@ export function jwtSubject(token,{requireExpiry=false}={}){
   // An expired synthetic session cannot prove current cross-account isolation.
   // Keep optional exp support for offline fixture JWTs; real Supabase JWTs carry exp.
   if(requireExpiry&&payload.exp===undefined)throw Error('Functional RLS proof requires expiring authenticated JWTs');
-  if(payload.exp!==undefined&&(!Number.isSafeInteger(payload.exp)||payload.exp<=Math.floor(Date.now()/1000)))throw Error('Synthetic JWT is expired or has invalid expiry');
+  const now=Math.floor(Date.now()/1000);
+  if(payload.exp!==undefined&&(!Number.isSafeInteger(payload.exp)||payload.exp<=now))throw Error('Synthetic JWT is expired or has invalid expiry');
+  // A future not-before claim means the account is not yet authenticated.
+  // Reject it before probing the backend, rather than interpreting denials as privacy proof.
+  if(payload.nbf!==undefined&&(!Number.isSafeInteger(payload.nbf)||payload.nbf>now))throw Error('Synthetic JWT is not yet valid or has invalid not-before');
   return payload.sub.toLowerCase();
 }
 export async function verifyTwoUserRls(config,{tokenA,tokenB,idA,idB,fetchImpl=globalThis.fetch,tables=PRIVATE_TABLES,timeoutMs=8000,requireExpiry=false}={}){
