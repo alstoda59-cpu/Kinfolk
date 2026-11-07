@@ -12,8 +12,10 @@ test('auth submit captures the form and message elements before awaiting Supabas
  assert.match(auth,/const current=\(\)=>form\.isConnected&&document\.getElementById\('authForm'\)===form/);
 });
 test('stale signup response cannot write into a replacement login form',()=>{
- assert.match(auth,/if\(!current\(\)\)return;if\(data\.session\)/);
+ assert.match(auth,/if\(!current\(\)\)return;if\(data\.session&&kf338ConfirmedSession\(data\.session\)\)/);
  assert.match(auth,/msg\.className='good';msg\.textContent='Account created/);
+ assert.match(auth,/const \{data,error\}=await sb\.auth\.signUp\(/);
+ assert.match(auth,/if\(error\)throw error;if\(!current\(\)\)return/);
 });
 test('stale async auth errors and finally cannot mutate replacement form',()=>{
  assert.match(auth,/catch\(err\)\{if\(current\(\)\)msg\.textContent=err\.message\|\|String\(err\)\}/);
