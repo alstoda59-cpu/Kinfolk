@@ -16,7 +16,10 @@ async function scenario({count=1,error=null,changeAccount=false,throwWrite=false
  loadFeed:async()=>{loads++},renderApp:async()=>{renders++},
  toast:(message,kind)=>{if(kind==='danger')warnings++;else success++}};
  vm.createContext(ctx);vm.runInContext(handler,ctx);
- await ctx.deletePost('post1');if(!changeAccount)await ctx.deletePost('post1');
+ await ctx.deletePost('post1');
+ // Only ambiguous outcomes must suppress a blind retry. A confirmed deletion
+ // removes the post from the refreshed feed, so it cannot be clicked again.
+ if(!changeAccount&&(count!==1||error||throwWrite))await ctx.deletePost('post1');
  return {writes,loads,renders,success,warnings};
 }
 (async()=>{
