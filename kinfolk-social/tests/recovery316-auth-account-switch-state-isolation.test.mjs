@@ -148,7 +148,11 @@ test('stale unconfirmed event cannot sign out a newer verified account',async()=
   assert.equal(await h.activate({access_token:'synthetic-stale-token-A',user:{id:A}}),false);
   assert.equal(h.auth.signouts,0);
   assert.equal(h.auth.session.user.id,B);
-  assert.equal(h.state.user,null);
+  // A stale callback cannot clear the UI of the previously active member.
+  // It also must not adopt B without an explicit verified activation.
+  assert.equal(h.state.user.id,A);
+  assert.equal(h.state.feed.length,1);
+  assert.equal(h.state.signed.size,1);
 });
 
 test('unconfirmed startup rejects even if the previous account was marked ready',async()=>{
