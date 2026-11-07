@@ -39,7 +39,9 @@ test('Vercel preview installs network and media deny policy before app startup',
   assert.equal(page.headNodes.length,1);
   const policy=page.headNodes[0];
   assert.equal(policy.attributes['http-equiv'],'Content-Security-Policy');
-  assert.match(policy.attributes.content,/connect-src 'self';/);
+  assert.match(policy.attributes.content,/connect-src 'none';/);
+  assert.match(policy.attributes.content,/worker-src 'none';/);
+  assert.doesNotMatch(policy.attributes.content,/connect-src 'self';/);
   assert.match(policy.attributes.content,/img-src 'self' data: blob:/);
   assert.match(policy.attributes.content,/media-src 'self' blob:/);
   assert.match(policy.attributes.content,/form-action 'none'/);
@@ -92,6 +94,13 @@ test('guard is idempotent if the same script executes twice',()=>{
   vm.runInContext(script,page.context);
   assert.equal(page.headNodes.length,1);
   assert.equal(page.events.get('submit').length,1);
+  assert.equal(page.window.__kinfolkPreviewGuardInstalled,true);
+});
+
+test('preseeded public blocked flag cannot bypass isolation',()=>{
+  const page=run('preview.vercel.app');
+  assert.equal(page.headNodes.length,1);
+  assert.match(page.headNodes[0].attributes.content,/connect-src 'none'/);
 });
 
 test('guard precedes remote SDK and Supabase client creation in the main app',()=>{
