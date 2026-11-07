@@ -116,7 +116,14 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - uses: android-actions/setup-android@v3
+      # Hosted Ubuntu already provides Android command-line tools. The old setup action
+      # fails while requesting a removed legacy SDK 'tools' package.
+      - name: Install Android 35 packages using hosted SDK
+        run: |
+          test -n "$ANDROID_HOME"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | sort | head -n 1)"
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
       - name: Run compiled APK audit regressions before Gradle compilation
         run: python3 -m unittest discover -s scripts -p 'test_audit_compiled_apk.py' -v
       - name: Install locked Capacitor dependencies
