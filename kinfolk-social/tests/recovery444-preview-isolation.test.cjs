@@ -18,6 +18,7 @@ function run(host, readyState='complete', preseedBlocked=false, missingBody=fals
     tag, attrs: {}, children: [], style: {},
     setAttribute(key, value) { this.attrs[key] = value; },
     append(...children) { this.children.push(...children); },
+    appendChild(child) { this.children.push(child); },
   });
   const document = {
     readyState,
