@@ -5,6 +5,9 @@
 (()=>{
   const host=String(window.location?.hostname||'').toLowerCase().replace(/\.+$/, '');
   if(!/(^|\.)vercel\.app$/.test(host))return;
+  // Separate internal installation marker from the public blocked-state flag.
+  // A preseeded public flag must never suppress the actual preview isolation.
+  if(window.__kinfolkPreviewGuardInstalled===true)return;
   window.__kinfolkPreviewBackendBlocked=true;
 
   // A Vercel preview currently ships source configured for the shared live
@@ -14,6 +17,7 @@
   policy.setAttribute('http-equiv','Content-Security-Policy');
   policy.setAttribute('content',"default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'none'; worker-src 'none'; img-src 'self' data: blob:; media-src 'self' blob:; form-action 'none'; frame-src 'none'; object-src 'none'");
   document.head.prepend(policy);
+  window.__kinfolkPreviewGuardInstalled=true;
 
   // Defense in depth for embedded WebViews that may not enforce meta CSP.
   // Preview pages have no approved backend, so deny every outbound API call.
