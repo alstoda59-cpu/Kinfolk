@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 const script=await readFile(new URL('../kinfolk-preview-isolation.js',import.meta.url),'utf8');
 const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
 
-function run(hostname,readyState='loading'){
+function run(hostname,readyState='loading',preseedBlocked=false){
   const headNodes=[],bodyNodes=[],events=new Map();
   function element(tag){
     return {
@@ -26,6 +26,7 @@ function run(hostname,readyState='loading'){
     }
   };
   const window={location:{hostname}};
+  if(preseedBlocked)window.__kinfolkPreviewBackendBlocked=true;
   const context=vm.createContext({window,document});
   vm.runInContext(script,context,{filename:'kinfolk-preview-isolation.js'});
   return {window,document,headNodes,bodyNodes,events,context,fire(name,event={}){
@@ -98,7 +99,7 @@ test('guard is idempotent if the same script executes twice',()=>{
 });
 
 test('preseeded public blocked flag cannot bypass isolation',()=>{
-  const page=run('preview.vercel.app');
+  const page=run('preview.vercel.app','loading',true);
   assert.equal(page.headNodes.length,1);
   assert.match(page.headNodes[0].attributes.content,/connect-src 'none'/);
 });
