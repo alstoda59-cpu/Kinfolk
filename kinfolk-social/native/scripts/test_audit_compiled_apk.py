@@ -43,6 +43,30 @@ class CompiledApkAuditTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "unexpected Supabase project endpoint"):
                 audit.verify(apk)
 
+    def test_second_supabase_project_in_other_asset_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d, {
+                "assets/public/config.json": b'{"url":"https://bbbbbbbbbbbbbbbbbbbb.supabase.co"}'
+            })
+            with self.assertRaisesRegex(ValueError, "unexpected Supabase project endpoint"):
+                audit.verify(apk)
+
+    def test_second_supabase_project_in_native_metadata_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d, {
+                "META-INF/backend.txt": b"https://cccccccccccccccccccc.supabase.co"
+            })
+            with self.assertRaisesRegex(ValueError, "unexpected Supabase project endpoint"):
+                audit.verify(apk)
+
+    def test_second_supabase_project_across_stream_boundary_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            url = b"https://dddddddddddddddddddd.supabase.co"
+            payload = b"x" * (1024 * 1024 - 12) + url
+            apk = self.make_apk(d, {"assets/public/large.txt": payload})
+            with self.assertRaisesRegex(ValueError, "unexpected Supabase project endpoint"):
+                audit.verify(apk)
+
     def test_non_supabase_host_allowed(self):
         with tempfile.TemporaryDirectory() as d:
             apk = self.make_apk(d, {"assets/public/readme.txt": b"https://example.org"})
