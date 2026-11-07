@@ -31,6 +31,23 @@ class CompiledApkAuditTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             audit.verify(self.make_apk(d))
 
+    def test_second_supabase_project_in_entry_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d)
+            with zipfile.ZipFile(apk) as z:
+                files = {n: z.read(n) for n in z.namelist()}
+            files[audit.REQUIRED[0]] += b'<script>const other="https://bbbbbbbbbbbbbbbbbbbb.supabase.co"</script>'
+            with zipfile.ZipFile(apk, "w") as z:
+                for name, data in files.items():
+                    z.writestr(name, data)
+            with self.assertRaisesRegex(ValueError, "unexpected Supabase project endpoint"):
+                audit.verify(apk)
+
+    def test_non_supabase_host_allowed(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d, {"assets/public/readme.txt": b"https://example.org"})
+            audit.verify(apk)
+
     def test_live_ref_in_json_rejected(self):
         with tempfile.TemporaryDirectory() as d:
             apk = self.make_apk(d, {"assets/public/config.json": audit.LIVE_REF.encode()})
