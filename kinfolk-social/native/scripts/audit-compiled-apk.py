@@ -45,10 +45,6 @@ def verify(apk: Path) -> None:
             raise ValueError("Compiled APK missing native startup marker")
         if "https://" + CI_REF + ".supabase.co" not in index:
             raise ValueError("Compiled APK is not bound to the offline synthetic backend")
-        # An expected stub URL alone is insufficient: reject extra Supabase endpoints.
-        endpoints = set(re.findall(r"https?://([a-z0-9-]+)\.supabase\.co", index, re.I))
-        if endpoints != {CI_REF}:
-            raise ValueError("Compiled offline APK contains unexpected Supabase project endpoint")
         if 'src="/kinfolk-supabase-sdk.js"' not in index:
             raise ValueError("Compiled APK does not load bundled Supabase SDK")
         if "cdn.jsdelivr.net/npm/@supabase/supabase-js" in index:
@@ -57,6 +53,8 @@ def verify(apk: Path) -> None:
         # A live backend reference outside assets/public is still a leak.
         # Stream each entry to avoid loading large assets into memory.
         needle = LIVE_REF.encode("ascii")
+        endpoint_pattern = re.compile(rb"https?://([a-z0-9-]+)\.supabase\.co", re.I)
+        endpoints = set()
         for info in archive.infolist():
             if info.is_dir():
                 continue
@@ -66,7 +64,13 @@ def verify(apk: Path) -> None:
                     combined = tail + chunk
                     if needle in combined:
                         raise ValueError("Shared live backend reference embedded in compiled APK: " + info.filename)
-                    tail = combined[-(len(needle) - 1):]
+                    # Scan every APK entry, not just index.html. Retain enough bytes
+                    # to catch endpoints split across adjacent stream chunks.
+                    for match in endpoint_pattern.finditer(combined):
+                        endpoints.add(match.group(1).decode("ascii").lower())
+                    tail = combined[-255:]
+        if endpoints != {CI_REF}:
+            raise ValueError("Compiled offline APK contains unexpected Supabase project endpoint")
         if len(archive.read(REQUIRED[1])) < 10000:
             raise ValueError("Compiled APK Supabase SDK is unexpectedly small")
     print("PASS compiled APK modules, offline backend, and whole-archive live-reference isolation")
