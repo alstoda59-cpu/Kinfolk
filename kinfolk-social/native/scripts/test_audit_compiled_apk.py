@@ -67,6 +67,22 @@ class CompiledApkAuditTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "unexpected Supabase project endpoint"):
                 audit.verify(apk)
 
+    def test_scheme_relative_supabase_endpoint_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d, {
+                "assets/public/config.json": b'{"url":"//bbbbbbbbbbbbbbbbbbbb.supabase.co"}'
+            })
+            with self.assertRaisesRegex(ValueError, "unexpected Supabase project endpoint"):
+                audit.verify(apk)
+
+    def test_websocket_supabase_endpoint_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d, {
+                "assets/public/socket.js": b'const url="wss://cccccccccccccccccccc.supabase.co/realtime";'
+            })
+            with self.assertRaisesRegex(ValueError, "unexpected Supabase project endpoint"):
+                audit.verify(apk)
+
     def test_non_supabase_host_allowed(self):
         with tempfile.TemporaryDirectory() as d:
             apk = self.make_apk(d, {"assets/public/readme.txt": b"https://example.org"})
