@@ -4,6 +4,7 @@
 This checks package contents only. It does not prove backend or device behavior.
 """
 import sys
+import re
 import stat
 import zipfile
 from pathlib import Path
@@ -44,6 +45,10 @@ def verify(apk: Path) -> None:
             raise ValueError("Compiled APK missing native startup marker")
         if "https://" + CI_REF + ".supabase.co" not in index:
             raise ValueError("Compiled APK is not bound to the offline synthetic backend")
+        # An expected stub URL alone is insufficient: reject extra Supabase endpoints.
+        endpoints = set(re.findall(r"https?://([a-z0-9-]+)\.supabase\.co", index, re.I))
+        if endpoints != {CI_REF}:
+            raise ValueError("Compiled offline APK contains unexpected Supabase project endpoint")
         if 'src="/kinfolk-supabase-sdk.js"' not in index:
             raise ValueError("Compiled APK does not load bundled Supabase SDK")
         if "cdn.jsdelivr.net/npm/@supabase/supabase-js" in index:
