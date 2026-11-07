@@ -35,7 +35,7 @@ function harness(){
      return {
        select(){return this},or(){return this},order(){return this},
        limit(){const d=deferred();requests.push(d);return d.promise},
-       insert(payload){const d=deferred();writes.push({...d,payload});return d.promise}
+       insert(payload){const d=deferred();writes.push({...d,payload});return {select(){return this},single(){return d.promise}}}
      };
    }}
  };
@@ -100,7 +100,7 @@ test('in-flight DM send uses captured sender and cannot reopen after switch',asy
  assert.equal(h.writes.length,1);
  assert.deepEqual({...h.writes[0].payload},{sender_id:'A',receiver_id:'peer',body:'hello'});
  h.switchAccount('B');
- h.writes[0].resolve({error:null});
+ h.writes[0].resolve({data:{id:'synthetic-message-1',...h.writes[0].payload},error:null,count:1});
  await sent;
  assert.equal(h.requests.length,0);
  assert.equal(h.toasts.length,0);
