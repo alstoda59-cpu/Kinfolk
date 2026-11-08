@@ -83,6 +83,22 @@ class CompiledApkAuditTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "unexpected Supabase project endpoint"):
                 audit.verify(apk)
 
+    def test_allowlisted_project_with_deceptive_hostname_suffix_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d, {
+                "assets/public/redirect.js": b'const url="https://aaaaaaaaaaaaaaaaaaaa.supabase.co.attacker.example/auth";'
+            })
+            with self.assertRaisesRegex(ValueError, "deceptive Supabase hostname"):
+                audit.verify(apk)
+
+    def test_scheme_relative_deceptive_hostname_suffix_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d, {
+                "assets/public/redirect.js": b'const url="//aaaaaaaaaaaaaaaaaaaa.supabase.company/path";'
+            })
+            with self.assertRaisesRegex(ValueError, "deceptive Supabase hostname"):
+                audit.verify(apk)
+
     def test_non_supabase_host_allowed(self):
         with tempfile.TemporaryDirectory() as d:
             apk = self.make_apk(d, {"assets/public/readme.txt": b"https://example.org"})
