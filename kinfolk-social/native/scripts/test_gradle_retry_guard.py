@@ -9,7 +9,7 @@ WORKFLOWS = [
     ROOT / ".github/workflows/kinfolk-alpha-native.yml",
 ]
 TRANSPORT = r"Server returned HTTP response code: (429|500|502|503|504)|SocketTimeoutException|Read timed out|Connect timed out"
-BUILD_FAILURE = r"^FAILURE: Build failed|^> Task .* FAILED|^.*Compilation failed"
+BUILD_FAILURE = r"^> Task .* FAILED|^.*Compilation failed"
 
 
 def should_retry(log, attempt=1):
@@ -27,6 +27,10 @@ class GradleRetryGuardTests(unittest.TestCase):
         self.assertTrue(should_retry("Server returned HTTP response code: 504"))
         self.assertTrue(should_retry("java.net.SocketTimeoutException"))
 
+    def test_generic_gradle_failure_header_does_not_block_transport_retry(self):
+        log = "FAILURE: Build failed with an exception.\nServer returned HTTP response code: 504"
+        self.assertTrue(should_retry(log))
+
     def test_compilation_failure_never_retries_even_with_prior_504(self):
         log = "Server returned HTTP response code: 504\n> Task :app:compileDebugJavaWithJavac FAILED\nFAILURE: Build failed"
         self.assertFalse(should_retry(log))
@@ -41,7 +45,7 @@ class GradleRetryGuardTests(unittest.TestCase):
         for path in WORKFLOWS:
             with self.subTest(path=path.name):
                 data = path.read_text()
-                self.assertIn("grep -Eq '^FAILURE: Build failed|^> Task .* FAILED|^.*Compilation failed'", data)
+                self.assertIn("grep -Eq '^> Task .* FAILED|^.*Compilation failed'", data)
                 self.assertIn("result=${PIPESTATUS[0]}", data)
 
 
