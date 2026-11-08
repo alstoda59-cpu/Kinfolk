@@ -143,7 +143,20 @@ jobs:
           # Capacitor generates a Gradle wrapper with a 10-second distribution download timeout.
           # Hosted runner network variance can exceed that even when the build is healthy.
           printf '\nnetworkTimeout=120000\n' >> gradle/wrapper/gradle-wrapper.properties
-          ./gradlew --no-daemon assembleDebug
+          # Retry only transient Gradle distribution transport failures (e.g. HTTP 504).
+          # Never mask compilation/test failures by retrying them.
+          for attempt in 1 2 3; do
+            set +e
+            ./gradlew --no-daemon assembleDebug 2>&1 | tee /tmp/kinfolk-gradle-build.log
+            result=${PIPESTATUS[0]}
+            set -e
+            if [ "$result" -eq 0 ]; then break; fi
+            if [ "$attempt" -eq 3 ] || ! grep -Eq 'Server returned HTTP response code: (429|500|502|503|504)|SocketTimeoutException|Read timed out|Connect timed out' /tmp/kinfolk-gradle-build.log; then
+              exit "$result"
+            fi
+            echo "Transient Gradle distribution transport failure; retrying attempt $((attempt + 1))/3"
+            sleep $((attempt * 15))
+          done
       - name: Audit compiled APK embedded app and offline backend isolation
         run: python3 scripts/audit-compiled-apk.py android/app/build/outputs/apk/debug/app-debug.apk
       - name: Verify debug APK and label nonfunctional backend
