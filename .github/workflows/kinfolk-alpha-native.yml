@@ -209,6 +209,9 @@ jobs:
         working-directory: kinfolk-social/native/android
         run: |
           chmod +x gradlew
+          # Capacitor generates a Gradle wrapper with a 10-second distribution download timeout.
+          # Hosted runner network variance can exceed that even when the build is healthy.
+          printf '\nnetworkTimeout=120000\n' >> gradle/wrapper/gradle-wrapper.properties
           ./gradlew --no-daemon assembleDebug
           test -s app/build/outputs/apk/debug/app-debug.apk
       - name: Audit compiled APK before artifact publication
