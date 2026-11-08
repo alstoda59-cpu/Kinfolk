@@ -115,6 +115,29 @@ class CompiledApkAuditTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "deceptive Supabase hostname"):
                 audit.verify(apk)
 
+    def test_password_bearing_userinfo_redirect_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d, {
+                "assets/public/redirect.js": b'const url="https://aaaaaaaaaaaaaaaaaaaa.supabase.co:password@attacker.example/auth";'
+            })
+            with self.assertRaisesRegex(ValueError, "deceptive Supabase hostname"):
+                audit.verify(apk)
+
+    def test_websocket_password_bearing_userinfo_redirect_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d, {
+                "assets/public/socket.js": b'const url="wss://aaaaaaaaaaaaaaaaaaaa.supabase.co:secret@attacker.example/realtime";'
+            })
+            with self.assertRaisesRegex(ValueError, "deceptive Supabase hostname"):
+                audit.verify(apk)
+
+    def test_explicit_numeric_port_without_userinfo_allowed(self):
+        with tempfile.TemporaryDirectory() as d:
+            apk = self.make_apk(d, {
+                "assets/public/endpoint.js": b'const url="https://aaaaaaaaaaaaaaaaaaaa.supabase.co:443/auth";'
+            })
+            audit.verify(apk)
+
     def test_non_supabase_host_allowed(self):
         with tempfile.TemporaryDirectory() as d:
             apk = self.make_apk(d, {"assets/public/readme.txt": b"https://example.org"})
