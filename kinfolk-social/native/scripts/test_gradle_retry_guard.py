@@ -3,7 +3,7 @@ import pathlib
 import re
 import unittest
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]
+ROOT = pathlib.Path(__file__).resolve().parents[3]
 WORKFLOWS = [
     ROOT / ".github/workflows/kinfolk-alpha-security-regressions.yml",
     ROOT / ".github/workflows/kinfolk-alpha-native.yml",
