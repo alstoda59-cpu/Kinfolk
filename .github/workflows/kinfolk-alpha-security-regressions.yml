@@ -140,6 +140,9 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
+          # Capacitor generates a Gradle wrapper with a 10-second distribution download timeout.
+          # Hosted runner network variance can exceed that even when the build is healthy.
+          printf '\nnetworkTimeout=120000\n' >> gradle/wrapper/gradle-wrapper.properties
           ./gradlew --no-daemon assembleDebug
       - name: Audit compiled APK embedded app and offline backend isolation
         run: python3 scripts/audit-compiled-apk.py android/app/build/outputs/apk/debug/app-debug.apk
