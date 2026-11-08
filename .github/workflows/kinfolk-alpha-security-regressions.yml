@@ -126,6 +126,8 @@ jobs:
           "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
       - name: Run compiled APK audit regressions before Gradle compilation
         run: python3 -m unittest discover -s scripts -p 'test_audit_compiled_apk.py' -v
+      - name: Verify Gradle retry does not mask compilation failures
+        run: python3 -m unittest discover -s scripts -p 'test_gradle_retry_guard.py' -v
       - name: Install locked Capacitor dependencies
         run: npm ci --ignore-scripts
       - name: Build and verify isolated complete web app
