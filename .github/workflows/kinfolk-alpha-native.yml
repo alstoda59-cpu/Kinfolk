@@ -220,7 +220,7 @@ jobs:
             result=${PIPESTATUS[0]}
             set -e
             if [ "$result" -eq 0 ]; then break; fi
-            if [ "$attempt" -eq 3 ] || grep -Eq '^> Task .* FAILED|^.*Compilation failed|^Execution failed for task /tmp/kinfolk-gradle-build.log || ! grep -Eq 'Server returned HTTP response code: (429|500|502|503|504)|SocketTimeoutException|Read timed out|Connect timed out' /tmp/kinfolk-gradle-build.log; then
+            if [ "$attempt" -eq 3 ] || grep -Eq '^> Task .* FAILED|^.*Compilation failed|^> Execution failed for task|^Execution failed for task' /tmp/kinfolk-gradle-build.log || ! grep -Eq 'Server returned HTTP response code: (429|500|502|503|504)|SocketTimeoutException|Read timed out|Connect timed out' /tmp/kinfolk-gradle-build.log; then
               exit "$result"
             fi
             echo "Transient Gradle distribution transport failure; retrying attempt $((attempt + 1))/3"
