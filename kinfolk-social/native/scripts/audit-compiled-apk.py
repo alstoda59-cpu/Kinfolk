@@ -53,7 +53,7 @@ def verify(apk: Path) -> None:
         # A live backend reference outside assets/public is still a leak.
         # Stream each entry to avoid loading large assets into memory.
         needle = LIVE_REF.encode("ascii")
-        endpoint_pattern = re.compile(rb"(?:(?:https?|wss?):)?//([a-z0-9-]+)\.supabase\.co(?![a-z0-9.-])", re.I)
+        endpoint_pattern = re.compile(rb"(?:(?:https?|wss?):)?//([a-z0-9-]+)\.supabase\.co([a-z0-9.-]*)", re.I)
         endpoints = set()
         for info in archive.infolist():
             if info.is_dir():
@@ -67,6 +67,8 @@ def verify(apk: Path) -> None:
                     # Scan HTTP, WebSocket and scheme-relative project URLs across every entry. Retain enough bytes
                     # to catch endpoints split across adjacent stream chunks.
                     for match in endpoint_pattern.finditer(combined):
+                        if match.group(2):
+                            raise ValueError("Compiled APK contains deceptive Supabase hostname: " + info.filename)
                         endpoints.add(match.group(1).decode("ascii").lower())
                     tail = combined[-255:]
         if endpoints != {CI_REF}:
