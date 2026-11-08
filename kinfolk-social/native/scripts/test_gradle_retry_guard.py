@@ -9,7 +9,7 @@ WORKFLOWS = [
     ROOT / ".github/workflows/kinfolk-alpha-native.yml",
 ]
 TRANSPORT = r"Server returned HTTP response code: (429|500|502|503|504)|SocketTimeoutException|Read timed out|Connect timed out"
-BUILD_FAILURE = r"^> Task .* FAILED|^.*Compilation failed|^Execution failed for task"
+BUILD_FAILURE = r"^> Task .* FAILED|^.*Compilation failed|^> Execution failed for task|^Execution failed for task"
 
 
 def should_retry(log, attempt=1):
@@ -39,6 +39,10 @@ class GradleRetryGuardTests(unittest.TestCase):
         log = "Server returned HTTP response code: 504\nExecution failed for task \u0027:app:compileDebugKotlin\u0027."
         self.assertFalse(should_retry(log))
 
+    def test_gradle_indented_task_exception_is_terminal(self):
+        log = "Server returned HTTP response code: 504\n> Execution failed for task \u0027:app:compileDebugKotlin\u0027."
+        self.assertFalse(should_retry(log))
+
     def test_non_transport_failure_does_not_retry(self):
         self.assertFalse(should_retry("Could not find dependency"))
 
@@ -49,7 +53,7 @@ class GradleRetryGuardTests(unittest.TestCase):
         for path in WORKFLOWS:
             with self.subTest(path=path.name):
                 data = path.read_text()
-                self.assertIn("grep -Eq '^> Task .* FAILED|^.*Compilation failed|^Execution failed for task", data)
+                self.assertIn("grep -Eq '^> Task .* FAILED|^.*Compilation failed|^> Execution failed for task|^Execution failed for task\' /tmp/kinfolk-gradle-build.log", data)
                 self.assertIn("result=${PIPESTATUS[0]}", data)
 
 
