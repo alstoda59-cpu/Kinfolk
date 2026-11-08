@@ -1,6 +1,8 @@
 """Regression checks for Recovery519 Gradle retry classification (synthetic logs)."""
 import pathlib
 import re
+import subprocess
+import textwrap
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
@@ -48,6 +50,22 @@ class GradleRetryGuardTests(unittest.TestCase):
 
     def test_third_attempt_is_terminal(self):
         self.assertFalse(should_retry("Server returned HTTP response code: 504", 3))
+
+    def test_gradle_retry_loop_parses_in_bash(self):
+        """Check the real workflow shell, not just a copied regex fixture."""
+        for path in WORKFLOWS:
+            with self.subTest(path=path.name):
+                source = path.read_text()
+                match = re.search(
+                    r"(?m)^          for attempt in 1 2 3; do\\n(?:^          .*\\n)*?^          done$",
+                    source,
+                )
+                self.assertIsNotNone(match, "Gradle retry loop not found")
+                script = textwrap.dedent(match.group(0))
+                result = subprocess.run(
+                    ["bash", "-n"], input=script, text=True, capture_output=True, check=False
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_both_workflows_include_failure_guard(self):
         for path in WORKFLOWS:
