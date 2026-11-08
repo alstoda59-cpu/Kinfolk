@@ -57,7 +57,7 @@ class GradleRetryGuardTests(unittest.TestCase):
             with self.subTest(path=path.name):
                 source = path.read_text()
                 match = re.search(
-                    r"(?m)^          for attempt in 1 2 3; do\\n(?:^          .*\\n)*?^          done$",
+                    r"(?m)^          for attempt in 1 2 3; do\n(?:^          .*\n)*?^          done$",
                     source,
                 )
                 self.assertIsNotNone(match, "Gradle retry loop not found")
