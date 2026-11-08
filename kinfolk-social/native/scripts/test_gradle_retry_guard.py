@@ -67,6 +67,27 @@ class GradleRetryGuardTests(unittest.TestCase):
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_workflow_retry_patterns_match_synthetic_classifier(self):
+        """Test the real workflow regexes, not only their Python counterpart."""
+        cases = [
+            ("Server returned HTTP response code: 504", True),
+            ("FAILURE: Build failed with an exception.\nServer returned HTTP response code: 504", True),
+            ("Server returned HTTP response code: 504\n> Task :app:compileDebugKotlin FAILED", False),
+            ("Server returned HTTP response code: 504\n> Execution failed for task ':app:compileDebugKotlin'.", False),
+            ("Server returned HTTP response code: 504\nCompilation failed", False),
+            ("Could not find dependency", False),
+        ]
+        for path in WORKFLOWS:
+            source = path.read_text()
+            guards = re.findall(r"grep -Eq '([^']+)' /tmp/kinfolk-gradle-build[.]log", source)
+            self.assertEqual(len(guards), 2, f"Expected failure and transport guards in {path}")
+            terminal, transport = guards
+            for log, expected in cases:
+                with self.subTest(workflow=path.name, log=log):
+                    actual = bool(re.search(transport, log)) and not bool(re.search(terminal, log, re.M))
+                    self.assertEqual(actual, expected)
+                    self.assertEqual(actual, should_retry(log))
+
     def test_both_workflows_include_failure_guard(self):
         for path in WORKFLOWS:
             with self.subTest(path=path.name):
