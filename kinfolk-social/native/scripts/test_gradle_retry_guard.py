@@ -17,6 +17,12 @@ def should_retry(log, attempt=1):
 
 
 class GradleRetryGuardTests(unittest.TestCase):
+    def test_workflow_paths_resolve_from_repository_root(self):
+        self.assertEqual(ROOT.name, "Kinfolk")
+        for path in WORKFLOWS:
+            with self.subTest(path=path.name):
+                self.assertTrue(path.is_file(), f"Missing workflow fixture: {path}")
+
     def test_transport_failure_retries(self):
         self.assertTrue(should_retry("Server returned HTTP response code: 504"))
         self.assertTrue(should_retry("java.net.SocketTimeoutException"))
