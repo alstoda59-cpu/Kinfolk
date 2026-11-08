@@ -213,14 +213,14 @@ jobs:
           # Hosted runner network variance can exceed that even when the build is healthy.
           printf '\nnetworkTimeout=120000\n' >> gradle/wrapper/gradle-wrapper.properties
           # Retry only transient Gradle distribution transport failures (e.g. HTTP 504).
-          # Never mask compilation/test failures by retrying them.
+          # Gradle also prints a generic FAILURE header for network errors; only task/compiler failures are terminal.
           for attempt in 1 2 3; do
             set +e
             ./gradlew --no-daemon assembleDebug 2>&1 | tee /tmp/kinfolk-gradle-build.log
             result=${PIPESTATUS[0]}
             set -e
             if [ "$result" -eq 0 ]; then break; fi
-            if [ "$attempt" -eq 3 ] || grep -Eq '^FAILURE: Build failed|^> Task .* FAILED|^.*Compilation failed' /tmp/kinfolk-gradle-build.log || ! grep -Eq 'Server returned HTTP response code: (429|500|502|503|504)|SocketTimeoutException|Read timed out|Connect timed out' /tmp/kinfolk-gradle-build.log; then
+            if [ "$attempt" -eq 3 ] || grep -Eq '^> Task .* FAILED|^.*Compilation failed' /tmp/kinfolk-gradle-build.log || ! grep -Eq 'Server returned HTTP response code: (429|500|502|503|504)|SocketTimeoutException|Read timed out|Connect timed out' /tmp/kinfolk-gradle-build.log; then
               exit "$result"
             fi
             echo "Transient Gradle distribution transport failure; retrying attempt $((attempt + 1))/3"
