@@ -1,0 +1,194 @@
+name: Kinfolk Connected Isolated Alpha (Android and iOS)
+
+on:
+  push:
+    branches:
+      - kinfolk-social/recovery527-profile-save-retry-20261109
+    paths:
+      - 'kinfolk-social/**'
+      - '.github/workflows/kinfolk-connected-alpha.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Publishable client key only; never a service role key. The isolated project is already approved.
+env:
+  KINFOLK_ALPHA_SUPABASE_URL: https://viantpfagtbgyyzavmtv.supabase.co
+  KINFOLK_ALPHA_SUPABASE_PUBLISHABLE_KEY: sb_publishable_Kb4Mge6cPELN7gbBRkPl0g_RdXqAnuJ
+
+concurrency:
+  group: kinfolk-connected-alpha-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-debug-apk:
+    name: Android installable debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      # ubuntu-latest already includes Android command-line tools and ANDROID_HOME.
+      # android-actions/setup-android@v3 attempts to install removed 'tools' package.
+      - name: Install Android 35 build packages using hosted SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | sort | head -n 1)"
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      - name: Resolve pinned native dependencies and install
+        working-directory: kinfolk-social/native
+        run: |
+          if [ ! -f package-lock.json ]; then npm install --package-lock-only --ignore-scripts --no-audit --no-fund; fi
+          npm ci --no-audit --no-fund
+      - name: Prepare and validate full Kinfolk native bundle
+        working-directory: kinfolk-social/native
+        run: |
+          npm run prepare:web
+          npm run alpha:verify
+          node --input-type=module -e "import {requireFunctionalAlphaBackend} from './scripts/alpha-backend-config.mjs';requireFunctionalAlphaBackend();"
+      - name: Identify isolated private alpha app
+        working-directory: kinfolk-social/native
+        run: |
+          node --input-type=module -e "import fs from 'node:fs';let p='capacitor.config.json',j=JSON.parse(fs.readFileSync(p));j.appId='social.kinfolk.alpha';j.appName='Kinfolk Social Alpha';fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n')"
+      - name: Generate Android project and sync local app assets
+        working-directory: kinfolk-social/native
+        run: |
+          npx cap add android
+          npx cap sync android
+      - name: Compile installable debug APK (no release signing)
+        working-directory: kinfolk-social/native/android
+        run: |
+          chmod +x gradlew
+          # Capacitor generates a Gradle wrapper with a 10-second distribution download timeout.
+          # Hosted runner network variance can exceed that even when the build is healthy.
+          printf '\nnetworkTimeout=120000\n' >> gradle/wrapper/gradle-wrapper.properties
+          # Retry only transient Gradle distribution transport failures (e.g. HTTP 504).
+          # Gradle also prints a generic FAILURE header for network errors; only task/compiler failures are terminal.
+          for attempt in 1 2 3; do
+            set +e
+            ./gradlew --no-daemon assembleDebug 2>&1 | tee /tmp/kinfolk-gradle-build.log
+            result=${PIPESTATUS[0]}
+            set -e
+            if [ "$result" -eq 0 ]; then break; fi
+            if [ "$attempt" -eq 3 ] || grep -Eq '^> Task .* FAILED|^.*Compilation failed|^> Execution failed for task|^Execution failed for task' /tmp/kinfolk-gradle-build.log || ! grep -Eq 'Server returned HTTP response code: (429|500|502|503|504)|SocketTimeoutException|Read timed out|Connect timed out' /tmp/kinfolk-gradle-build.log; then
+              exit "$result"
+            fi
+            echo "Transient Gradle distribution transport failure; retrying attempt $((attempt + 1))/3"
+            sleep $((attempt * 15))
+          done
+          test -s app/build/outputs/apk/debug/app-debug.apk
+      - name: Audit compiled APK before artifact publication
+        working-directory: kinfolk-social/native
+        run: |
+          python3 - <<'PY'
+          import zipfile
+          p='android/app/build/outputs/apk/debug/app-debug.apk'
+          with zipfile.ZipFile(p) as z:
+              names=set(z.namelist())
+              for item in ('assets/public/index.html','assets/public/kinfolk-supabase-sdk.js','assets/public/kinfolk-reels159.js','assets/public/kinfolk-communities.js'):
+                  assert item in names, 'Missing '+item
+              index=z.read('assets/public/index.html').decode()
+              assert 'https://viantpfagtbgyyzavmtv.supabase.co' in index
+              assert 'zojajuzmfjpvubzibzgg' not in index
+              assert 'aaaaaaaaaaaaaaaaaaaa.supabase.co' not in index
+              assert 'src="/kinfolk-supabase-sdk.js"' in index
+              for item in names:
+                  if not item.endswith('/'):
+                      data=z.read(item)
+                      assert b'zojajuzmfjpvubzibzgg' not in data, 'Live backend leaked into '+item
+          print('Connected alpha APK: isolated endpoint, full modules, no live reference')
+          PY
+      - name: Validate APK archive and record package provenance
+        working-directory: kinfolk-social/native
+        run: |
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          unzip -t "$APK" > /dev/null
+          mkdir -p package-evidence
+          sha256sum "$APK" > package-evidence/android-apk.sha256
+          printf 'commit=%s\nref=%s\nbackend=isolated-alpha\npackage=connected-debug-unverified\n' "$GITHUB_SHA" "$GITHUB_REF" > package-evidence/build.txt
+          cat package-evidence/android-apk.sha256 >> "$GITHUB_STEP_SUMMARY"
+          echo 'Connected alpha APK: packaging only; Auth, RLS and physical-device proof still required.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish Android build provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: kinfolk-social-android-connected-alpha-evidence
+          path: kinfolk-social/native/package-evidence/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Publish private-test Android APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kinfolk-social-android-connected-alpha-package
+          path: kinfolk-social/native/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  ios-simulator:
+    name: iOS unsigned simulator app (not an iPhone IPA)
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Resolve pinned native dependencies and install
+        working-directory: kinfolk-social/native
+        run: |
+          if [ ! -f package-lock.json ]; then npm install --package-lock-only --ignore-scripts --no-audit --no-fund; fi
+          npm ci --no-audit --no-fund
+      - name: Prepare and validate full Kinfolk native bundle
+        working-directory: kinfolk-social/native
+        run: |
+          npm run prepare:web
+          npm run alpha:verify
+          node --input-type=module -e "import {requireFunctionalAlphaBackend} from './scripts/alpha-backend-config.mjs';requireFunctionalAlphaBackend();"
+      - name: Identify isolated private alpha app
+        working-directory: kinfolk-social/native
+        run: |
+          node --input-type=module -e "import fs from 'node:fs';let p='capacitor.config.json',j=JSON.parse(fs.readFileSync(p));j.appId='social.kinfolk.alpha';j.appName='Kinfolk Social Alpha';fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n')"
+      - name: Generate iOS project and sync local app assets
+        working-directory: kinfolk-social/native
+        run: |
+          npx cap add ios
+          npx cap sync ios
+      - name: Compile unsigned iOS Simulator application
+        working-directory: kinfolk-social/native
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/KinfolkAlphaDerived" CODE_SIGNING_ALLOWED=NO build
+          test -d "$RUNNER_TEMP/KinfolkAlphaDerived/Build/Products/Debug-iphonesimulator/App.app"
+          ditto -c -k --sequesterRsrc --keepParent "$RUNNER_TEMP/KinfolkAlphaDerived/Build/Products/Debug-iphonesimulator/App.app" "$RUNNER_TEMP/kinfolk-ios-simulator.zip"
+      - name: Verify iOS Simulator archive and record provenance
+        run: |
+          set -euo pipefail
+          unzip -t "$RUNNER_TEMP/kinfolk-ios-simulator.zip" > /dev/null
+          shasum -a 256 "$RUNNER_TEMP/kinfolk-ios-simulator.zip" > "$RUNNER_TEMP/kinfolk-ios-simulator.sha256"
+          cat "$RUNNER_TEMP/kinfolk-ios-simulator.sha256" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Unsigned Simulator build only; not installable on a physical iPhone.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish iOS Simulator checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: kinfolk-social-ios-connected-alpha-evidence
+          path: ${{ runner.temp }}/kinfolk-ios-simulator.sha256
+          if-no-files-found: error
+          retention-days: 7
+      - name: Publish iOS Simulator zip (not installable on physical iPhone)
+        uses: actions/upload-artifact@v4
+        with:
+          name: kinfolk-social-ios-connected-alpha-package
+          path: ${{ runner.temp }}/kinfolk-ios-simulator.zip
+          if-no-files-found: error
+          retention-days: 7
