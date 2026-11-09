@@ -50,6 +50,25 @@ try {
   const comment = check(await a.from('comments').insert({post_id:postId,author_id:aid,body:'Alpha comment '+runId}).select('id').single(),'A comment');
   commentId = comment.id;
   requireRow(check(await b.from('comments').select('id').eq('id',commentId),'B comment read'),commentId,'B cannot see A public comment');
+  // Messages are friend-only by RLS. Exercise the real friend-request lifecycle first.
+  // These accounts MUST be disposable: accepted friendships cannot be deleted by ordinary users.
+  const existing = check(await a.from('friend_requests').select('id,sender_id,receiver_id,status').or(`and(sender_id.eq.${aid},receiver_id.eq.${bid}),and(sender_id.eq.${bid},receiver_id.eq.${aid})`), 'friendship lookup');
+  let accepted = existing.find(r => r.status === 'accepted');
+  if (!accepted) {
+    let pending = existing.find(r => r.status === 'pending');
+    if (pending && pending.sender_id === bid) {
+      accepted = check(await a.from('friend_requests').update({status:'accepted'}).eq('id',pending.id).select('id,status').single(), 'A accept B request');
+    } else {
+      if (!pending) pending = check(await a.from('friend_requests').insert({sender_id:aid,receiver_id:bid,status:'pending'}).select('id,sender_id,receiver_id,status').single(), 'A request B friendship');
+      accepted = check(await b.from('friend_requests').update({status:'accepted'}).eq('id',pending.id).select('id,status').single(), 'B accept A request');
+    }
+  }
+  assert.equal(accepted.status, 'accepted', 'Friendship not accepted before messaging');
+  // Confirm both participants can see the accepted relationship through RLS.
+  for (const [client,label] of [[a,'A'],[b,'B']]) {
+    const rows = check(await client.from('friend_requests').select('id,status').eq('id',accepted.id), label + ' friendship visibility');
+    assert.equal(rows[0]?.status,'accepted',label + ' cannot see accepted friendship');
+  }
   const msg = check(await a.from('messages').insert({sender_id:aid,receiver_id:bid,body:'Alpha private message '+runId}).select('id').single(),'A send message');
   messageId = msg.id;
   requireRow(check(await b.from('messages').select('id').eq('id',messageId),'B inbox'),messageId,'B receives message');
@@ -64,7 +83,7 @@ try {
   assert.ok(spoofMessage.error, 'B was allowed to impersonate A as message sender');
   const outsider = await b.from('kinfolk_safety_settings').update({discoverable:true}).eq('user_id',aid).select('user_id');
   assert.ok(outsider.error || outsider.data?.length===0, 'B was allowed to modify A safety settings');
-  console.log('PASS: verified login/session restore/logout, profile/safety trigger, cross-account feed/comments, direct message, anonymous isolation, author spoofing and safety ownership');
+  console.log('PASS: verified login/session restore/logout, profile/safety trigger, cross-account feed/comments, friend request/acceptance, direct message, anonymous isolation, author spoofing and safety ownership');
 } finally {
   // Only delete records carrying this run's IDs. Never remove users or unrelated data.
   if (commentId) { const r=await a.from('comments').delete().eq('id',commentId); if(r.error) console.error('Cleanup comment:',r.error.message); }
