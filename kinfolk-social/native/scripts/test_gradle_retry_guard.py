@@ -88,6 +88,35 @@ class GradleRetryGuardTests(unittest.TestCase):
                     self.assertEqual(actual, expected)
                     self.assertEqual(actual, should_retry(log))
 
+    def test_real_grep_classification_matches_synthetic_cases(self):
+        """Exercise the exact grep -E commands used by GitHub Actions."""
+        cases = [
+            ("Server returned HTTP response code: 504", True),
+            ("FAILURE: Build failed with an exception.\nServer returned HTTP response code: 504", True),
+            ("Server returned HTTP response code: 504\n> Task :app:compileDebugKotlin FAILED", False),
+            ("Server returned HTTP response code: 504\n> Execution failed for task ':app:compileDebugKotlin'.", False),
+            ("Server returned HTTP response code: 504\nCompilation failed", False),
+            ("Could not find dependency", False),
+        ]
+        for path in WORKFLOWS:
+            source = path.read_text()
+            guards = re.findall(r"grep -Eq '([^']+)' /tmp/kinfolk-gradle-build[.]log", source)
+            self.assertEqual(len(guards), 2, f"Missing grep guards in {path}")
+            terminal, transport = guards
+            for log, expected in cases:
+                with self.subTest(workflow=path.name, log=log):
+                    terminal_match = subprocess.run(
+                        ["grep", "-Eq", terminal], input=log, text=True, check=False
+                    )
+                    transport_match = subprocess.run(
+                        ["grep", "-Eq", transport], input=log, text=True, check=False
+                    )
+                    self.assertIn(terminal_match.returncode, (0, 1))
+                    self.assertIn(transport_match.returncode, (0, 1))
+                    actual = transport_match.returncode == 0 and terminal_match.returncode != 0
+                    self.assertEqual(actual, expected)
+                    self.assertEqual(actual, should_retry(log))
+
     def test_both_workflows_include_failure_guard(self):
         for path in WORKFLOWS:
             with self.subTest(path=path.name):
