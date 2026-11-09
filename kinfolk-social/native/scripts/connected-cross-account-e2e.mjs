@@ -51,7 +51,7 @@ try {
   const spoofMessage = await b.from('messages').insert({sender_id:aid,receiver_id:bid,body:'forbidden '+runId});
   assert.ok(spoofMessage.error, 'B was allowed to impersonate A as message sender');
   const outsider = await b.from('kinfolk_safety_settings').update({discoverable:true}).eq('user_id',aid).select('user_id');
-  assert.ok(!outsider.error && outsider.data.length===0, 'B was allowed to modify A safety settings');
+  assert.ok(outsider.error || outsider.data?.length===0, 'B was allowed to modify A safety settings');
   console.log('PASS: verified sessions, profile/safety trigger, post, comment, direct message, anonymous isolation, author spoofing and safety ownership');
 } finally {
   // Only delete records carrying this run's IDs. Never remove users or unrelated data.
