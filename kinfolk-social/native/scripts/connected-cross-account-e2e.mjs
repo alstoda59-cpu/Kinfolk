@@ -32,7 +32,8 @@ try {
   check(await restored.auth.setSession({access_token:loginA.session.access_token,refresh_token:loginA.session.refresh_token}), 'A session restore');
   const restoredUser = check(await restored.auth.getUser(), 'A restored getUser');
   assert.equal(restoredUser.user?.id, aid, 'Restored session belongs to wrong account');
-  check(await restored.auth.signOut(), 'A restored logout');
+  // Local signout must not revoke the original A session used for the remaining E2E operations.
+  check(await restored.auth.signOut({scope:'local'}), 'A restored local logout');
   assert.equal((await restored.auth.getSession()).data.session, null, 'Logout left a local session');
   assert.ok(aid && bid && aid !== bid && loginA.user.email_confirmed_at && loginB.user.email_confirmed_at, 'Distinct confirmed users required');
   for (const [client,id,label] of [[a,aid,'A'],[b,bid,'B']]) {
