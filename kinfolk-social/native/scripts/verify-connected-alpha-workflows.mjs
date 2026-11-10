@@ -1,0 +1,82 @@
+// Connected, disposable two-account alpha workflow. Writes only to the isolated
+// alpha project and deletes its own test rows. Never use production credentials.
+import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'node:crypto';
+import { requireFunctionalAlphaBackend } from './alpha-backend-config.mjs';
+
+const env=process.env;
+if(env.KINFOLK_ALPHA_SYNTHETIC_ACCOUNTS_ONLY!=='1'||env.KINFOLK_ALPHA_ALLOW_TEST_WRITES!=='1')
+  throw Error('Synthetic-account and isolated test-write opt-ins are required');
+const config=requireFunctionalAlphaBackend(env);
+const credentials=[
+  [env.KINFOLK_ALPHA_TEST_USER_A_EMAIL,env.KINFOLK_ALPHA_TEST_USER_A_PASSWORD],
+  [env.KINFOLK_ALPHA_TEST_USER_B_EMAIL,env.KINFOLK_ALPHA_TEST_USER_B_PASSWORD]
+];
+if(credentials.some(p=>!p[0]||!p[1])||credentials[0][0].toLowerCase()===credentials[1][0].toLowerCase())
+  throw Error('Two distinct disposable alpha credentials required');
+const clients=credentials.map(()=>createClient(config.url,config.key,{
+  auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
+}));
+const ids=[];
+const cleanup=[];
+const marker='kinfolk-alpha-e2e-'+randomUUID();
+const check=(result,what)=>{
+  if(result.error)throw Error(what+': '+result.error.message);
+  return result.data;
+};
+async function remove(client,table,id){
+  const {error}=await client.from(table).delete().eq('id',id);
+  if(error)console.error('Cleanup failed for '+table+': '+error.message);
+}
+try{
+  for(let i=0;i<2;i++){
+    const {data,error}=await clients[i].auth.signInWithPassword({
+      email:credentials[i][0],password:credentials[i][1]
+    });
+    if(error||!data?.session||!data.user?.email_confirmed_at)
+      throw Error('Account '+(i+1)+' is not confirmed and authenticated');
+    const verified=check(await clients[i].auth.getUser(),'Verify session '+(i+1));
+    if(verified.user?.id!==data.user.id)throw Error('Session identity mismatch');
+    ids.push(data.user.id);
+  }
+  if(ids[0]===ids[1])throw Error('Accounts must be distinct');
+  for(let i=0;i<2;i++){
+    const rows=check(await clients[i].from('profiles').select('id').eq('id',ids[i]).limit(1),'Read profile');
+    if(rows.length!==1)throw Error('Account '+(i+1)+' lacks its application profile');
+  }
+  // An authenticated user must be able to publish a feed item, and the other
+  // account must see it before being allowed to comment on it.
+  const post=check(await clients[0].from('posts')
+    .insert({author_id:ids[0],body:marker}).select('id').single(),'Publish post');
+  cleanup.push(()=>remove(clients[0],'posts',post.id));
+  const visible=check(await clients[1].from('posts').select('id,body').eq('id',post.id),'Cross-account feed read');
+  if(visible.length!==1||visible[0].body!==marker)throw Error('Post not visible to second account');
+  const comment=check(await clients[1].from('comments')
+    .insert({post_id:post.id,author_id:ids[1],body:marker}).select('id').single(),'Publish comment');
+  cleanup.push(()=>remove(clients[1],'comments',comment.id));
+  const replies=check(await clients[0].from('comments').select('id,author_id').eq('id',comment.id),'Read comment');
+  if(replies.length!==1||replies[0].author_id!==ids[1])throw Error('Cross-account comment missing');
+  // Friendship is required by the existing messaging privacy rules.
+  const request=check(await clients[0].from('friend_requests')
+    .insert({sender_id:ids[0],receiver_id:ids[1],status:'pending'})
+    .select('id').single(),'Send friend request');
+  cleanup.push(()=>remove(clients[0],'friend_requests',request.id));
+  const accepted=check(await clients[1].from('friend_requests')
+    .update({status:'accepted'}).eq('id',request.id).select('id,status').single(),'Accept friend request');
+  if(accepted.status!=='accepted')throw Error('Friendship acceptance did not persist');
+  const message=check(await clients[0].from('messages')
+    .insert({sender_id:ids[0],receiver_id:ids[1],body:marker})
+    .select('id').single(),'Send direct message');
+  cleanup.push(()=>remove(clients[0],'messages',message.id));
+  const received=check(await clients[1].from('messages')
+    .select('id,sender_id,body').eq('id',message.id),'Receive direct message');
+  if(received.length!==1||received[0].sender_id!==ids[0]||received[0].body!==marker)
+    throw Error('Receiver could not read message');
+  console.log('PASS isolated alpha: two confirmed sessions, profiles, post, feed visibility, comment, friendship, and direct message');
+}catch(error){
+  console.error('FAIL isolated alpha connected workflow: '+error.message);
+  process.exitCode=1;
+}finally{
+  for(const fn of cleanup.reverse())try{await fn()}catch(error){console.error('Cleanup error: '+error.message)}
+  await Promise.all(clients.map(async c=>{try{await c.auth.signOut({scope:'local'})}catch{}}));
+}
