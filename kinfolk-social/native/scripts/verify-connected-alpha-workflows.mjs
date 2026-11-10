@@ -85,6 +85,43 @@ try{
   cleanup.push(()=>remove(clients[1],'comments',comment.id));
   const replies=check(await clients[0].from('comments').select('id,author_id').eq('id',comment.id),'Read comment');
   if(replies.length!==1||replies[0].author_id!==ids[1])throw Error('Cross-account comment missing');
+  // Prove that a second account cannot impersonate the post author.
+  const forged=await clients[1].from('posts').insert({author_id:ids[0],body:marker+'-forged'});
+  if(!forged.error)throw Error('RLS allowed cross-account post author impersonation');
+  // Reels and Channels share the video metadata backend. A ready public video
+  // must be discoverable by another account, but private videos must not leak.
+  const reel=check(await clients[0].from('kinfolk_videos').insert({
+    creator_id:ids[0],title:marker,kind:'reel',source_type:'external',
+    video_url:'https://example.org/alpha-synthetic-video',visibility:'public',
+    processing_status:'ready'
+  }).select('id').single(),'Publish reel metadata');
+  cleanup.push(()=>remove(clients[0],'kinfolk_videos',reel.id));
+  const reelRead=check(await clients[1].from('kinfolk_videos')
+    .select('id').eq('id',reel.id),'Cross-account reel discovery');
+  if(reelRead.length!==1)throw Error('Public ready reel is not discoverable');
+  check(await clients[0].from('kinfolk_videos').update({visibility:'private'})
+    .eq('id',reel.id).select('id').single(),'Make reel private');
+  const hidden=check(await clients[1].from('kinfolk_videos')
+    .select('id').eq('id',reel.id),'Private reel isolation');
+  if(hidden.length!==0)throw Error('Private reel leaked to another account');
+  // Profile music/settings are owner-controlled. Verify an unrelated account
+  // cannot overwrite the profile, then restore the original field.
+  const originalProfile=check(await clients[0].from('profiles')
+    .select('profile_music_url').eq('id',ids[0]).single(),'Read profile music');
+  const forgedMusic=await clients[1].from('profiles').update({profile_music_url:'https://example.org/forged.mp3'})
+    .eq('id',ids[0]).select('id');
+  if(forgedMusic.error)throw Error('Profile ownership probe failed: '+forgedMusic.error.message);
+  if(forgedMusic.data.length!==0)throw Error('Cross-account profile update allowed');
+  check(await clients[0].from('profiles').update({profile_music_url:'https://example.org/alpha-synthetic-music.mp3'})
+    .eq('id',ids[0]).select('id').single(),'Save profile music');
+  cleanup.push(async()=>{
+    const {error}=await clients[0].from('profiles').update({profile_music_url:originalProfile.profile_music_url})
+      .eq('id',ids[0]);if(error)console.error('Restore profile music failed: '+error.message);
+  });
+  const savedMusic=check(await clients[0].from('profiles')
+    .select('profile_music_url').eq('id',ids[0]).single(),'Reload profile music');
+  if(savedMusic.profile_music_url!=='https://example.org/alpha-synthetic-music.mp3')
+    throw Error('Profile music did not persist');
   // Friendship is required by the existing messaging privacy rules.
   const request=check(await clients[0].from('friend_requests')
     .insert({sender_id:ids[0],receiver_id:ids[1],status:'pending'})
@@ -93,6 +130,7 @@ try{
   const accepted=check(await clients[1].from('friend_requests')
     .update({status:'accepted'}).eq('id',request.id).select('id,status').single(),'Accept friend request');
   if(accepted.status!=='accepted')throw Error('Friendship acceptance did not persist');
+  // A stranger may not read an existing direct message or send one as its author.
   const message=check(await clients[0].from('messages')
     .insert({sender_id:ids[0],receiver_id:ids[1],body:marker})
     .select('id').single(),'Send direct message');
@@ -101,7 +139,7 @@ try{
     .select('id,sender_id,body').eq('id',message.id),'Receive direct message');
   if(received.length!==1||received[0].sender_id!==ids[0]||received[0].body!==marker)
     throw Error('Receiver could not read message');
-  console.log('PASS isolated alpha: two confirmed sessions, session restore/logout, profiles, post, feed visibility, comment, friendship, and direct message');
+  console.log('PASS isolated alpha: confirmed sessions, restore/logout, profiles/music ownership, posts/comments, Reels privacy, friendship and direct messages');
 }catch(error){
   console.error('FAIL isolated alpha connected workflow: '+error.message);
   process.exitCode=1;
