@@ -40,6 +40,6 @@ try{
 }finally{
   // Revoke test sessions even after a partial failure. Never print tokens.
   await Promise.all(clients.map(async client=>{
-    try{await client.auth.signOut({scope:'local'})}catch{}
+    try{await client.auth.signOut({scope:'global'})}catch{}
   }));
 }
