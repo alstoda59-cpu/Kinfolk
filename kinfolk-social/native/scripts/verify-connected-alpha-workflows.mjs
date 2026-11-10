@@ -40,6 +40,35 @@ try{
     ids.push(data.user.id);
   }
   if(ids[0]===ids[1])throw Error('Accounts must be distinct');
+  // Simulate a native process restart by restoring each authenticated session
+  // into a fresh Supabase client. Verify identity with Auth, not just local state.
+  // The original clients remain active for the connected workflows below.
+  for(let i=0;i<2;i++){
+    const {data:original,error:sessionError}=await clients[i].auth.getSession();
+    if(sessionError||!original?.session?.access_token||!original.session.refresh_token)
+      throw Error('Account '+(i+1)+' has no restorable session');
+    const restored=createClient(config.url,config.key,{
+      auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
+    });
+    try{
+      const {data:resumed,error:restoreError}=await restored.auth.setSession({
+        access_token:original.session.access_token,
+        refresh_token:original.session.refresh_token
+      });
+      if(restoreError||resumed?.user?.id!==ids[i]||!resumed.session)
+        throw Error('Account '+(i+1)+' session restoration failed: '+(restoreError?.message||'identity mismatch'));
+      const {data:verified,error:verifyError}=await restored.auth.getUser();
+      if(verifyError||verified?.user?.id!==ids[i])
+        throw Error('Account '+(i+1)+' restored session was not accepted by Auth');
+      const {error:logoutError}=await restored.auth.signOut({scope:'local'});
+      if(logoutError)throw Error('Account '+(i+1)+' logout failed: '+logoutError.message);
+      const {data:afterLogout,error:afterLogoutError}=await restored.auth.getSession();
+      if(afterLogoutError||afterLogout?.session)
+        throw Error('Account '+(i+1)+' retained a local session after logout');
+    }finally{
+      await restored.auth.signOut({scope:'local'}).catch(()=>{});
+    }
+  }
   for(let i=0;i<2;i++){
     const rows=check(await clients[i].from('profiles').select('id').eq('id',ids[i]).limit(1),'Read profile');
     if(rows.length!==1)throw Error('Account '+(i+1)+' lacks its application profile');
@@ -72,7 +101,7 @@ try{
     .select('id,sender_id,body').eq('id',message.id),'Receive direct message');
   if(received.length!==1||received[0].sender_id!==ids[0]||received[0].body!==marker)
     throw Error('Receiver could not read message');
-  console.log('PASS isolated alpha: two confirmed sessions, profiles, post, feed visibility, comment, friendship, and direct message');
+  console.log('PASS isolated alpha: two confirmed sessions, session restore/logout, profiles, post, feed visibility, comment, friendship, and direct message');
 }catch(error){
   console.error('FAIL isolated alpha connected workflow: '+error.message);
   process.exitCode=1;
