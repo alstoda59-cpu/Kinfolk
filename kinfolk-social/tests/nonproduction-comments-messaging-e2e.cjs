@@ -81,7 +81,8 @@ async function run(c=config(),log=console.log){
     log('PASS sender can read sent message');
   }finally{
     for(const item of created.reverse()){
-      if(item.pendingOnly){log('CLEANUP REQUIRED accepted friendship '+item.id+' (alpha RLS forbids deleting accepted requests)');continue;}\n      try{await rest(item.table+'?id=eq.'+item.id,{method:'DELETE',token:item.token,expected:[200,204]});}
+      if(item.pendingOnly){log('CLEANUP REQUIRED accepted friendship '+item.id+' (alpha RLS forbids deleting accepted requests)');continue;}
+      try{await rest(item.table+'?id=eq.'+item.id,{method:'DELETE',token:item.token,expected:[200,204]});}
       catch(e){log('CLEANUP REQUIRED '+item.table+' '+item.id+': '+e.message);}
     }
     for(const s of sessions){
