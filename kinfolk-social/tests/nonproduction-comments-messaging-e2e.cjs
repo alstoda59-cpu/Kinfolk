@@ -47,6 +47,25 @@ async function run(c=config(),log=console.log){
     const read=await rest('comments?id=eq.'+comment.id+'&select=id,body',{token:a.token});
     if(read.data?.length!==1)throw Error('Post owner cannot read cross-account comment');
     log('PASS B comments on A post; A reads comment');
+    // Messaging is friend-only under alpha RLS. Establish the relationship through
+    // the same authenticated request/accept flow as real users, never via admin SQL.
+    const existing=await rest('friend_requests?or=(and(sender_id.eq.'+a.id+',receiver_id.eq.'+b.id+'),and(sender_id.eq.'+b.id+',receiver_id.eq.'+a.id+'))&select=id,status,sender_id,receiver_id',{token:a.token});
+    let friendship=existing.data?.find(x=>x.status==='accepted');
+    if(!friendship){
+      if(existing.data?.some(x=>x.status!=='pending'))throw Error('Existing declined friendship; use fresh disposable accounts');
+      let pending=existing.data?.find(x=>x.status==='pending');
+      if(!pending){
+        const fr=await rest('friend_requests?select=id,status,sender_id,receiver_id',{method:'POST',token:a.token,prefer:'return=representation',body:{sender_id:a.id,receiver_id:b.id,status:'pending'},expected:[201]});
+        pending=fr.data?.[0];
+        if(!pending?.id)throw Error('Friend request creation failed');
+        created.push({table:'friend_requests',id:pending.id,token:a.token,pendingOnly:true});
+      }
+      const recipient=pending.receiver_id===a.id?a:b;
+      const accepted=await rest('friend_requests?id=eq.'+pending.id+'&status=eq.pending&select=id,status',{method:'PATCH',token:recipient.token,prefer:'return=representation',body:{status:'accepted'},expected:[200]});
+      if(accepted.data?.[0]?.status!=='accepted')throw Error('Recipient could not accept friend request; inspect contact permissions');
+      friendship=accepted.data[0];
+    }
+    log('PASS authenticated friend request accepted before messaging');
     const msg=await rest('messages?select=id,sender_id,receiver_id',{method:'POST',token:a.token,
       prefer:'return=representation',body:{sender_id:a.id,receiver_id:b.id,body:marker+' direct message'},
       expected:[201]});
@@ -62,7 +81,7 @@ async function run(c=config(),log=console.log){
     log('PASS sender can read sent message');
   }finally{
     for(const item of created.reverse()){
-      try{await rest(item.table+'?id=eq.'+item.id,{method:'DELETE',token:item.token,expected:[200,204]});}
+      if(item.pendingOnly){log('CLEANUP REQUIRED accepted friendship '+item.id+' (alpha RLS forbids deleting accepted requests)');continue;}\n      try{await rest(item.table+'?id=eq.'+item.id,{method:'DELETE',token:item.token,expected:[200,204]});}
       catch(e){log('CLEANUP REQUIRED '+item.table+' '+item.id+': '+e.message);}
     }
     for(const s of sessions){
