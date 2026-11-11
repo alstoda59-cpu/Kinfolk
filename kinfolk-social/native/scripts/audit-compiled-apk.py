@@ -11,6 +11,7 @@ from pathlib import Path
 
 LIVE_REF = "zojajuzmfjpvubzibzgg"
 CI_REF = "aaaaaaaaaaaaaaaaaaaa"
+ALPHA_REF = "viantpfagtbgyyzavmtv"
 ROOT = "assets/public/"
 REQUIRED = (
     ROOT + "index.html",
@@ -20,7 +21,8 @@ REQUIRED = (
     ROOT + "kinfolk-preview-isolation.js",
 )
 
-def verify(apk: Path) -> None:
+def verify(apk: Path, connected_alpha: bool = False) -> None:
+    expected_ref = ALPHA_REF if connected_alpha else CI_REF
     if not apk.is_file() or apk.stat().st_size == 0:
         raise ValueError("Compiled Android debug APK missing or empty")
     with zipfile.ZipFile(apk) as archive:
@@ -43,8 +45,8 @@ def verify(apk: Path) -> None:
         index = archive.read(REQUIRED[0]).decode("utf-8")
         if "window.KINFOLK_NATIVE_ALPHA=true;" not in index:
             raise ValueError("Compiled APK missing native startup marker")
-        if "https://" + CI_REF + ".supabase.co" not in index:
-            raise ValueError("Compiled APK is not bound to the offline synthetic backend")
+        if "https://" + expected_ref + ".supabase.co" not in index:
+            raise ValueError("Compiled APK is not bound to the expected isolated backend")
         if 'src="/kinfolk-supabase-sdk.js"' not in index:
             raise ValueError("Compiled APK does not load bundled Supabase SDK")
         if "cdn.jsdelivr.net/npm/@supabase/supabase-js" in index:
@@ -71,15 +73,20 @@ def verify(apk: Path) -> None:
                             raise ValueError("Compiled APK contains deceptive Supabase hostname: " + info.filename)
                         endpoints.add(match.group(1).decode("ascii").lower())
                     tail = combined[-255:]
-        if endpoints != {CI_REF}:
-            raise ValueError("Compiled offline APK contains unexpected Supabase project endpoint")
+        if endpoints != {expected_ref}:
+            raise ValueError("Compiled APK contains unexpected Supabase project endpoint")
         if len(archive.read(REQUIRED[1])) < 10000:
             raise ValueError("Compiled APK Supabase SDK is unexpectedly small")
-    print("PASS compiled APK modules, offline backend, and whole-archive live-reference isolation")
+    print("PASS compiled APK modules, " + ("connected alpha" if connected_alpha else "offline synthetic") + " backend, and whole-archive live-reference isolation")
 
 if __name__ == "__main__":
     try:
-        verify(Path(sys.argv[1] if len(sys.argv) > 1 else "android/app/build/outputs/apk/debug/app-debug.apk"))
+        args = sys.argv[1:]
+        connected_alpha = "--connected-alpha" in args
+        args = [arg for arg in args if arg != "--connected-alpha"]
+        if len(args) > 1:
+            raise ValueError("Usage: audit-compiled-apk.py [--connected-alpha] [apk-path]")
+        verify(Path(args[0] if args else "android/app/build/outputs/apk/debug/app-debug.apk"), connected_alpha=connected_alpha)
     except (ValueError, OSError, UnicodeError, zipfile.BadZipFile) as error:
         print("FAIL compiled APK audit:", error, file=sys.stderr)
         sys.exit(1)
