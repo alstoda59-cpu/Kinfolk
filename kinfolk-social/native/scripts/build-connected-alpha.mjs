@@ -31,7 +31,7 @@ run('npx',['cap','sync','android']);
 run(process.platform==='win32'?'gradlew.bat':'./gradlew',['--no-daemon','assembleDebug'],androidPath);
 const apk=resolve(androidPath,'app/build/outputs/apk/debug/app-debug.apk');
 if(!existsSync(apk))throw new Error('Gradle succeeded without an APK');
-run('python3',['scripts/audit-compiled-apk.py',apk]);
+run('python3',['scripts/audit-compiled-apk.py','--connected-alpha',apk]);
 const out=resolve(root,'connected-alpha-artifacts');
 mkdirSync(out,{recursive:true});
 const target=resolve(out,'kinfolk-social-alpha-android-debug.apk');
