@@ -12,6 +12,7 @@ const idA=jwtSubject(a,{requireExpiry:true}),idB=jwtSubject(b,{requireExpiry:tru
 if(idA===idB)throw Error('Two distinct real alpha accounts required');
 const postId=randomUUID(),commentId=randomUUID(),spoofId=randomUUID(),marker='kinfolk-alpha-e2e-'+randomUUID();
 const created={post:false,comment:false,spoof:false};
+let originalPrivacy=null,privacyChanged=false;
 const timeout=12000;
 async function request(table,method,token,{query='',body,prefer}={}){
   const ctrl=new AbortController();
@@ -44,10 +45,25 @@ try{
     assert(profile.length===1,'Missing confirmed Auth-backed profile for '+id);
   }
   const pa=await rows('profiles',a,'?select=is_private&id=eq.'+idA);
-  assert(pa[0].is_private===false,'Test account A must have a public profile; refusing to change privacy settings');
-  let r=await request('posts','POST',a,{body:{id:postId,author_id:idA,body:marker},prefer:'return=representation'});
-  assert(r.status===201&&r.data?.[0]?.id===postId,'Account A post creation failed: HTTP '+r.status);
-  created.post=true;
+  originalPrivacy=pa[0].is_private;
+  // Exercise the real default-private profile path before public feed access.
+  if(originalPrivacy===true){
+    let r=await request('posts','POST',a,{body:{id:postId,author_id:idA,body:marker},prefer:'return=representation'});
+    assert(r.status===201&&r.data?.[0]?.id===postId,'Private account post creation failed: HTTP '+r.status);
+    created.post=true;
+    const hidden=await rows('posts',b,'?select=id&id=eq.'+postId);
+    assert(hidden.length===0,'SECURITY: private profile post visible to unrelated account B');
+    r=await request('profiles','PATCH',a,{query:'?id=eq.'+idA,body:{is_private:false},prefer:'return=representation'});
+    assert(r.status===200&&r.data?.[0]?.is_private===false,'Owner cannot make profile public: HTTP '+r.status);
+    privacyChanged=true;
+  }
+  assert(originalPrivacy===true||originalPrivacy===false,'Missing profile privacy setting');
+  let r;
+  if(!created.post){
+    r=await request('posts','POST',a,{body:{id:postId,author_id:idA,body:marker},prefer:'return=representation'});
+    assert(r.status===201&&r.data?.[0]?.id===postId,'Account A post creation failed: HTTP '+r.status);
+    created.post=true;
+  }
   const visible=await rows('posts',b,'?select=id,body&id=eq.'+postId);
   assert(visible.length===1&&visible[0].body===marker,'Account B cannot read A public post');
   r=await request('posts','POST',b,{body:{id:spoofId,author_id:idA,body:marker+'-spoof'},prefer:'return=minimal'});
@@ -62,7 +78,7 @@ try{
   assert(r.status===200&&Array.isArray(r.data)&&r.data.length===0,'SECURITY: B deleted A post or delete was unverified');
   const still=await rows('posts',a,'?select=id&id=eq.'+postId);
   assert(still.length===1,'Account A post disappeared after B attempted deletion');
-  console.log('PASS connected alpha: two confirmed sessions, A post, B feed read/comment, A comment read, cross-account spoof/delete denied');
+  console.log('PASS connected alpha: two confirmed sessions, private/public visibility, A post, B feed read/comment, A comment read, cross-account spoof/delete denied');
 }catch(e){primaryError=e}
 finally{
   const failures=[];
@@ -77,6 +93,12 @@ finally{
   if(created.post){
     try{const r=await request('posts','DELETE',a,{query:'?id=eq.'+postId,prefer:'return=representation'});if(r.status!==200||r.data?.length!==1)failures.push('post cleanup unverified')}
     catch(e){failures.push('post cleanup: '+e.message)}
+  }
+  if(privacyChanged){
+    try{
+      const r=await request('profiles','PATCH',a,{query:'?id=eq.'+idA,body:{is_private:originalPrivacy},prefer:'return=representation'});
+      if(r.status!==200||r.data?.[0]?.is_private!==originalPrivacy)failures.push('profile privacy restoration unverified');
+    }catch(e){failures.push('profile privacy restoration: '+e.message)}
   }
   if(failures.length)console.error('MANUAL ALPHA CLEANUP NEEDED: '+failures.join('; ')+'; IDs: '+postId+', '+commentId+', '+spoofId);
   if(primaryError)throw primaryError;
