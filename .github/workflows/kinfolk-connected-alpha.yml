@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - kinfolk-social/recovery527-profile-save-retry-20261109
+      - kinfolk-social/alpha-unified-native-build-20261111
       - kinfolk-social/connected-mobile-release-candidate-20261110
       - kinfolk-social/alpha-email-confirm-manual-login-20261110
     paths:
