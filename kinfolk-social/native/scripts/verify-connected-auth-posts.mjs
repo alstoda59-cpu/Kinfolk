@@ -25,6 +25,7 @@ async function auth(path, body, token) {
   } finally {clearTimeout(timer)}
 }
 const sessions=[];
+const refreshTokens=[];
 try {
   for(const user of users) {
     const result=await auth('token?grant_type=password',user);
@@ -38,9 +39,21 @@ try {
     const identity=await verify.json().catch(()=>null);
     if(verify.status!==200||identity?.id!==result.data.user.id)
       throw Error('Alpha token identity verification failed');
+    if(!result.data.refresh_token)throw Error('Alpha login did not issue a refresh token');
     sessions.push(result.data.access_token);
+    refreshTokens.push(result.data.refresh_token);
   }
   if(sessions.length!==2)throw Error('Both sessions required');
+  // Exercise real session restoration rather than trusting an initial login alone.
+  for(let i=0;i<2;i++){
+    const restored=await auth('token?grant_type=refresh_token',{refresh_token:refreshTokens[i]});
+    if(restored.status!==200||!restored.data?.access_token||!restored.data?.user?.id)
+      throw Error('Alpha session refresh failed for disposable account '+(i+1)+' (HTTP '+restored.status+')');
+    const oldSubject=JSON.parse(Buffer.from(sessions[i].split('.')[1],'base64url').toString('utf8')).sub;
+    if(restored.data.user.id!==oldSubject)throw Error('SECURITY: restored session belongs to another account');
+    sessions[i]=restored.data.access_token;
+    refreshTokens[i]=restored.data.refresh_token||refreshTokens[i];
+  }
   const payloads=sessions.map(s=>JSON.parse(Buffer.from(s.split('.')[1],'base64url').toString('utf8')));
   if(payloads[0].sub===payloads[1].sub)throw Error('Account isolation requires distinct Auth IDs');
   const result=spawnSync(process.execPath,['scripts/verify-connected-posts-comments.mjs'],{
@@ -49,10 +62,13 @@ try {
   });
   if(result.error)throw result.error;
   if(result.status!==0)throw Error('Connected posts/comments cross-account test failed');
-  console.log('PASS: two confirmed alpha logins and cross-account posts/comments integration');
+  console.log('PASS: two confirmed alpha logins, session refresh and cross-account posts/comments integration');
 } finally {
   // Revocation of each disposable session, including on failed integration.
   for(const token of sessions){
-    try {await auth('logout',{},token)} catch {console.error('Alpha logout request failed; revoke disposable session manually')}
+    try {
+      const result=await auth('logout',{},token);
+      if(result.status!==204&&result.status!==200)console.error('Alpha logout HTTP '+result.status+'; revoke disposable session manually');
+    } catch {console.error('Alpha logout request failed; revoke disposable session manually')}
   }
 }
