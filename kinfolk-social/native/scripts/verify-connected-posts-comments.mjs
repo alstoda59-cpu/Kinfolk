@@ -54,8 +54,8 @@ try{
     const hidden=await rows('posts',b,'?select=id&id=eq.'+postId);
     assert(hidden.length===0,'SECURITY: private profile post visible to unrelated account B');
     r=await request('profiles','PATCH',a,{query:'?id=eq.'+idA,body:{is_private:false},prefer:'return=representation'});
+    if(r.status===200)privacyChanged=true;
     assert(r.status===200&&r.data?.[0]?.is_private===false,'Owner cannot make profile public: HTTP '+r.status);
-    privacyChanged=true;
   }
   assert(originalPrivacy===true||originalPrivacy===false,'Missing profile privacy setting');
   let r;
