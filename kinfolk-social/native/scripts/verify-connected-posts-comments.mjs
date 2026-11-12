@@ -10,8 +10,8 @@ const a=process.env.KINFOLK_ALPHA_TEST_USER_A_JWT;
 const b=process.env.KINFOLK_ALPHA_TEST_USER_B_JWT;
 const idA=jwtSubject(a,{requireExpiry:true}),idB=jwtSubject(b,{requireExpiry:true});
 if(idA===idB)throw Error('Two distinct real alpha accounts required');
-const postId=randomUUID(),commentId=randomUUID(),marker='kinfolk-alpha-e2e-'+randomUUID();
-const created={post:false,comment:false};
+const postId=randomUUID(),commentId=randomUUID(),spoofId=randomUUID(),marker='kinfolk-alpha-e2e-'+randomUUID();
+const created={post:false,comment:false,spoof:false};
 const timeout=12000;
 async function request(table,method,token,{query='',body,prefer}={}){
   const ctrl=new AbortController();
@@ -50,7 +50,8 @@ try{
   created.post=true;
   const visible=await rows('posts',b,'?select=id,body&id=eq.'+postId);
   assert(visible.length===1&&visible[0].body===marker,'Account B cannot read A public post');
-  r=await request('posts','POST',b,{body:{id:randomUUID(),author_id:idA,body:marker+'-spoof'},prefer:'return=minimal'});
+  r=await request('posts','POST',b,{body:{id:spoofId,author_id:idA,body:marker+'-spoof'},prefer:'return=minimal'});
+  if(r.status===201)created.spoof=true;
   assert(r.status===401||r.status===403,'SECURITY: B could impersonate A in post insert (HTTP '+r.status+')');
   r=await request('comments','POST',b,{body:{id:commentId,post_id:postId,author_id:idB,body:marker},prefer:'return=representation'});
   assert(r.status===201&&r.data?.[0]?.id===commentId,'Account B comment creation failed: HTTP '+r.status);
@@ -65,6 +66,10 @@ try{
 }catch(e){primaryError=e}
 finally{
   const failures=[];
+  if(created.spoof){
+    try{await request('posts','DELETE',a,{query:'?id=eq.'+spoofId,prefer:'return=representation'})}
+    catch(e){failures.push('spoofed post cleanup: '+e.message)}
+  }
   if(created.comment){
     try{const r=await request('comments','DELETE',b,{query:'?id=eq.'+commentId,prefer:'return=representation'});if(r.status!==200||r.data?.length!==1)failures.push('comment cleanup unverified')}
     catch(e){failures.push('comment cleanup: '+e.message)}
@@ -73,7 +78,7 @@ finally{
     try{const r=await request('posts','DELETE',a,{query:'?id=eq.'+postId,prefer:'return=representation'});if(r.status!==200||r.data?.length!==1)failures.push('post cleanup unverified')}
     catch(e){failures.push('post cleanup: '+e.message)}
   }
-  if(failures.length)console.error('MANUAL ALPHA CLEANUP NEEDED: '+failures.join('; ')+'; IDs: '+postId+', '+commentId);
+  if(failures.length)console.error('MANUAL ALPHA CLEANUP NEEDED: '+failures.join('; ')+'; IDs: '+postId+', '+commentId+', '+spoofId);
   if(primaryError)throw primaryError;
   if(failures.length)throw Error(failures.join('; '));
 }
