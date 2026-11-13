@@ -1,6 +1,6 @@
 // Build the real isolated Kinfolk Android alpha, never the offline CI placeholder.
 // Run from kinfolk-social/native after npm ci, with Android SDK/JDK installed.
-// Required: isolated alpha backend URL, publishable key, email redirect URL.
+// Required: isolated alpha backend URL and publishable key. HTTPS app-link callback is optional for manual-confirmation alpha.
 // Build can be compiled before disposable inboxes are available; that is NOT an E2E pass.
 // Set KINFOLK_ALPHA_RUN_FUNCTIONAL_E2E=1 to require connected functional verification.
 // No production credentials are accepted.
@@ -13,7 +13,7 @@ import { alphaEmailCallback } from './native-email-callback.mjs';
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const backend=requireFunctionalAlphaBackend();
-alphaEmailCallback(process.env.KINFOLK_ALPHA_EMAIL_REDIRECT_URL,{required:true});
+const emailCallback=alphaEmailCallback(process.env.KINFOLK_ALPHA_EMAIL_REDIRECT_URL);
 if(!process.env.ANDROID_HOME&&!process.env.ANDROID_SDK_ROOT)
   throw new Error('Android SDK missing: configure ANDROID_HOME or ANDROID_SDK_ROOT');
 function run(command,args,cwd=root){
@@ -41,7 +41,8 @@ copyFileSync(apk,target);
 writeFileSync(resolve(out,'build-provenance.json'),JSON.stringify({
   backend:backend.projectRef,mode:'connected-nonproduction',
   artifact:'kinfolk-social-alpha-android-debug.apk',
-  emailCallbackConfigured:true,
+  emailCallbackConfigured:Boolean(emailCallback),
+  emailActivationMode:emailCallback?'configured app-link callback (device verification required)':'manual browser confirmation then return to app and log in',
   verifiedBy:ranFunctionalE2E?'functional alpha verification and compiled APK auditor':'compiled APK auditor only',
   backendE2E:ranFunctionalE2E?'functional verifier completed':'NOT RUN; confirmed disposable accounts required',
   limitations:'Not proof of email delivery, cross-account E2E, or physical-device QA; only claim verified stages'
