@@ -7,6 +7,7 @@ on:
       - kinfolk-social/alpha-unified-native-build-20261111
       - kinfolk-social/connected-mobile-release-candidate-20261110
       - kinfolk-social/alpha-email-confirm-manual-login-20261110
+      - kinfolk-social/alpha-cross-account-posts-e2e-20261112
     paths:
       - 'kinfolk-social/**'
       - '.github/workflows/kinfolk-connected-alpha.yml'
