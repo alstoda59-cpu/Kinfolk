@@ -58,7 +58,7 @@ jobs:
         working-directory: kinfolk-social/native
         run: |
           npm run prepare:web
-          npm run alpha:verify
+          node scripts/verify-alpha-package.mjs
           node --input-type=module -e "import {requireFunctionalAlphaBackend} from './scripts/alpha-backend-config.mjs';requireFunctionalAlphaBackend();"
       - name: Identify isolated private alpha app
         working-directory: kinfolk-social/native
@@ -158,7 +158,7 @@ jobs:
         working-directory: kinfolk-social/native
         run: |
           npm run prepare:web
-          npm run alpha:verify
+          node scripts/verify-alpha-package.mjs
           node --input-type=module -e "import {requireFunctionalAlphaBackend} from './scripts/alpha-backend-config.mjs';requireFunctionalAlphaBackend();"
       - name: Identify isolated private alpha app
         working-directory: kinfolk-social/native
