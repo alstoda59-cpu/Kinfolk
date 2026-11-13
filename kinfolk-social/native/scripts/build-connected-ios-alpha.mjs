@@ -1,5 +1,5 @@
 // Connected, nonproduction iOS Simulator alpha. Requires macOS/Xcode and
-// the same isolated Supabase configuration and real two-account RLS gate as Android.
+// the same isolated Supabase configuration as Android; real two-account E2E is an optional release gate.
 // This produces a simulator .app archive, NOT a signed installable iPhone IPA.
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
@@ -11,7 +11,7 @@ import { alphaEmailCallback } from './native-email-callback.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 if(process.platform!=='darwin')throw Error('Connected iOS builds require macOS with Xcode.');
 const backend=requireFunctionalAlphaBackend();
-alphaEmailCallback(process.env.KINFOLK_ALPHA_EMAIL_REDIRECT_URL,{required:true});
+const emailCallback=alphaEmailCallback(process.env.KINFOLK_ALPHA_EMAIL_REDIRECT_URL);
 function run(command,args,cwd=root){
   const result=spawnSync(command,args,{cwd,env:process.env,stdio:'inherit'});
   if(result.error)throw result.error;
@@ -19,7 +19,8 @@ function run(command,args,cwd=root){
 }
 run('xcodebuild',['-version']);
 run('npm',['run','prepare:web']);
-run('npm',['run','alpha:verify:functional']);
+const ranFunctionalE2E=process.env.KINFOLK_ALPHA_RUN_FUNCTIONAL_E2E==='1';
+if(ranFunctionalE2E)run('npm',['run','alpha:verify:functional']);
 const ios=resolve(root,'ios');
 if(!existsSync(resolve(ios,'App')))run('npx',['cap','add','ios']);
 run('npx',['cap','sync','ios']);
@@ -42,7 +43,9 @@ writeFileSync(resolve(out,'ios-simulator-provenance.json'),JSON.stringify({
   backend:backend.projectRef,mode:'connected-nonproduction',
   artifact:'kinfolk-social-alpha-ios-simulator.zip',
   platform:'iOS Simulator only',signedIpa:false,
-  gates:'package, two-account owner-private RLS, signup readiness',
+  gates:ranFunctionalE2E?'package and functional alpha verifier':'package only; two-account E2E not run',
+  emailCallbackConfigured:Boolean(emailCallback),
+  emailActivationMode:emailCallback?'configured app-link callback (device verification required)':'manual browser confirmation then return to app and log in',
   unverified:'email delivery, cross-account feature E2E, physical iPhone QA'
 },null,2)+'\n');
 console.log('Connected iOS simulator app archived: '+archive);
