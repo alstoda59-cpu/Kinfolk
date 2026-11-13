@@ -62,7 +62,13 @@ try {
   });
   if(result.error)throw result.error;
   if(result.status!==0)throw Error('Connected posts/comments cross-account test failed');
-  console.log('PASS: two confirmed alpha logins, session refresh and cross-account posts/comments integration');
+  const privateResult=spawnSync(process.execPath,['scripts/verify-connected-settings-inbox.mjs'],{
+    cwd:process.cwd(),stdio:'inherit',timeout:120000,
+    env:{...process.env,KINFOLK_ALPHA_TEST_USER_A_JWT:sessions[0],KINFOLK_ALPHA_TEST_USER_B_JWT:sessions[1]}
+  });
+  if(privateResult.error)throw privateResult.error;
+  if(privateResult.status!==0)throw Error('Connected settings/inbox isolation test failed');
+  console.log('PASS: confirmed logins, session refresh, posts/comments, settings/inbox isolation');
 } finally {
   // Revocation of each disposable session, including on failed integration.
   for(const token of sessions){
