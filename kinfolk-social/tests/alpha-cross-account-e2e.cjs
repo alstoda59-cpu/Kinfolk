@@ -66,9 +66,11 @@ async function run(env = process.env, fetchImpl = fetch, log = console.log) {
     if (own?.length !== 1) throw Error('Cannot read account A privacy setting.');
     originalPrivacy = own[0].is_private;
     if (originalPrivacy) {
-      await rest(a, 'profiles', { method: 'PATCH', query: '?id=eq.' + a.id,
-        body: { is_private: false } });
-      changedPrivacy = true;
+      changedPrivacy = true; // mark before mutation so cleanup runs even on ambiguous failures
+      const updated = await rest(a, 'profiles', { method: 'PATCH', query: '?id=eq.' + a.id,
+        prefer: 'return=representation', body: { is_private: false } });
+      if (updated?.length !== 1 || updated[0].is_private !== false)
+        throw Error('Privacy update did not persist; refusing to test public content.');
     }
     const publicProfile = await rest(b, 'profiles',
       { query: '?select=id,is_private&id=eq.' + a.id });
@@ -137,9 +139,21 @@ async function run(env = process.env, fetchImpl = fetch, log = console.log) {
     // This two-account run does not claim that proof.
   } finally {
     if (changedPrivacy) {
-      try { await rest(a, 'profiles', { method: 'PATCH',
-        query: '?id=eq.' + a.id, body: { is_private: originalPrivacy } }); }
-      catch (error) { log('PRIVACY RESTORE REQUIRED account A: ' + error.message); }
+      try {
+        const restored = await rest(a, 'profiles', { method: 'PATCH',
+          query: '?id=eq.' + a.id, prefer: 'return=representation',
+          body: { is_private: originalPrivacy } });
+        if (restored?.length !== 1 || restored[0].is_private !== originalPrivacy)
+          throw Error('Privacy restoration was not persisted.');
+        const verified = await rest(a, 'profiles',
+          { query: '?select=is_private&id=eq.' + a.id });
+        if (verified?.length !== 1 || verified[0].is_private !== originalPrivacy)
+          throw Error('Privacy restoration failed read-back verification.');
+        log('PASS original profile privacy restored and verified');
+      } catch (error) {
+        log('PRIVACY RESTORE REQUIRED account A: ' + error.message);
+        process.exitCode = 1;
+      }
     }
     if (friendshipId)
       log('DISPOSABLE ACCOUNT CLEANUP: accepted friendship ' + friendshipId +
