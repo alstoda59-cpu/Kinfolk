@@ -74,7 +74,13 @@ try {
   });
   if(storageResult.error)throw storageResult.error;
   if(storageResult.status!==0)throw Error('Connected private media storage isolation test failed');
-  console.log('PASS: confirmed logins, session refresh, posts/comments, settings/inbox, private media storage isolation');
+  const deliveryResult=spawnSync(process.execPath,['scripts/verify-connected-post-media-delivery.mjs'],{
+    cwd:process.cwd(),stdio:'inherit',timeout:120000,
+    env:{...process.env,KINFOLK_ALPHA_TEST_USER_A_JWT:sessions[0],KINFOLK_ALPHA_TEST_USER_B_JWT:sessions[1]}
+  });
+  if(deliveryResult.error)throw deliveryResult.error;
+  if(deliveryResult.status!==0)throw Error('Connected public/private post media delivery failed');
+  console.log('PASS: confirmed logins, session refresh, posts/comments, settings/inbox, private storage and cross-account post media delivery');
 } finally {
   // Revocation of each disposable session, including on failed integration.
   for(const token of sessions){
