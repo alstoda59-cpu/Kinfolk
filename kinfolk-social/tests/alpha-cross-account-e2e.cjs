@@ -52,7 +52,8 @@ async function run(env = process.env, fetchImpl = fetch, log = console.log) {
     return data ? JSON.parse(data) : null;
   };
   const runId = crypto.randomUUID();
-  let postId, commentId, messageId;
+  let postId, commentId, messageId, originalPrivacy, changedPrivacy = false, friendshipId;
+  const allowFriendship = env.KINFOLK_TEST_ALLOW_FRIENDSHIP_MUTATION === 'YES';
   try {
     // Profile rows must have been created by the real Auth trigger.
     const profiles = await rest(a, 'profiles',
@@ -60,6 +61,21 @@ async function run(env = process.env, fetchImpl = fetch, log = console.log) {
     if (!Array.isArray(profiles) || !profiles.some(p => p.id === a.id))
       throw Error('Auth profile trigger did not provision account A.');
     log('PASS authenticated profile provisioning');
+    // Private-by-default is intentional. Restore original privacy after test.
+    const own = await rest(a, 'profiles', { query: '?select=id,is_private&id=eq.' + a.id });
+    if (own?.length !== 1) throw Error('Cannot read account A privacy setting.');
+    originalPrivacy = own[0].is_private;
+    if (originalPrivacy) {
+      await rest(a, 'profiles', { method: 'PATCH', query: '?id=eq.' + a.id,
+        body: { is_private: false } });
+      changedPrivacy = true;
+    }
+    const publicProfile = await rest(b, 'profiles',
+      { query: '?select=id,is_private&id=eq.' + a.id });
+    if (publicProfile?.[0]?.is_private !== false)
+      throw Error('Public profile setting was not visible to account B.');
+    log('PASS real public-profile visibility');
+
 
     const post = await rest(a, 'posts', { method: 'POST', prefer: 'return=representation',
       body: { author_id: a.id, body: 'Kinfolk alpha cross-account QA ' + runId } });
@@ -78,6 +94,37 @@ async function run(env = process.env, fetchImpl = fetch, log = console.log) {
       throw Error('Cross-account comment not visible to author of post.');
     log('PASS cross-account comment');
 
+    // DMs require accepted friendship; use the real friend request workflow.
+    const friends = await rest(a, 'friend_requests', {
+      query: '?select=id,status,sender_id,receiver_id&status=eq.accepted&or=(and(sender_id.eq.' +
+        a.id + ',receiver_id.eq.' + b.id + '),and(sender_id.eq.' +
+        b.id + ',receiver_id.eq.' + a.id + '))'
+    });
+    if (!friends?.length) {
+      if (!allowFriendship)
+        throw Error('No accepted friendship. For disposable accounts set KINFOLK_TEST_ALLOW_FRIENDSHIP_MUTATION=YES. Accepted requests cannot be auto-deleted under current RLS.');
+      const pending = await rest(a, 'friend_requests', {
+        query: '?select=id&sender_id=eq.' + a.id +
+          '&receiver_id=eq.' + b.id + '&status=eq.pending'
+      });
+      if (pending?.length) friendshipId = pending[0].id;
+      else {
+        const request = await rest(a, 'friend_requests', {
+          method: 'POST', prefer: 'return=representation',
+          body: { sender_id: a.id, receiver_id: b.id, status: 'pending' }
+        });
+        friendshipId = request?.[0]?.id;
+      }
+      if (!friendshipId) throw Error('Friend request was not persisted.');
+      const accepted = await rest(b, 'friend_requests', {
+        method: 'PATCH', query: '?id=eq.' + friendshipId,
+        prefer: 'return=representation', body: { status: 'accepted' }
+      });
+      if (accepted?.[0]?.status !== 'accepted')
+        throw Error('Recipient could not accept friend request.');
+      log('PASS friend request and recipient acceptance');
+    } else log('PASS existing accepted friendship');
+
     const message = await rest(a, 'messages', { method: 'POST', prefer: 'return=representation',
       body: { sender_id: a.id, receiver_id: b.id, body: 'Alpha QA DM ' + runId } });
     messageId = message?.[0]?.id;
@@ -89,6 +136,14 @@ async function run(env = process.env, fetchImpl = fetch, log = console.log) {
     // An authenticated third account is required to prove nonparticipant isolation.
     // This two-account run does not claim that proof.
   } finally {
+    if (changedPrivacy) {
+      try { await rest(a, 'profiles', { method: 'PATCH',
+        query: '?id=eq.' + a.id, body: { is_private: originalPrivacy } }); }
+      catch (error) { log('PRIVACY RESTORE REQUIRED account A: ' + error.message); }
+    }
+    if (friendshipId)
+      log('DISPOSABLE ACCOUNT CLEANUP: accepted friendship ' + friendshipId +
+        ' persists because RLS only permits deleting pending requests.');
     // Clean up only records created by this run, in dependent-first order.
     // Preserve original errors and log any cleanup failure for manual inspection.
     for (const [user, table, id] of [
@@ -98,7 +153,7 @@ async function run(env = process.env, fetchImpl = fetch, log = console.log) {
       catch (error) { log('CLEANUP REQUIRED ' + table + ' id=' + id + ': ' + error.message); }
     }
   }
-  log('PASS real alpha cross-account feed/comment/DM integration; device and third-account privacy untested');
+  log('PASS real alpha cross-account feed/comment/friendship/DM integration; device and third-account privacy untested');
 }
 
 if (require.main === module) run().catch(error => {
