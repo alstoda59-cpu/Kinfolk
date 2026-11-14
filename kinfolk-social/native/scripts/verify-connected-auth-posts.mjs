@@ -80,7 +80,13 @@ try {
   });
   if(deliveryResult.error)throw deliveryResult.error;
   if(deliveryResult.status!==0)throw Error('Connected public/private post media delivery failed');
-  console.log('PASS: confirmed logins, session refresh, posts/comments, settings/inbox, private storage and cross-account post media delivery');
+  const videoResult=spawnSync(process.execPath,['scripts/verify-connected-video-media-delivery.mjs'],{
+    cwd:process.cwd(),stdio:'inherit',timeout:120000,
+    env:{...process.env,KINFOLK_ALPHA_TEST_USER_A_JWT:sessions[0],KINFOLK_ALPHA_TEST_USER_B_JWT:sessions[1]}
+  });
+  if(videoResult.error)throw videoResult.error;
+  if(videoResult.status!==0)throw Error('Connected Reel media authorization test failed');
+  console.log('PASS: confirmed logins, session refresh, posts/comments, settings/inbox, private storage, post media and Reel media authorization');
 } finally {
   // Revocation of each disposable session, including on failed integration.
   for(const token of sessions){
