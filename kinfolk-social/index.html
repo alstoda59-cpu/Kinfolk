@@ -12,6 +12,7 @@
 <meta name="application-name" content="Kinfolk Social">
 <title>Kinfolk Social</title>
 <!-- Recovery317: prevent Vercel previews from contacting shared live Supabase. -->
+<meta name="kinfolk-approved-alpha-project" content="viantpfagtbgyyzavmtv">
 <script src="/kinfolk-preview-isolation.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- Recovery225: show an actionable mobile startup screen if the external auth SDK fails. -->
@@ -72,8 +73,8 @@
 <div id="toast" class="toast hide"></div>
 <div id="modalRoot"></div>
 <script>
-const SB_URL='https://zojajuzmfjpvubzibzgg.supabase.co';
-const SB_KEY='sb_publishable_1te_hrDXQciMD7Gp1EXmRw_dvQmszvi';
+const SB_URL='https://viantpfagtbgyyzavmtv.supabase.co';
+const SB_KEY='sb_publishable_Kb4Mge6cPELN7gbBRkPl0g_RdXqAnuJ';
 const sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const state={user:null,profile:null,extras:null,view:'home',profileViewId:null,profileTab:'posts',channelViewId:null,channelTab:'videos',feed:[],profiles:new Map(),likes:new Map(),comments:new Map(),stories:[],channels:[],subscriptions:new Map(),videos:[],friendRequests:[],notifications:[],signed:new Map(),busy:false};
 window.state=state; // Share the same app state with the existing phase modules.
