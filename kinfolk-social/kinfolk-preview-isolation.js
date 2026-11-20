@@ -5,6 +5,10 @@
 (()=>{
   const host=String(window.location?.hostname||'').toLowerCase().replace(/\.+$/, '');
   if(!/(^|\.)vercel\.app$/.test(host))return;
+  // Allow only the separately configured nonproduction Alpha Test build.
+  // All other previews retain their fail-closed shared-backend network block.
+  const approvedAlpha=document.querySelector('meta[name="kinfolk-approved-alpha-project"]')?.getAttribute('content')==='viantpfagtbgyyzavmtv';
+  if(approvedAlpha)return;
   // Separate internal installation marker from the public blocked-state flag.
   // A preseeded public flag must never suppress the actual preview isolation.
   if(window.__kinfolkPreviewGuardInstalled===true)return;
