@@ -1374,9 +1374,9 @@ setTimeout(harden,0);setTimeout(harden,700);setInterval(unlockStuck,1200);
 
 ;
 (function(){
-  const SUPABASE_URL='https://zojajuzmfjpvubzibzgg.supabase.co';
-  const ANON_KEY='sb_publishable_1te_hrDXQciMD7Gp1EXmRw_dvQmszvi';
-  const STORAGE_KEY='sb-zojajuzmfjpvubzibzgg-auth-token';
+  const SUPABASE_URL='https://viantpfagtbgyyzavmtv.supabase.co';
+  const ANON_KEY='sb_publishable_Kb4Mge6cPELN7gbBRkPl0g_RdXqAnuJ';
+  const STORAGE_KEY='sb-viantpfagtbgyyzavmtv-auth-token';
   function friendlyError(data,status){
     const raw=(data?.error_description||data?.msg||data?.message||data?.error||'').toString();
     const low=raw.toLowerCase();
